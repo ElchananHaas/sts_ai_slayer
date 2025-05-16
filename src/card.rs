@@ -1,22 +1,23 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Card {
-    cost: i32,
-    effect: CardEffect,
+    pub cost: Option<i32>,
+    pub effect: CardEffect,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-enum CardEffect {
+pub enum CardEffect {
     Strike,
     Bash,
     Defend,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-enum PlayEffect {
+pub enum PlayEffect {
     Attack(i32),
-    Debuff(Debuff),
+    DebuffEnemy(Debuff),
     Block(i32),
 }
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Debuff {
     Vulnerable(i32),
@@ -28,12 +29,12 @@ pub enum Buff {
 }
 
 impl CardEffect {
-    fn actions(&self) -> &'static [PlayEffect] {
+    pub fn actions(&self) -> &'static [PlayEffect] {
         match self {
             CardEffect::Strike => &[PlayEffect::Attack(6)],
             CardEffect::Bash => &[
                 PlayEffect::Attack(8),
-                PlayEffect::Debuff(Debuff::Vulnerable(2)),
+                PlayEffect::DebuffEnemy(Debuff::Vulnerable(2)),
             ],
             CardEffect::Defend => &[PlayEffect::Block(5)],
         }
@@ -43,6 +44,12 @@ impl CardEffect {
             CardEffect::Strike => 1,
             CardEffect::Bash => 2,
             CardEffect::Defend => 1,
+        }
+    }
+    pub fn requires_target(&self) -> bool {
+        match self {
+            CardEffect::Strike | CardEffect::Bash => true,
+            _ => false,
         }
     }
 }

@@ -1,20 +1,43 @@
+use std::collections::VecDeque;
+
 use crate::{
-    card::{Buff, Debuff},
+    card::{Buff, Card, Debuff},
     rng::Rng,
 };
 
-struct Fight {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Fight {
     //Fights have at most 5 enemies (Reptomancer + 4 Daggers).
-    enemies: [Option<Enemy>; 5],
+    pub enemies: [Option<Enemy>; 5],
+    pub hand: Vec<Card>,
+    pub energy: i32,
+    pub player_block: i32,
+}
+
+impl Fight {
+    //Returns if the i'th card in hand is playable.
+    pub fn is_playable(&self, idx: usize) -> bool {
+        if idx >= self.hand.len() {
+            false
+        } else {
+            //TODO handle Blue Candle and Medical kit.
+            //TODO handle can't play attack effects (Entangled, Awakened One dead)
+            let Some(energy_cost) = &self.hand[idx].cost else {
+                return false;
+            };
+            *energy_cost <= self.energy
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-enum EnemyAction {
+pub enum EnemyAction {
     Attack(i32),
     Block(i32),
     Buff(Buff),
 }
-struct Enemy {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Enemy {
     //In order to allow full information to be passed to an AI model,
     //the enemy AI state is encoded as a state machine. This works for most
     //enemies. Some enemies like Avacado and some bosses will change intent
@@ -22,34 +45,49 @@ struct Enemy {
 
     //The odd cases are - The Guardian. It has a intent change based on an HP threshold being met
     //which is raised on Mode shift.
-    name: &'static str,
-    ai_state: u32,
+    pub name: &'static str,
+    pub ai_state: u32,
     //A function from the current state to the new ai state and the actions to take.
-    behavior: fn(&mut Rng, &Fight, &Enemy, u32) -> (u32, &'static [EnemyAction]),
-    hp: i32,
-    max_hp: i32,
+    pub behavior: fn(&mut Rng, &Fight, &Enemy, u32) -> (u32, &'static [EnemyAction]),
+    pub hp: i32,
+    pub max_hp: i32,
     //Being a minion is a buff.
-    buffs: Vec<Buff>,
-    debuffs: Vec<Debuff>,
+    pub buffs: EnemyBuffs,
+    pub debuffs: EnemyDebuffs,
+    pub block: i32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+pub struct EnemyBuffs {
+    pub strength: i32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+pub struct EnemyDebuffs {
+    pub vulnerable: i32,
 }
 
 const JAW_WORM_NAME: &'static str = "Jaw Worm";
 fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
     let hp = 40 + rng.sample_i32(5);
-    fn jaw_worm_ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
-        // States are 
+    fn jaw_worm_ai(
+        rng: &mut Rng,
+        _: &Fight,
+        _: &Enemy,
+        state: u32,
+    ) -> (u32, &'static [EnemyAction]) {
+        // States are
         // 1) Playing Attack
-        // 2) Playing Defend+Attack, different move first. 
+        // 2) Playing Defend+Attack, different move first.
         // 3) Playing Defend+Attack, same move prior turn.
-        // 4) Playing Buff. 
+        // 4) Playing Buff.
         // Jaw Worm's actions are a bit weird. The code samples a boolean if the same
         // action is chosen too many times in a row. The devs then changed the AI but didn't
-        // update the boolean values so the percentages are now strange.
-        const JAW_WORM_TABLE: &'static [StateEntry]= &[
+        // update the boolean values so the percentages are now strange, but the values are accurate.
+        const JAW_WORM_TABLE: &'static [StateEntry] = &[
             StateEntry {
                 actions: &[EnemyAction::Attack(11)],
                 new_states: &[2, 4],
-                //Yes, these are the actual odds.
                 weights: &[131, 189],
             },
             StateEntry {
@@ -66,18 +104,19 @@ fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
                 actions: &[EnemyAction::Buff(Buff::Strength(3)), EnemyAction::Block(6)],
                 new_states: &[1, 2],
                 weights: &[1093, 1407],
-            }
+            },
         ];
-        return weighted_transition(rng, state, JAW_WORM_TABLE)
+        return weighted_transition(rng, state, JAW_WORM_TABLE);
     }
     Enemy {
         name: JAW_WORM_NAME,
         ai_state: 0,
         behavior: jaw_worm_ai,
-        hp: hp,
+        hp,
         max_hp: hp,
-        buffs: Vec::new(),
-        debuffs: Vec::new(),
+        buffs: EnemyBuffs::default(),
+        debuffs: EnemyDebuffs::default(),
+        block: 0,
     }
 }
 
@@ -85,10 +124,14 @@ struct StateEntry {
     actions: &'static [EnemyAction],
     //The first entry is the new state. The second entry is the weight.
     new_states: &'static [u32],
-    weights: &'static [u32]
+    weights: &'static [u32],
 }
 
-fn weighted_transition(rng: &mut Rng, state: u32, entries: &'static [StateEntry]) -> (u32, &'static [EnemyAction]) {
+fn weighted_transition(
+    rng: &mut Rng,
+    state: u32,
+    entries: &'static [StateEntry],
+) -> (u32, &'static [EnemyAction]) {
     let entry = &entries[state as usize];
     let new_idx = rng.sample_weighted(entry.weights);
     (entry.new_states[new_idx], entry.actions)
