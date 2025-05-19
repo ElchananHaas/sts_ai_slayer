@@ -276,7 +276,7 @@ impl Game {
 
     pub fn setup_jawworm_fight(&mut self) -> ChoiceState {
         self.setup_fight();
-        self.fight.enemies[0] = generate_jaw_worm(&mut self.rng);
+        *self.fight.enemies.get_option(0) = Some(generate_jaw_worm(&mut self.rng));
         self.draw_initial_hand();
         ChoiceState::PlayCardState(PlayCardState { game: self })
     }

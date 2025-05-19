@@ -57,7 +57,7 @@ pub struct Enemies {
 impl Enemies {
     pub fn indicies(&self) -> EnemiesIdxIter {
         let mut res: u8 = 0;
-        for i in 0..self.enemies.len() {
+        for i in (0..self.enemies.len()).rev() {
             res <<= 1;
             if self.enemies[i].is_some() {
                 res |= 1
@@ -182,22 +182,22 @@ pub fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
         const JAW_WORM_TABLE: &'static [StateEntry] = &[
             StateEntry {
                 actions: &[EnemyAction::Attack(11)],
-                new_states: &[2, 4],
+                new_states: &[1, 3],
                 weights: &[131, 189],
             },
             StateEntry {
                 actions: &[EnemyAction::Attack(7), EnemyAction::Block(5)],
-                new_states: &[1, 3, 4],
+                new_states: &[0, 2, 3],
                 weights: &[25, 30, 45],
             },
             StateEntry {
                 actions: &[EnemyAction::Attack(7), EnemyAction::Block(5)],
-                new_states: &[1, 4],
+                new_states: &[0, 3],
                 weights: &[3571, 6429],
             },
             StateEntry {
                 actions: &[EnemyAction::Buff(Buff::Strength(3)), EnemyAction::Block(6)],
-                new_states: &[1, 2],
+                new_states: &[0, 1],
                 weights: &[1093, 1407],
             },
         ];
