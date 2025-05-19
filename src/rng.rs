@@ -1,11 +1,18 @@
+use std::hash::Hash;
 use std::random::DefaultRandomSource;
 use std::random::Random;
 
+#[derive(Debug, Clone)]
 pub struct Rng {
     source: DefaultRandomSource,
 }
 
 impl Rng {
+    pub fn new() -> Self {
+        Self {
+            source: DefaultRandomSource,
+        }
+    }
     //The samples is exclusive on max. It utilizes rejection sampling.
     pub fn sample(&mut self, max: usize) -> usize {
         if max == 0 {
@@ -43,3 +50,19 @@ impl Rng {
         panic!("A weight wasn't chosen!");
     }
 }
+
+impl Hash for Rng {
+    //The RNG is not part of the state to be hashed.
+    fn hash<H: std::hash::Hasher>(&self, _: &mut H) {
+        return;
+    }
+}
+
+impl PartialEq for Rng {
+    //The RNG's state is not used in comparisons.
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+impl Eq for Rng {}

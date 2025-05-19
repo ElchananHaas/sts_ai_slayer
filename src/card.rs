@@ -29,6 +29,12 @@ pub enum Buff {
 }
 
 impl CardEffect {
+    pub fn to_card(&self) -> Card {
+        Card {
+            cost: self.default_cost(),
+            effect: *self,
+        }
+    }
     pub fn actions(&self) -> &'static [PlayEffect] {
         match self {
             CardEffect::Strike => &[PlayEffect::Attack(6)],
@@ -39,11 +45,11 @@ impl CardEffect {
             CardEffect::Defend => &[PlayEffect::Block(5)],
         }
     }
-    fn default_cost(&self) -> i32 {
+    fn default_cost(&self) -> Option<i32> {
         match self {
-            CardEffect::Strike => 1,
-            CardEffect::Bash => 2,
-            CardEffect::Defend => 1,
+            CardEffect::Strike => Some(1),
+            CardEffect::Bash => Some(2),
+            CardEffect::Defend => Some(1),
         }
     }
     pub fn requires_target(&self) -> bool {

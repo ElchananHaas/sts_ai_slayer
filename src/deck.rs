@@ -1,7 +1,9 @@
+use std::hash::Hash;
+
 //This file simulates a deck. It allows for lazy sampling.
 use crate::{card::Card, rng::Rng};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum DeckSegment {
     //This is a segment of the deck that is shuffled. It is
     //not in any particular order, cards will be drawn from it using an RNG.
@@ -17,8 +19,8 @@ enum DeckSegment {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-struct Deck {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Deck {
     num_cards: usize,
     segment: DeckSegment,
 }
@@ -62,10 +64,14 @@ impl Deck {
         }
     }
 
-    pub fn shuffle(cards: Vec<Card>) -> Deck {
+    pub fn shuffled(cards: Vec<Card>) -> Deck {
         Deck {
             num_cards: cards.len(),
             segment: DeckSegment::Shuffled(cards),
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.num_cards
     }
 }

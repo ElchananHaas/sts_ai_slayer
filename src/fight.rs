@@ -1,17 +1,112 @@
-use std::collections::VecDeque;
+use std::{
+    mem,
+    ops::{Index, IndexMut},
+};
 
 use crate::{
-    card::{Buff, Card, Debuff},
+    card::{Buff, Card},
+    deck::Deck,
     rng::Rng,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Fight {
-    //Fights have at most 5 enemies (Reptomancer + 4 Daggers).
-    pub enemies: [Option<Enemy>; 5],
+    pub enemies: Enemies,
     pub hand: Vec<Card>,
+    pub discard_pile: Vec<Card>,
+    pub deck: Deck,
     pub energy: i32,
     pub player_block: i32,
+}
+
+impl Fight {
+    //The setup method must be called to allow for allocation reuse.
+    pub fn new() -> Self {
+        Self {
+            enemies: Enemies {
+                enemies: [const { None }; 5],
+            },
+            hand: vec![],
+            deck: Deck::shuffled(vec![]),
+            energy: 0,
+            player_block: 0,
+            discard_pile: vec![],
+        }
+    }
+    pub fn draw(&mut self, rng: &mut Rng) {
+        if self.hand.len() >= 10 {
+            return;
+        }
+        if self.deck.len() == 0 {
+            let mut old_discard = vec![];
+            mem::swap(&mut old_discard, &mut self.discard_pile);
+            self.deck = Deck::shuffled(old_discard);
+        }
+        if self.deck.len() > 0 {
+            self.hand.push(self.deck.draw(rng));
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Enemies {
+    //Fights have at most 5 enemies (Reptomancer + 4 Daggers).
+    pub enemies: [Option<Enemy>; 5],
+}
+
+impl Enemies {
+    pub fn indicies(&self) -> EnemiesIdxIter {
+        let mut res: u8 = 0;
+        for i in 0..self.enemies.len() {
+            res <<= 1;
+            if self.enemies[i].is_some() {
+                res |= 1
+            }
+        }
+        EnemiesIdxIter {
+            filled: res,
+            pos: 0,
+        }
+    }
+
+    pub fn get_option(&mut self, idx: usize) -> &mut Option<Enemy> {
+        &mut self.enemies[idx]
+    }
+}
+impl Index<usize> for Enemies {
+    type Output = Enemy;
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.enemies[index].as_ref().expect("Enemy exists!")
+    }
+}
+
+impl IndexMut<usize> for Enemies {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.enemies[index].as_mut().expect("Enemy exists!")
+    }
+}
+
+pub struct EnemiesIdxIter {
+    filled: u8,
+    pos: u8,
+}
+impl Iterator for EnemiesIdxIter {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.filled == 0 {
+            None
+        } else {
+            while (self.filled & 1) == 0 {
+                self.filled >>= 1;
+                self.pos += 1;
+            }
+            self.filled >>= 1;
+            let res = self.pos;
+            self.pos += 1;
+            Some(res as usize)
+        }
+    }
 }
 
 impl Fight {
@@ -68,7 +163,7 @@ pub struct EnemyDebuffs {
 }
 
 const JAW_WORM_NAME: &'static str = "Jaw Worm";
-fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
+pub fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
     let hp = 40 + rng.sample_i32(5);
     fn jaw_worm_ai(
         rng: &mut Rng,
