@@ -68,21 +68,35 @@ impl Enemies {
             pos: 0,
         }
     }
-
-    pub fn get_option(&mut self, idx: usize) -> &mut Option<Enemy> {
-        &mut self.enemies[idx]
+    pub fn len(&self) -> usize {
+        self.enemies.iter().filter(|x| x.is_some()).count()
     }
 }
 impl Index<usize> for Enemies {
-    type Output = Enemy;
+    type Output = Option<Enemy>;
     fn index(&self, index: usize) -> &Self::Output {
-        &self.enemies[index].as_ref().expect("Enemy exists!")
+        &self.enemies[index]
     }
 }
 
 impl IndexMut<usize> for Enemies {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.enemies[index].as_mut().expect("Enemy exists!")
+        &mut self.enemies[index]
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct EnemyIdx(pub u8);
+impl Index<EnemyIdx> for Enemies {
+    type Output = Enemy;
+    fn index(&self, index: EnemyIdx) -> &Self::Output {
+        self.enemies[index.0 as usize].as_ref().expect("Enemy exists!")
+    }
+}
+
+impl IndexMut<EnemyIdx> for Enemies {
+    fn index_mut(&mut self, index: EnemyIdx) -> &mut Self::Output {
+        self.enemies[index.0 as usize].as_mut().expect("Enemy exists!")
     }
 }
 
@@ -91,7 +105,7 @@ pub struct EnemiesIdxIter {
     pos: u8,
 }
 impl Iterator for EnemiesIdxIter {
-    type Item = usize;
+    type Item = EnemyIdx;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.filled == 0 {
@@ -104,7 +118,7 @@ impl Iterator for EnemiesIdxIter {
             self.filled >>= 1;
             let res = self.pos;
             self.pos += 1;
-            Some(res as usize)
+            Some(EnemyIdx(res))
         }
     }
 }

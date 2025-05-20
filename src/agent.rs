@@ -7,19 +7,26 @@ impl RandomAgent {
         match choice {
             ChoiceState::PlayCardState(play_card_state) => {
                 let actions = play_card_state.available_actions();
+                dbg!(&actions);
                 let idx = rng.sample(actions.len());
+                dbg!(&idx);
                 play_card_state.take_action(actions[idx])
             }
             ChoiceState::ChooseEnemyState(choose_enemy_state) => {
                 let actions = choose_enemy_state.available_actions();
+                dbg!(&actions);
                 let idx = rng.sample(actions.len());
+                dbg!(&idx);
                 choose_enemy_state.take_action(actions[idx])
             }
-            ChoiceState::WinState(game) => {
+            ChoiceState::WinState(_) => {
                 panic!("Game is already won!");
             }
-            ChoiceState::LossState(game) => {
+            ChoiceState::LossState(_) => {
                 panic!("Game is already lost!")
+            },
+            ChoiceState::MapState(_) => {
+                todo!("Multiple floors aren't implemented yet!")
             }
         }
     }

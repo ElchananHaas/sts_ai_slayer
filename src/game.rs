@@ -1,3 +1,5 @@
+use std::process::id;
+
 use crate::{
     card::{Buff, Card, CardEffect, Debuff, PlayEffect},
     deck::Deck,
@@ -22,6 +24,7 @@ pub enum ChoiceState<'a> {
     ChooseEnemyState(ChooseEnemyState<'a>),
     WinState(&'a mut Game),
     LossState(&'a mut Game),
+    MapState(&'a mut Game)
 }
 
 impl<'a> ChoiceState<'a> {
@@ -70,6 +73,9 @@ fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> 
             return ChoiceState::LossState(game);
         }
     }
+    if game.fight.enemies.len() == 0 {
+        return ChoiceState::MapState(game)
+    }
     ChoiceState::PlayCardState(PlayCardState { game })
 }
 
@@ -79,7 +85,7 @@ fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
         PlayEffect::Attack(attack) => {
             //TODO handle player buffs and debuffs.
             let mut damage: f32 = *attack as f32;
-            let enemy = &mut game.fight.enemies[target];
+            let Some(enemy) = &mut game.fight.enemies[target] else {return;};
             if enemy.debuffs.vulnerable > 0 {
                 damage *= 1.5;
             }
@@ -94,12 +100,14 @@ fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
             damage = std::cmp::min(damage, enemy.hp);
             enemy.hp -= damage as i32;
             if enemy.hp <= 0 {
-                *game.fight.enemies.get_option(target) = None;
+                game.fight.enemies[target] = None;
                 return;
             }
         }
         PlayEffect::DebuffEnemy(debuff) => {
-            apply_debuff_to_enemy(&mut game.fight.enemies[target], *debuff);
+            //This handles the case where the enemy dies during the card effect.
+            let Some(enemy) = &mut game.fight.enemies[target] else {return};
+            apply_debuff_to_enemy(enemy, *debuff);
         }
         PlayEffect::Block(block) => {
             //TODO handle player buffs and debuffs.
@@ -167,6 +175,8 @@ impl<'a> PlayCardState<'a> {
                         if damage > self.game.fight.player_block {
                             let dealt = damage - self.game.fight.player_block;
                             self.player_lose_life(dealt);
+                        } else {
+                            self.game.fight.player_block -= damage;
                         }
                         if self.game.player_hp <= 0 {
                             self.game.player_hp = 0;
@@ -193,10 +203,17 @@ impl<'a> PlayCardState<'a> {
             .fight
             .discard_pile
             .append(&mut self.game.fight.hand);
+        for idx in self.game.fight.enemies.indicies() {
+            self.game.fight.enemies[idx].block = 0;
+        }
     }
     fn reset_for_next_turn(&mut self) {
         //TODO implement relics that affect energy.
         //TODO implement cards that affect energy.
+        for _ in 0..5 {
+            self.game.fight.draw(&mut self.game.rng);
+        }
+        self.game.fight.player_block = 0;
         self.game.fight.energy = 3;
     }
     //TODO handle various effects of HP loss.
@@ -218,7 +235,7 @@ impl<'a> ChooseEnemyState<'a> {
         let fight = &self.game.fight;
         let mut res = vec![];
         for i in fight.enemies.indicies() {
-            res.push(ChooseEnemyAction { enemy: i as u8 });
+            res.push(ChooseEnemyAction { enemy: i.0 });
         }
         res
     }
@@ -272,11 +289,12 @@ impl Game {
         self.fight.energy = 0;
         self.fight.player_block = 0;
         self.fight.deck = Deck::shuffled(self.base_deck.clone());
+        self.fight.energy = 3;
     }
 
     pub fn setup_jawworm_fight(&mut self) -> ChoiceState {
         self.setup_fight();
-        *self.fight.enemies.get_option(0) = Some(generate_jaw_worm(&mut self.rng));
+        self.fight.enemies[0] = Some(generate_jaw_worm(&mut self.rng));
         self.draw_initial_hand();
         ChoiceState::PlayCardState(PlayCardState { game: self })
     }
