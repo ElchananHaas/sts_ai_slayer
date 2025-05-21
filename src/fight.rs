@@ -170,6 +170,7 @@ pub struct Enemy {
 pub struct EnemyBuffs {
     pub strength: i32,
     pub ritual: i32,
+    pub ritual_skip_first: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]

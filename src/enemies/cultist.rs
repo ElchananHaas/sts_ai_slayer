@@ -14,7 +14,7 @@ pub fn generate_cultist(rng: &mut Rng) -> Enemy {
         // 1) Attack for 6
         const ENEMY_TABLE: &'static [StateEntry] = &[
             StateEntry {
-                actions: &[EnemyAction::Buff(Buff::Ritual(3))],
+                actions: &[EnemyAction::Buff(Buff::RitualSkipFirst(3))],
                 new_states: &[1],
                 weights: &[1],
             },

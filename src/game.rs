@@ -211,6 +211,9 @@ impl<'a> PlayCardState<'a> {
         //TODO implement cards that affect energy.
         for enemy_idx in self.game.fight.enemies.indicies() {
             self.game.fight.enemies[enemy_idx].buffs.strength += self.game.fight.enemies[enemy_idx].buffs.ritual;
+            //Cultists skip the ritual buff the turn they play it.
+            self.game.fight.enemies[enemy_idx].buffs.ritual += self.game.fight.enemies[enemy_idx].buffs.ritual_skip_first;
+            self.game.fight.enemies[enemy_idx].buffs.ritual_skip_first = 0;
         }
         for _ in 0..5 {
             self.game.fight.draw(&mut self.game.rng);
@@ -226,6 +229,9 @@ impl<'a> PlayCardState<'a> {
             },
             Buff::Ritual(x) => {
                 enemy.buffs.ritual += x;
+            },
+            Buff::RitualSkipFirst(x) => {
+                enemy.buffs.ritual_skip_first += x;
             }
         }
     }
@@ -348,7 +354,18 @@ impl<'a> Display for ChoiceState<'a> {
         write!(f, "{}/{} hp | ",game.player_hp, game.player_max_hp)?;
         write!(f, "{}⚡︎ | ",game.fight.energy)?;
         write!(f, "{} block | ",game.fight.player_block)?;
-        write!(f, "\n{:-<80}\n", "")?;
+        write!(f, "\n")?;
+        write!(f, "{:.<80}\n", "")?;
+        write!(f, "| ")?;
+        for card in &game.fight.hand {
+            if let Some(cost) = card.cost {
+                write!(f, "{:?} [{}] | ", card.effect, cost)?;
+            } else {
+                write!(f, "{:?} [x] | ", card.effect)?;
+            }
+        }
+        write!(f, "\n")?;
+        write!(f, "{:-<80}\n", "")?;
         Ok(())
     }
 }
