@@ -169,6 +169,7 @@ pub struct Enemy {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct EnemyBuffs {
     pub strength: i32,
+    pub ritual: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
@@ -176,72 +177,3 @@ pub struct EnemyDebuffs {
     pub vulnerable: i32,
 }
 
-const JAW_WORM_NAME: &'static str = "Jaw Worm";
-pub fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
-    let hp = 40 + rng.sample_i32(5);
-    fn jaw_worm_ai(
-        rng: &mut Rng,
-        _: &Fight,
-        _: &Enemy,
-        state: u32,
-    ) -> (u32, &'static [EnemyAction]) {
-        // States are
-        // 1) Playing Attack
-        // 2) Playing Defend+Attack, different move first.
-        // 3) Playing Defend+Attack, same move prior turn.
-        // 4) Playing Buff.
-        // Jaw Worm's actions are a bit weird. The code samples a boolean if the same
-        // action is chosen too many times in a row. The devs then changed the AI but didn't
-        // update the boolean values so the percentages are now strange, but the values are accurate.
-        const JAW_WORM_TABLE: &'static [StateEntry] = &[
-            StateEntry {
-                actions: &[EnemyAction::Attack(11)],
-                new_states: &[1, 3],
-                weights: &[131, 189],
-            },
-            StateEntry {
-                actions: &[EnemyAction::Attack(7), EnemyAction::Block(5)],
-                new_states: &[0, 2, 3],
-                weights: &[25, 30, 45],
-            },
-            StateEntry {
-                actions: &[EnemyAction::Attack(7), EnemyAction::Block(5)],
-                new_states: &[0, 3],
-                weights: &[3571, 6429],
-            },
-            StateEntry {
-                actions: &[EnemyAction::Buff(Buff::Strength(3)), EnemyAction::Block(6)],
-                new_states: &[0, 1],
-                weights: &[1093, 1407],
-            },
-        ];
-        return weighted_transition(rng, state, JAW_WORM_TABLE);
-    }
-    Enemy {
-        name: JAW_WORM_NAME,
-        ai_state: 0,
-        behavior: jaw_worm_ai,
-        hp,
-        max_hp: hp,
-        buffs: EnemyBuffs::default(),
-        debuffs: EnemyDebuffs::default(),
-        block: 0,
-    }
-}
-
-struct StateEntry {
-    actions: &'static [EnemyAction],
-    //The first entry is the new state. The second entry is the weight.
-    new_states: &'static [u32],
-    weights: &'static [u32],
-}
-
-fn weighted_transition(
-    rng: &mut Rng,
-    state: u32,
-    entries: &'static [StateEntry],
-) -> (u32, &'static [EnemyAction]) {
-    let entry = &entries[state as usize];
-    let new_idx = rng.sample_weighted(entry.weights);
-    (entry.new_states[new_idx], entry.actions)
-}

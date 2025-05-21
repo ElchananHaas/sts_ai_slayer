@@ -10,10 +10,10 @@ mod deck;
 mod fight;
 mod game;
 mod rng;
-
+mod enemies;
 fn main() {
     let mut game = Game::new(Charachter::IRONCLAD);
-    let mut choice = game.setup_jawworm_fight();
+    let mut choice = game.setup_cultist_fight();
     let mut rng = Rng::new();
     let agent = RandomAgent {};
     while !choice.is_over() && !matches!(choice, ChoiceState::MapState { .. }) {

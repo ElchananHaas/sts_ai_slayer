@@ -1,10 +1,5 @@
-use std::process::id;
-
 use crate::{
-    card::{Buff, Card, CardEffect, Debuff, PlayEffect},
-    deck::Deck,
-    fight::{Enemies, Enemy, EnemyAction, Fight, generate_jaw_worm},
-    rng::Rng,
+    card::{Buff, Card, CardEffect, Debuff, PlayEffect}, deck::Deck, enemies::{cultist::generate_cultist, jaw_worm::generate_jaw_worm}, fight::{Enemies, Enemy, EnemyAction, Fight}, rng::Rng
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -73,6 +68,8 @@ fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> 
             return ChoiceState::LossState(game);
         }
     }
+    let card = game.fight.hand.remove(card_idx);
+    game.fight.discard_pile.push(card);
     if game.fight.enemies.len() == 0 {
         return ChoiceState::MapState(game)
     }
@@ -210,6 +207,9 @@ impl<'a> PlayCardState<'a> {
     fn reset_for_next_turn(&mut self) {
         //TODO implement relics that affect energy.
         //TODO implement cards that affect energy.
+        for enemy_idx in self.game.fight.enemies.indicies() {
+            self.game.fight.enemies[enemy_idx].buffs.strength += self.game.fight.enemies[enemy_idx].buffs.ritual;
+        }
         for _ in 0..5 {
             self.game.fight.draw(&mut self.game.rng);
         }
@@ -221,6 +221,9 @@ impl<'a> PlayCardState<'a> {
         match buff {
             Buff::Strength(x) => {
                 enemy.buffs.strength += x;
+            },
+            Buff::Ritual(x) => {
+                enemy.buffs.ritual += x;
             }
         }
     }
@@ -295,6 +298,13 @@ impl Game {
     pub fn setup_jawworm_fight(&mut self) -> ChoiceState {
         self.setup_fight();
         self.fight.enemies[0] = Some(generate_jaw_worm(&mut self.rng));
+        self.draw_initial_hand();
+        ChoiceState::PlayCardState(PlayCardState { game: self })
+    }
+
+    pub fn setup_cultist_fight(&mut self) -> ChoiceState {
+        self.setup_fight();
+        self.fight.enemies[0] = Some(generate_cultist(&mut self.rng));
         self.draw_initial_hand();
         ChoiceState::PlayCardState(PlayCardState { game: self })
     }

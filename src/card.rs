@@ -26,6 +26,7 @@ pub enum Debuff {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Buff {
     Strength(i32),
+    Ritual(i32)
 }
 
 impl CardEffect {
