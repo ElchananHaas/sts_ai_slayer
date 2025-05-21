@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     card::{Buff, Card, CardEffect, Debuff, PlayEffect}, deck::Deck, enemies::{cultist::generate_cultist, jaw_worm::generate_jaw_worm}, fight::{Enemies, Enemy, EnemyAction, Fight}, rng::Rng
 };
@@ -316,4 +318,37 @@ pub enum Charachter {
     SILENT,
     DEFECT,
     WATCHER,
+}
+
+impl Charachter {
+    fn name(&self) -> &str {
+        match self {
+            Charachter::IRONCLAD => "Ironclad",
+            Charachter::SILENT => "Silent",
+            Charachter::DEFECT => "Defect",
+            Charachter::WATCHER => "Watcher",
+        }
+    }
+}
+
+impl<'a> Display for ChoiceState<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+       let (state_name, game) = match self {
+            ChoiceState::PlayCardState(play_card_state) => ("PlayCard", &*play_card_state.game),
+            ChoiceState::ChooseEnemyState(choose_enemy_state) => ("ChooseEnemy", &*choose_enemy_state.game),
+            ChoiceState::WinState(game) => ("Win", &**game),
+            ChoiceState::LossState(game) => ("Loss", &**game),
+            ChoiceState::MapState(game) => ("Map Choice", &**game),
+        };
+        const SCREEN_WIDTH: usize = 80;
+        write!(f, "{:-<80}\n", "")?;
+        write!(f, "| ")?;
+        write!(f, "{} | ", state_name)?;
+        write!(f, "{} | ", game.charachter.name())?;
+        write!(f, "{}/{} hp | ",game.player_hp, game.player_max_hp)?;
+        write!(f, "{}⚡︎ | ",game.fight.energy)?;
+        write!(f, "{} block | ",game.fight.player_block)?;
+        write!(f, "\n{:-<80}\n", "")?;
+        Ok(())
+    }
 }

@@ -1,6 +1,6 @@
 use crate::{card::Buff, enemies::{weighted_transition, StateEntry}, fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight}, rng::Rng};
 
-pub const JAW_WORM_NAME: &'static str = "Jaw Worm";
+const ENEMY_NAME: &'static str = "Jaw Worm";
 pub fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
     let hp = 40 + rng.sample_i32(5);
     fn ai(
@@ -42,7 +42,7 @@ pub fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
         return weighted_transition(rng, state, ENEMY_TABLE);
     }
     Enemy {
-        name: JAW_WORM_NAME,
+        name: ENEMY_NAME,
         ai_state: 0,
         behavior: ai,
         hp,

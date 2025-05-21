@@ -18,6 +18,6 @@ fn main() {
     let agent = RandomAgent {};
     while !choice.is_over() && !matches!(choice, ChoiceState::MapState { .. }) {
         choice = agent.take_action(choice, &mut rng);
-        dbg!(&choice);
+        println!("{}", &choice);
     }
 }

@@ -1,6 +1,6 @@
 use crate::{card::Buff, enemies::{weighted_transition, StateEntry}, fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight}, rng::Rng};
 
-pub const CULTIST_NAME: &'static str = "Cultist";
+const ENEMY_NAME: &'static str = "Cultist";
 pub fn generate_cultist(rng: &mut Rng) -> Enemy {
     let hp = 48 + rng.sample_i32(7);
     fn ai(
@@ -27,7 +27,7 @@ pub fn generate_cultist(rng: &mut Rng) -> Enemy {
         return weighted_transition(rng, state, ENEMY_TABLE);
     }
     Enemy {
-        name: CULTIST_NAME,
+        name: ENEMY_NAME,
         ai_state: 0,
         behavior: ai,
         hp,
