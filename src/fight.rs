@@ -90,13 +90,17 @@ pub struct EnemyIdx(pub u8);
 impl Index<EnemyIdx> for Enemies {
     type Output = Enemy;
     fn index(&self, index: EnemyIdx) -> &Self::Output {
-        self.enemies[index.0 as usize].as_ref().expect("Enemy exists!")
+        self.enemies[index.0 as usize]
+            .as_ref()
+            .expect("Enemy exists!")
     }
 }
 
 impl IndexMut<EnemyIdx> for Enemies {
     fn index_mut(&mut self, index: EnemyIdx) -> &mut Self::Output {
-        self.enemies[index.0 as usize].as_mut().expect("Enemy exists!")
+        self.enemies[index.0 as usize]
+            .as_mut()
+            .expect("Enemy exists!")
     }
 }
 
@@ -177,4 +181,3 @@ pub struct EnemyBuffs {
 pub struct EnemyDebuffs {
     pub vulnerable: i32,
 }
-

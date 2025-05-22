@@ -1,14 +1,14 @@
-use crate::{card::Buff, enemies::{weighted_transition, StateEntry}, fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight}, rng::Rng};
+use crate::{
+    card::Buff,
+    enemies::{StateEntry, weighted_transition},
+    fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight},
+    rng::Rng,
+};
 
 const ENEMY_NAME: &'static str = "Cultist";
 pub fn generate_cultist(rng: &mut Rng) -> Enemy {
     let hp = 48 + rng.sample_i32(7);
-    fn ai(
-        rng: &mut Rng,
-        _: &Fight,
-        _: &Enemy,
-        state: u32,
-    ) -> (u32, &'static [EnemyAction]) {
+    fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
         // States are
         // 0) Buff
         // 1) Attack for 6

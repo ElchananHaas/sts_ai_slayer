@@ -1,7 +1,7 @@
 use crate::{fight::EnemyAction, rng::Rng};
 
-pub mod jaw_worm;
 pub mod cultist;
+pub mod jaw_worm;
 
 struct StateEntry {
     actions: &'static [EnemyAction],

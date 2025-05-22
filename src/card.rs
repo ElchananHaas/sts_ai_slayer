@@ -27,7 +27,7 @@ pub enum Debuff {
 pub enum Buff {
     Strength(i32),
     Ritual(i32),
-    RitualSkipFirst(i32)
+    RitualSkipFirst(i32),
 }
 
 impl CardEffect {

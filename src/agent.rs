@@ -7,16 +7,14 @@ impl RandomAgent {
         match choice {
             ChoiceState::PlayCardState(play_card_state) => {
                 let actions = play_card_state.available_actions();
-                dbg!(&actions);
                 let idx = rng.sample(actions.len());
-                dbg!(&idx);
+                println!("{}", play_card_state.action_str(actions[idx]));
                 play_card_state.take_action(actions[idx])
             }
             ChoiceState::ChooseEnemyState(choose_enemy_state) => {
                 let actions = choose_enemy_state.available_actions();
-                dbg!(&actions);
                 let idx = rng.sample(actions.len());
-                dbg!(&idx);
+                println!("{}", choose_enemy_state.action_str(actions[idx]));
                 choose_enemy_state.take_action(actions[idx])
             }
             ChoiceState::WinState(_) => {
@@ -24,7 +22,7 @@ impl RandomAgent {
             }
             ChoiceState::LossState(_) => {
                 panic!("Game is already lost!")
-            },
+            }
             ChoiceState::MapState(_) => {
                 todo!("Multiple floors aren't implemented yet!")
             }
