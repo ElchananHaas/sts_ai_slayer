@@ -2,7 +2,7 @@ use crate::{fight::EnemyAction, rng::Rng};
 
 pub mod cultist;
 pub mod jaw_worm;
-
+pub mod red_louse;
 struct StateEntry {
     actions: &'static [EnemyAction],
     //The first entry is the new state. The second entry is the weight.
@@ -18,4 +18,8 @@ fn weighted_transition(
     let entry = &entries[state as usize];
     let new_idx = rng.sample_weighted(entry.weights);
     (entry.new_states[new_idx], entry.actions)
+}
+
+fn uniform_inclusive(rng: &mut Rng, min: i32, max: i32) -> i32 {
+    min + rng.sample_i32(max - min + 1)
 }

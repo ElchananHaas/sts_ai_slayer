@@ -394,6 +394,16 @@ impl<'a> Display for ChoiceState<'a> {
                     enemy.buffs.ritual + enemy.buffs.ritual_skip_first
                 )?;
             }
+            if enemy.buffs.curl_up > 0 {
+                write!(
+                    f,
+                    "{} curl up | ",
+                    enemy.buffs.curl_up
+                )?;
+            }
+            if enemy.debuffs.vulnerable > 0 {
+                write!(f, "{} vuln | ", enemy.debuffs.vulnerable)?;
+            }
             write!(f, "\n")?;
             dash_line(f)?;
             Ok(())

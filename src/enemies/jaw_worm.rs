@@ -1,13 +1,13 @@
 use crate::{
     card::Buff,
-    enemies::{StateEntry, weighted_transition},
+    enemies::{uniform_inclusive, weighted_transition, StateEntry},
     fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight},
     rng::Rng,
 };
 
 const ENEMY_NAME: &'static str = "Jaw Worm";
 pub fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
-    let hp = 40 + rng.sample_i32(5);
+    let hp = uniform_inclusive(rng, 40, 44);
     fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
         // States are
         // 0) Playing Attack

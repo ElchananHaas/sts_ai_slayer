@@ -28,8 +28,8 @@ impl Rng {
         }
     }
 
-    pub fn sample_i32(&mut self, max: usize) -> i32 {
-        self.sample(max) as i32
+    pub fn sample_i32(&mut self, max: i32) -> i32 {
+        self.sample(max as usize) as i32
     }
 
     pub fn sample_u32(&mut self, max: u32) -> u32 {
