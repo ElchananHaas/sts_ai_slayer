@@ -1,12 +1,14 @@
 ### Act 1 Basic Enemies
 - [x] Jaw Worm
 - [x] Cultist
-- [ ] Red Louse
-- [ ] Green Louse
-- [ ] Med Acid Slime
-- [ ] Small Acid Slime
-- [ ] Med Spike Slime
-- [ ] Small Spike Slime
+- [x] Red Louse
+- [x] Green Louse
+- [ ] Large Green Slime
+- [x] Med Green Slime
+- [x] Small Green Slime
+- [ ] Large Black Slime
+- [ ] Med Black Slime
+- [x] Small Black Slime
 - [ ] Mad Gremlin
 - [ ] Sneaky Gremlin
 - [ ] Fat Gremlin

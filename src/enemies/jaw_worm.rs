@@ -1,6 +1,6 @@
 use crate::{
     card::Buff,
-    enemies::{uniform_inclusive, weighted_transition, StateEntry},
+    enemies::{StateEntry, uniform_inclusive, weighted_transition},
     fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight},
     rng::Rng,
 };

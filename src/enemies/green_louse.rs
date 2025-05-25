@@ -1,12 +1,12 @@
 use crate::{
-    card::Buff,
+    card::{Buff, Debuff},
     enemies::{StateEntry, uniform_inclusive, weighted_transition},
     fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight},
     rng::Rng,
 };
 
-const ENEMY_NAME: &'static str = "Red Louse";
-pub fn generate_red_louse(rng: &mut Rng) -> Enemy {
+const ENEMY_NAME: &'static str = "Green Louse";
+pub fn generate_green_louse(rng: &mut Rng) -> Enemy {
     let hp = uniform_inclusive(rng, 10, 15);
     fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
         // States are
@@ -26,12 +26,12 @@ pub fn generate_red_louse(rng: &mut Rng) -> Enemy {
                 weights: &[1],
             },
             StateEntry {
-                actions: &[EnemyAction::Buff(Buff::Strength(3))],
+                actions: &[EnemyAction::Debuff(Debuff::Weak(2))],
                 new_states: &[0, 3],
                 weights: &[3, 1],
             },
             StateEntry {
-                actions: &[EnemyAction::Buff(Buff::Strength(3))],
+                actions: &[EnemyAction::Debuff(Debuff::Weak(2))],
                 new_states: &[0],
                 weights: &[1],
             },

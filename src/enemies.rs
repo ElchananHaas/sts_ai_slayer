@@ -1,8 +1,16 @@
 use crate::{fight::EnemyAction, rng::Rng};
 
 pub mod cultist;
+pub mod green_louse;
 pub mod jaw_worm;
 pub mod red_louse;
+pub mod large_black_slime;
+pub mod med_black_slime;
+pub mod small_black_slime;
+pub mod large_green_slime;
+pub mod med_green_slime;
+pub mod small_green_slime;
+
 struct StateEntry {
     actions: &'static [EnemyAction],
     //The first entry is the new state. The second entry is the weight.

@@ -9,6 +9,7 @@ pub enum CardEffect {
     Strike,
     Bash,
     Defend,
+    Slimed,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -21,6 +22,8 @@ pub enum PlayEffect {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Debuff {
     Vulnerable(i32),
+    Weak(i32),
+    Frail(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -31,7 +34,7 @@ pub enum Buff {
 }
 
 impl CardEffect {
-    pub fn to_card(&self) -> Card {
+    pub const fn to_card(&self) -> Card {
         Card {
             cost: self.default_cost(),
             effect: *self,
@@ -45,13 +48,15 @@ impl CardEffect {
                 PlayEffect::DebuffEnemy(Debuff::Vulnerable(2)),
             ],
             CardEffect::Defend => &[PlayEffect::Block(5)],
+            CardEffect::Slimed => todo!(),
         }
     }
-    fn default_cost(&self) -> Option<i32> {
+    const fn default_cost(&self) -> Option<i32> {
         match self {
             CardEffect::Strike => Some(1),
             CardEffect::Bash => Some(2),
             CardEffect::Defend => Some(1),
+            CardEffect::Slimed => Some(1),
         }
     }
     pub fn requires_target(&self) -> bool {

@@ -3,8 +3,10 @@ use std::fmt::Display;
 use crate::{
     card::{Buff, Card, CardEffect, Debuff, PlayEffect},
     deck::Deck,
-    enemies::{cultist::generate_cultist, jaw_worm::generate_jaw_worm},
-    fight::{Enemies, Enemy, EnemyAction, Fight},
+    enemies::{
+        cultist::generate_cultist, green_louse::generate_green_louse, jaw_worm::generate_jaw_worm, med_black_slime::generate_med_black_slime, med_green_slime::generate_med_green_slime, red_louse::generate_red_louse
+    },
+    fight::{Enemies, Enemy, EnemyAction, EnemyIdx, Fight},
     rng::Rng,
 };
 
@@ -70,6 +72,7 @@ fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> 
     fight.energy -= card.cost.expect("Card has a cost");
     for action in card.effect.actions() {
         handle_action(game, action, target);
+        post_card_play(game);
         if game.player_hp <= 0 {
             return ChoiceState::LossState(game);
         }
@@ -82,6 +85,15 @@ fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> 
     ChoiceState::PlayCardState(PlayCardState { game })
 }
 
+fn post_card_play<'a>(game: &'a mut Game) {
+    for enemy_idx in game.fight.enemies.indicies() {
+        let enemy = &mut game.fight.enemies[enemy_idx];
+        if enemy.buffs.queued_block > 0 {
+            enemy.block += enemy.buffs.queued_block;
+            enemy.buffs.queued_block = 0;
+        }
+    }
+}
 //Returns if the action is interrupted due to an enemy dying.
 fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
     match action {
@@ -94,6 +106,9 @@ fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
             if enemy.debuffs.vulnerable > 0 {
                 damage *= 1.5;
             }
+            if game.fight.player_debuffs.weak > 0 {
+                damage *= 0.75;
+            }
             let mut damage = damage as i32;
             if damage < enemy.block {
                 enemy.block -= damage;
@@ -103,6 +118,12 @@ fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
                 enemy.block = 0;
             }
             damage = std::cmp::min(damage, enemy.hp);
+            if damage > 0 {
+                if enemy.buffs.curl_up > 0 {
+                    enemy.buffs.queued_block += enemy.buffs.curl_up;
+                    enemy.buffs.curl_up = 0;
+                }
+            }
             enemy.hp -= damage as i32;
             if enemy.hp <= 0 {
                 game.fight.enemies[target] = None;
@@ -118,6 +139,11 @@ fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
         }
         PlayEffect::Block(block) => {
             //TODO handle player buffs and debuffs.
+            let mut block = *block as f32;
+            if game.fight.player_debuffs.frail > 0 {
+                block *= 0.75;
+            }
+            let block = block as i32;
             game.fight.player_block += block;
         }
     }
@@ -128,9 +154,58 @@ fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
         Debuff::Vulnerable(amount) => {
             enemy.debuffs.vulnerable += amount;
         }
+        Debuff::Weak(amount) => {
+            enemy.debuffs.weak += amount;
+        }
+        Debuff::Frail(_) => {
+            panic!("Frail cannot be applied to enemies!");
+        }
     }
 }
 
+fn decrement(x: &mut i32) {
+    if *x > 0 {
+        *x -= 1;
+    }
+}
+
+//This applies player debuffs that wind down at the end of turn.
+//In the original STS there is a flag for if the debuff was applied this turn,
+//but I'll just add 1 extra when applied. It has the same gameplay behavior.
+//This could be replaced with something better later.
+fn debuff_player_turn_wind_down(x: &mut i32, amount: i32) {
+    if *x == 0 {
+        *x = amount + 1;
+    } else {
+        *x += amount;
+    }
+}
+
+fn split(game: &mut Game, i: EnemyIdx) {
+    let hp = game.fight.enemies[i].hp;
+    let name = game.fight.enemies[i].name;
+    if name == crate::enemies::large_black_slime::ENEMY_NAME {
+        let mut med_slime_1 = generate_med_black_slime(&mut game.rng);
+        med_slime_1.max_hp = hp;
+        med_slime_1.hp = hp;
+        let mut med_slime_2 = generate_med_black_slime(&mut game.rng);
+        med_slime_2.max_hp = hp;
+        med_slime_2.hp = hp;
+        game.fight.enemies[(i.0) as usize] = Some(med_slime_1);
+        game.fight.enemies[(i.0 + 1) as usize] = Some(med_slime_2);
+    }
+    if name == crate::enemies::large_green_slime::ENEMY_NAME {
+        let mut med_slime_1 = generate_med_green_slime(&mut game.rng);
+        med_slime_1.max_hp = hp;
+        med_slime_1.hp = hp;
+        let mut med_slime_2 = generate_med_green_slime(&mut game.rng);
+        med_slime_2.max_hp = hp;
+        med_slime_2.hp = hp;
+        game.fight.enemies[(i.0) as usize] = Some(med_slime_1);
+        game.fight.enemies[(i.0 + 1) as usize] = Some(med_slime_2);
+    }
+    panic!("Splitting not implemented for {}", name);
+}
 impl<'a> PlayCardState<'a> {
     pub fn available_actions(&self) -> Vec<PlayCardAction> {
         let fight = &self.game.fight;
@@ -175,9 +250,15 @@ impl<'a> PlayCardState<'a> {
                 match action {
                     EnemyAction::Attack(damage) => {
                         let enemy = &self.game.fight.enemies[i];
-                        let damage = *damage + enemy.buffs.strength;
-                        let damage = damage as f32;
+                        let damage = *damage + enemy.buffs.strength + enemy.buffs.implicit_strength;
+                        let mut damage = damage as f32;
                         //Weak and vulnerable calculations require using floats then rounding down afterwards.
+                        if enemy.debuffs.weak > 0 {
+                            damage *= 0.75;
+                        }
+                        if self.game.fight.player_debuffs.vulnerable > 0 {
+                            damage *= 1.5;
+                        }
                         let damage = damage as i32;
                         if damage > self.game.fight.player_block {
                             let dealt = damage - self.game.fight.player_block;
@@ -196,11 +277,37 @@ impl<'a> PlayCardState<'a> {
                     EnemyAction::Buff(buff) => {
                         Self::enemy_buff(&mut self.game.fight.enemies[i], *buff);
                     }
+                    EnemyAction::Debuff(debuff) => {
+                        self.apply_debuff_to_player(*debuff);
+                    }
+                    EnemyAction::AddToDiscard(cards) => {
+                        self.game.fight.discard_pile.extend(*cards);
+                    }
+                    EnemyAction::Split => {
+                        split(&mut self.game, i);
+                    }
                 }
             }
         }
         self.reset_for_next_turn();
         ChoiceState::PlayCardState(PlayCardState { game: self.game })
+    }
+
+    fn apply_debuff_to_player(&mut self, debuff: Debuff) {
+        match debuff {
+            Debuff::Vulnerable(amount) => {
+                debuff_player_turn_wind_down(
+                    &mut self.game.fight.player_debuffs.vulnerable,
+                    amount,
+                );
+            }
+            Debuff::Weak(amount) => {
+                debuff_player_turn_wind_down(&mut self.game.fight.player_debuffs.weak, amount);
+            }
+            Debuff::Frail(amount) => {
+                debuff_player_turn_wind_down(&mut self.game.fight.player_debuffs.frail, amount);
+            }
+        }
     }
 
     fn discard_hand_end_of_turn(&mut self) {
@@ -218,12 +325,15 @@ impl<'a> PlayCardState<'a> {
         //TODO implement relics that affect energy.
         //TODO implement cards that affect energy.
         for enemy_idx in self.game.fight.enemies.indicies() {
-            self.game.fight.enemies[enemy_idx].buffs.strength +=
-                self.game.fight.enemies[enemy_idx].buffs.ritual;
+            let enemy: &mut Enemy = &mut self.game.fight.enemies[enemy_idx];
+            enemy.buffs.strength += enemy.buffs.ritual;
             //Cultists skip the ritual buff the turn they play it.
-            self.game.fight.enemies[enemy_idx].buffs.ritual +=
-                self.game.fight.enemies[enemy_idx].buffs.ritual_skip_first;
-            self.game.fight.enemies[enemy_idx].buffs.ritual_skip_first = 0;
+            enemy.buffs.ritual += enemy.buffs.ritual_skip_first;
+            enemy.buffs.ritual_skip_first = 0;
+            decrement(&mut enemy.debuffs.vulnerable);
+            decrement(&mut enemy.debuffs.weak);
+            decrement(&mut self.game.fight.player_debuffs.vulnerable);
+            decrement(&mut self.game.fight.player_debuffs.weak);
         }
         for _ in 0..5 {
             self.game.fight.draw(&mut self.game.rng);
@@ -231,7 +341,6 @@ impl<'a> PlayCardState<'a> {
         self.game.fight.player_block = 0;
         self.game.fight.energy = 3;
     }
-    //TODO handle various effects of HP loss.
     fn enemy_buff(enemy: &mut Enemy, buff: Buff) {
         match buff {
             Buff::Strength(x) => {
@@ -326,6 +435,20 @@ impl Game {
         self.draw_initial_hand();
         ChoiceState::PlayCardState(PlayCardState { game: self })
     }
+
+    pub fn setup_redlouse_fight(&mut self) -> ChoiceState {
+        self.setup_fight();
+        self.fight.enemies[0] = Some(generate_red_louse(&mut self.rng));
+        self.draw_initial_hand();
+        ChoiceState::PlayCardState(PlayCardState { game: self })
+    }
+
+    pub fn setup_greenlouse_fight(&mut self) -> ChoiceState {
+        self.setup_fight();
+        self.fight.enemies[0] = Some(generate_green_louse(&mut self.rng));
+        self.draw_initial_hand();
+        ChoiceState::PlayCardState(PlayCardState { game: self })
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -395,11 +518,7 @@ impl<'a> Display for ChoiceState<'a> {
                 )?;
             }
             if enemy.buffs.curl_up > 0 {
-                write!(
-                    f,
-                    "{} curl up | ",
-                    enemy.buffs.curl_up
-                )?;
+                write!(f, "{} curl up | ", enemy.buffs.curl_up)?;
             }
             if enemy.debuffs.vulnerable > 0 {
                 write!(f, "{} vuln | ", enemy.debuffs.vulnerable)?;

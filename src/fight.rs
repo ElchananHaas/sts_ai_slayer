@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    card::{Buff, Card},
+    card::{Buff, Card, Debuff},
     deck::Deck,
     rng::Rng,
 };
@@ -17,6 +17,14 @@ pub struct Fight {
     pub deck: Deck,
     pub energy: i32,
     pub player_block: i32,
+    pub player_debuffs: PlayerDebuffs,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct PlayerDebuffs {
+    pub weak: i32,
+    pub vulnerable: i32,
+    pub frail: i32,
 }
 
 impl Fight {
@@ -30,6 +38,7 @@ impl Fight {
             deck: Deck::shuffled(vec![]),
             energy: 0,
             player_block: 0,
+            player_debuffs: PlayerDebuffs::default(),
             discard_pile: vec![],
         }
     }
@@ -148,7 +157,11 @@ pub enum EnemyAction {
     Attack(i32),
     Block(i32),
     Buff(Buff),
+    Debuff(Debuff),
+    AddToDiscard(&'static [Card]),
+    Split,
 }
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Enemy {
     //In order to allow full information to be passed to an AI model,
@@ -176,9 +189,17 @@ pub struct EnemyBuffs {
     pub ritual: i32,
     pub ritual_skip_first: i32,
     pub curl_up: i32,
+    pub queued_block: i32, //Queued block for after the current card finishes resolving.
+    //This is used for Malleable and Curl Up
+    pub implicit_strength: i32, //This is used for the louses which
+                                //start with a strength between 5 and 7
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+pub struct EnemyVars {}
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct EnemyDebuffs {
     pub vulnerable: i32,
+    pub weak: i32,
 }
