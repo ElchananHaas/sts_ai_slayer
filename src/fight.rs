@@ -160,6 +160,7 @@ pub enum EnemyAction {
     Debuff(Debuff),
     AddToDiscard(&'static [Card]),
     Split,
+    DefendAlly(i32),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -192,7 +193,8 @@ pub struct EnemyBuffs {
     pub queued_block: i32, //Queued block for after the current card finishes resolving.
     //This is used for Malleable and Curl Up
     pub implicit_strength: i32, //This is used for the louses which
-                                //start with a strength between 5 and 7
+    //start with a strength between 5 and 7
+    pub angry: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]

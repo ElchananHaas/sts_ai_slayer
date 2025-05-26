@@ -4,7 +4,9 @@ use crate::{
     card::{Buff, Card, CardEffect, Debuff, PlayEffect},
     deck::Deck,
     enemies::{
-        cultist::generate_cultist, green_louse::generate_green_louse, jaw_worm::generate_jaw_worm, med_black_slime::generate_med_black_slime, med_green_slime::generate_med_green_slime, red_louse::generate_red_louse
+        cultist::generate_cultist, green_louse::generate_green_louse, jaw_worm::generate_jaw_worm,
+        med_black_slime::generate_med_black_slime, med_green_slime::generate_med_green_slime,
+        red_louse::generate_red_louse,
     },
     fight::{Enemies, Enemy, EnemyAction, EnemyIdx, Fight},
     rng::Rng,
@@ -123,6 +125,7 @@ fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
                     enemy.buffs.queued_block += enemy.buffs.curl_up;
                     enemy.buffs.curl_up = 0;
                 }
+                enemy.buffs.strength += enemy.buffs.angry;
             }
             enemy.hp -= damage as i32;
             if enemy.hp <= 0 {
@@ -206,6 +209,28 @@ fn split(game: &mut Game, i: EnemyIdx) {
     }
     panic!("Splitting not implemented for {}", name);
 }
+
+fn defend_ally(game: &mut Game, i: EnemyIdx, amount: i32) {
+    let num_enemies = game.fight.enemies.len();
+    //If there are no other enemies to shield it will protect itself.
+    if num_enemies == 1 {
+        game.fight.enemies[i].block += amount;
+    } else {
+        let mut chosen_enemy = game.rng.sample(num_enemies - 1);
+        for j in 0..game.fight.enemies.enemies.len() {
+            if let Some(enemy) = &mut game.fight.enemies.enemies[j] {
+                if j == i.0 as usize {
+                    continue;
+                }
+                if chosen_enemy == 0 {
+                    enemy.block += amount;
+                } else {
+                    chosen_enemy -= 1;
+                }
+            }
+        }
+    }
+}
 impl<'a> PlayCardState<'a> {
     pub fn available_actions(&self) -> Vec<PlayCardAction> {
         let fight = &self.game.fight;
@@ -285,6 +310,9 @@ impl<'a> PlayCardState<'a> {
                     }
                     EnemyAction::Split => {
                         split(&mut self.game, i);
+                    }
+                    EnemyAction::DefendAlly(amount) => {
+                        defend_ally(&mut self.game, i, *amount);
                     }
                 }
             }

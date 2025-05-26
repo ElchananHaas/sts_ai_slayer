@@ -1,5 +1,5 @@
 use crate::{
-    card::{Buff, Debuff},
+    card::Debuff,
     enemies::{StateEntry, uniform_inclusive, weighted_transition},
     fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight},
     rng::Rng,
