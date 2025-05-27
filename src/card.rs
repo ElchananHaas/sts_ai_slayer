@@ -24,6 +24,7 @@ pub enum Debuff {
     Vulnerable(i32),
     Weak(i32),
     Frail(i32),
+    Entangled,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -31,6 +32,15 @@ pub enum Buff {
     Strength(i32),
     Ritual(i32),
     RitualSkipFirst(i32),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum CardType {
+    Attack,
+    Skill,
+    Power,
+    Status,
+    Curse,
 }
 
 impl CardEffect {
@@ -63,6 +73,14 @@ impl CardEffect {
         match self {
             CardEffect::Strike | CardEffect::Bash => true,
             _ => false,
+        }
+    }
+    pub fn card_type(&self) -> CardType {
+        match self {
+            CardEffect::Strike => CardType::Attack,
+            CardEffect::Bash => CardType::Attack,
+            CardEffect::Defend => CardType::Skill,
+            CardEffect::Slimed => CardType::Status,
         }
     }
 }

@@ -1,0 +1,4 @@
+- [ ] Implement Act 1 enemies.
+- [ ] Chain combats together (no map yet)
+- [ ] Implement a learning agent based on MCTS/AlphaZero.
+- [ ] Ironclad Cards.

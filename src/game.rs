@@ -20,6 +20,7 @@ pub struct Game {
     charachter: Charachter,
     fight: Fight,
     base_deck: Vec<Card>,
+    gold: i32,
     rng: Rng,
 }
 
@@ -129,6 +130,10 @@ fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
             }
             enemy.hp -= damage as i32;
             if enemy.hp <= 0 {
+                if enemy.buffs.spore_cloud > 0 {
+                    game.fight.player_debuffs.vulnerable += 2;
+                }
+                game.fight.stolen_back_gold += enemy.stolen_gold;
                 game.fight.enemies[target] = None;
                 return;
             }
@@ -162,6 +167,9 @@ fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
         }
         Debuff::Frail(_) => {
             panic!("Frail cannot be applied to enemies!");
+        }
+        Debuff::Entangled => {
+            panic!("Entangled cannot be applied to enemies!");
         }
     }
 }
@@ -210,6 +218,7 @@ fn split(game: &mut Game, i: EnemyIdx) {
     panic!("Splitting not implemented for {}", name);
 }
 
+//Used for Shield Gremlin.
 fn defend_ally(game: &mut Game, i: EnemyIdx, amount: i32) {
     let num_enemies = game.fight.enemies.len();
     //If there are no other enemies to shield it will protect itself.
@@ -314,8 +323,20 @@ impl<'a> PlayCardState<'a> {
                     EnemyAction::DefendAlly(amount) => {
                         defend_ally(&mut self.game, i, *amount);
                     }
+                    EnemyAction::Escape => {
+                        self.game.fight.enemies.enemies[i.0 as usize] = None;
+                    }
+                    EnemyAction::StealGold(amount) => {
+                        let steal_amount = std::cmp::min(self.game.gold, *amount);
+                        self.game.gold -= steal_amount;
+                        self.game.fight.enemies[i].stolen_gold += steal_amount;
+                    }
                 }
             }
+        }
+        if self.game.fight.enemies.len() == 0 {
+            //This should be changed to card reward state.
+            return ChoiceState::MapState(self.game);
         }
         self.reset_for_next_turn();
         ChoiceState::PlayCardState(PlayCardState { game: self.game })
@@ -335,6 +356,9 @@ impl<'a> PlayCardState<'a> {
             Debuff::Frail(amount) => {
                 debuff_player_turn_wind_down(&mut self.game.fight.player_debuffs.frail, amount);
             }
+            Debuff::Entangled => {
+                self.game.fight.player_debuffs.entangled = true;
+            }
         }
     }
 
@@ -345,6 +369,7 @@ impl<'a> PlayCardState<'a> {
             .fight
             .discard_pile
             .append(&mut self.game.fight.hand);
+        self.game.fight.player_debuffs.entangled = false;
         for idx in self.game.fight.enemies.indicies() {
             self.game.fight.enemies[idx].block = 0;
         }
@@ -412,6 +437,7 @@ impl Game {
                 max_potion_slots: 3,
                 charachter,
                 fight: Fight::new(),
+                gold: 99,
                 base_deck: vec![
                     CardEffect::Strike.to_card(),
                     CardEffect::Strike.to_card(),

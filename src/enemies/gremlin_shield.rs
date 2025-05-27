@@ -24,6 +24,6 @@ pub fn generate_shield_gremlin(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs,
         debuffs: EnemyDebuffs::default(),
-        block: 0,
+        ..Enemy::default()
     }
 }

@@ -4,48 +4,49 @@ use crate::{
     rng::Rng,
 };
 
-const ENEMY_NAME: &'static str = "Wizard Gremlin";
-pub fn generate_wizard_gremlin(rng: &mut Rng) -> Enemy {
-    let hp = uniform_inclusive(rng, 23, 25);
+const ENEMY_NAME: &'static str = "Looter";
+pub fn generate_looter_slime(rng: &mut Rng) -> Enemy {
+    let hp = uniform_inclusive(rng, 8, 12);
     fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
         // States are
-        // 0) Charge Up Attack
-        // 0) Charge Up Attack (Starting state)
-        // 0) Charge Up Attack
-        // 0) Attack
+        // 0) Playing Attack
+        // 1) Debuff
         const ENEMY_TABLE: &'static [StateEntry] = &[
             StateEntry {
-                actions: &[],
+                actions: &[EnemyAction::Attack(10), EnemyAction::StealGold(15)],
                 new_states: &[1],
                 weights: &[1],
             },
             StateEntry {
-                actions: &[],
-                new_states: &[2],
-                weights: &[1],
+                actions: &[EnemyAction::Attack(10), EnemyAction::StealGold(15)],
+                new_states: &[2, 3],
+                weights: &[1, 1],
             },
             StateEntry {
-                actions: &[],
+                actions: &[EnemyAction::Attack(12), EnemyAction::StealGold(15)],
                 new_states: &[3],
                 weights: &[1],
             },
             StateEntry {
-                actions: &[EnemyAction::Attack(25)],
-                new_states: &[0],
+                actions: &[EnemyAction::Block(6)],
+                new_states: &[4],
+                weights: &[1],
+            },
+            StateEntry {
+                actions: &[EnemyAction::Escape],
+                new_states: &[5],
                 weights: &[1],
             },
         ];
         return weighted_transition(rng, state, ENEMY_TABLE);
     }
-    let mut buffs = EnemyBuffs::default();
-    buffs.angry = 1;
     Enemy {
         name: ENEMY_NAME,
-        ai_state: 1,
+        ai_state: 0,
         behavior: ai,
         hp,
         max_hp: hp,
-        buffs,
+        buffs: EnemyBuffs::default(),
         debuffs: EnemyDebuffs::default(),
         ..Enemy::default()
     }

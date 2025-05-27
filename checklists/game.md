@@ -7,7 +7,7 @@ TODO
 ### Potions
 TODO
 
-### General Events
+### Events Common Across Acts
 TODO
 
 ### Map Generation

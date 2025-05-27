@@ -44,12 +44,12 @@ pub fn generate_red_louse(rng: &mut Rng) -> Enemy {
     buffs.implicit_strength = uniform_inclusive(rng, 0, 2);
     Enemy {
         name: ENEMY_NAME,
-        ai_state: 0,
+        ai_state: rng.sample_weighted(&[75, 0, 25, 0]) as u32,
         behavior: ai,
         hp,
         max_hp: hp,
         buffs: buffs,
         debuffs: EnemyDebuffs::default(),
-        block: 0,
+        ..Enemy::default()
     }
 }

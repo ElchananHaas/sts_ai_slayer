@@ -14,10 +14,10 @@
 - [x] Fat Gremlin
 - [x] Wizard Gremlin
 - [x] Shield Gremlin
-- [ ] Blue Slaver
-- [ ] Red Slaver
-- [ ] Fungi Beast
-- [ ] Looter
+- [x] Blue Slaver
+- [x] Red Slaver
+- [x] Fungi Beast
+- [x] Looter
 
 ### Act 1 Elites
 - [ ] Gremlin Nob

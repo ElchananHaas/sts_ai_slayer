@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    card::{Buff, Card, Debuff},
+    card::{Buff, Card, CardType, Debuff},
     deck::Deck,
     rng::Rng,
 };
@@ -18,6 +18,7 @@ pub struct Fight {
     pub energy: i32,
     pub player_block: i32,
     pub player_debuffs: PlayerDebuffs,
+    pub stolen_back_gold: i32,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
@@ -25,6 +26,7 @@ pub struct PlayerDebuffs {
     pub weak: i32,
     pub vulnerable: i32,
     pub frail: i32,
+    pub entangled: bool,
 }
 
 impl Fight {
@@ -40,6 +42,7 @@ impl Fight {
             player_block: 0,
             player_debuffs: PlayerDebuffs::default(),
             discard_pile: vec![],
+            stolen_back_gold: 0
         }
     }
     pub fn draw(&mut self, rng: &mut Rng) {
@@ -144,10 +147,14 @@ impl Fight {
         } else {
             //TODO handle Blue Candle and Medical kit.
             //TODO handle can't play attack effects (Entangled, Awakened One dead)
-            let Some(energy_cost) = &self.hand[idx].cost else {
+            let card = self.hand[idx];
+            if self.player_debuffs.entangled && card.effect.card_type() == CardType::Attack {
+                return false;
+            }
+            let Some(energy_cost) = card.cost else {
                 return false;
             };
-            *energy_cost <= self.energy
+            energy_cost <= self.energy
         }
     }
 }
@@ -161,6 +168,8 @@ pub enum EnemyAction {
     AddToDiscard(&'static [Card]),
     Split,
     DefendAlly(i32),
+    Escape,
+    StealGold(i32),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -182,8 +191,27 @@ pub struct Enemy {
     pub buffs: EnemyBuffs,
     pub debuffs: EnemyDebuffs,
     pub block: i32,
+    pub stolen_gold: i32,
 }
 
+impl Default for Enemy {
+    fn default() -> Self {
+        fn default_ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
+            (0, &[])
+        }
+        Self {
+            name: Default::default(),
+            ai_state: Default::default(),
+            behavior: default_ai,
+            hp: Default::default(),
+            max_hp: Default::default(),
+            buffs: Default::default(),
+            debuffs: Default::default(),
+            block: Default::default(),
+            stolen_gold: Default::default(),
+        }
+    }
+}
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct EnemyBuffs {
     pub strength: i32,
@@ -195,6 +223,7 @@ pub struct EnemyBuffs {
     pub implicit_strength: i32, //This is used for the louses which
     //start with a strength between 5 and 7
     pub angry: i32,
+    pub spore_cloud: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]

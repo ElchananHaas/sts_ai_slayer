@@ -20,6 +20,6 @@ pub fn generate_mad_gremlin(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs,
         debuffs: EnemyDebuffs::default(),
-        block: 0,
+        ..Enemy::default()
     }
 }

@@ -25,6 +25,6 @@ pub fn generate_small_black_slime(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs: EnemyBuffs::default(),
         debuffs: EnemyDebuffs::default(),
-        block: 0,
+        ..Enemy::default()
     }
 }

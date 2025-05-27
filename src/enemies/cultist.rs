@@ -34,6 +34,6 @@ pub fn generate_cultist(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs: EnemyBuffs::default(),
         debuffs: EnemyDebuffs::default(),
-        block: 0,
+        ..Enemy::default()
     }
 }

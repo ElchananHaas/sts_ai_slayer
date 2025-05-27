@@ -1,36 +1,27 @@
 use crate::{
+    card::Buff,
     enemies::{StateEntry, uniform_inclusive, weighted_transition},
     fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight},
     rng::Rng,
 };
 
-const ENEMY_NAME: &'static str = "Wizard Gremlin";
-pub fn generate_wizard_gremlin(rng: &mut Rng) -> Enemy {
-    let hp = uniform_inclusive(rng, 23, 25);
+const ENEMY_NAME: &'static str = "Fungi Beast";
+pub fn generate_fungi_beast(rng: &mut Rng) -> Enemy {
+    let hp = uniform_inclusive(rng, 22, 28);
     fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
-        // States are
-        // 0) Charge Up Attack
-        // 0) Charge Up Attack (Starting state)
-        // 0) Charge Up Attack
-        // 0) Attack
         const ENEMY_TABLE: &'static [StateEntry] = &[
             StateEntry {
-                actions: &[],
-                new_states: &[1],
-                weights: &[1],
+                actions: &[EnemyAction::Attack(6)],
+                new_states: &[1, 2],
+                weights: &[6, 4],
             },
             StateEntry {
-                actions: &[],
+                actions: &[EnemyAction::Attack(6)],
                 new_states: &[2],
                 weights: &[1],
             },
             StateEntry {
-                actions: &[],
-                new_states: &[3],
-                weights: &[1],
-            },
-            StateEntry {
-                actions: &[EnemyAction::Attack(25)],
+                actions: &[EnemyAction::Buff(Buff::Strength(3))],
                 new_states: &[0],
                 weights: &[1],
             },
@@ -38,10 +29,10 @@ pub fn generate_wizard_gremlin(rng: &mut Rng) -> Enemy {
         return weighted_transition(rng, state, ENEMY_TABLE);
     }
     let mut buffs = EnemyBuffs::default();
-    buffs.angry = 1;
+    buffs.spore_cloud = 2;
     Enemy {
         name: ENEMY_NAME,
-        ai_state: 1,
+        ai_state: rng.sample_weighted(&[6, 0, 4]) as u32,
         behavior: ai,
         hp,
         max_hp: hp,
