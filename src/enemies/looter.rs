@@ -48,6 +48,6 @@ pub fn generate_looter_slime(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs: EnemyBuffs::default(),
         debuffs: EnemyDebuffs::default(),
-        ..Enemy::default()
+        block: 0,
     }
 }

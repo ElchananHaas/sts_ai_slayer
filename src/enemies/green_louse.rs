@@ -50,6 +50,6 @@ pub fn generate_green_louse(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs: buffs,
         debuffs: EnemyDebuffs::default(),
-        ..Enemy::default()
+        block: 0,
     }
 }

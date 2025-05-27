@@ -47,6 +47,6 @@ pub fn generate_wizard_gremlin(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs,
         debuffs: EnemyDebuffs::default(),
-        ..Enemy::default()
+        block: 0,
     }
 }

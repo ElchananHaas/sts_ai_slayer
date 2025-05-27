@@ -191,27 +191,8 @@ pub struct Enemy {
     pub buffs: EnemyBuffs,
     pub debuffs: EnemyDebuffs,
     pub block: i32,
-    pub stolen_gold: i32,
 }
 
-impl Default for Enemy {
-    fn default() -> Self {
-        fn default_ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
-            (0, &[])
-        }
-        Self {
-            name: Default::default(),
-            ai_state: Default::default(),
-            behavior: default_ai,
-            hp: Default::default(),
-            max_hp: Default::default(),
-            buffs: Default::default(),
-            debuffs: Default::default(),
-            block: Default::default(),
-            stolen_gold: Default::default(),
-        }
-    }
-}
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct EnemyBuffs {
     pub strength: i32,
@@ -224,6 +205,7 @@ pub struct EnemyBuffs {
     //start with a strength between 5 and 7
     pub angry: i32,
     pub spore_cloud: i32,
+    pub stolen_gold: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]

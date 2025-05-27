@@ -1,4 +1,3 @@
 - [x] Create a random agent.
 - [x] Provide a decent way of viewing the game state.
-- [ ] Create a way to test a single combat to win or loss.
 - [ ] Get MCTS running on single combats.

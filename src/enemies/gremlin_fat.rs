@@ -24,6 +24,6 @@ pub fn generate_fat_gremlin(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs,
         debuffs: EnemyDebuffs::default(),
-        ..Enemy::default()
+        block: 0,
     }
 }

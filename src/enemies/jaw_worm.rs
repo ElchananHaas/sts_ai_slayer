@@ -49,6 +49,6 @@ pub fn generate_jaw_worm(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs: EnemyBuffs::default(),
         debuffs: EnemyDebuffs::default(),
-        ..Enemy::default()
+        block: 0,
     }
 }

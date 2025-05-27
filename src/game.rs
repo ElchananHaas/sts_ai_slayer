@@ -133,7 +133,7 @@ fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
                 if enemy.buffs.spore_cloud > 0 {
                     game.fight.player_debuffs.vulnerable += 2;
                 }
-                game.fight.stolen_back_gold += enemy.stolen_gold;
+                game.fight.stolen_back_gold += enemy.buffs.stolen_gold;
                 game.fight.enemies[target] = None;
                 return;
             }
@@ -329,7 +329,7 @@ impl<'a> PlayCardState<'a> {
                     EnemyAction::StealGold(amount) => {
                         let steal_amount = std::cmp::min(self.game.gold, *amount);
                         self.game.gold -= steal_amount;
-                        self.game.fight.enemies[i].stolen_gold += steal_amount;
+                        self.game.fight.enemies[i].buffs.stolen_gold += steal_amount;
                     }
                 }
             }

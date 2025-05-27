@@ -56,6 +56,6 @@ pub fn generate_blue_slaver(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs: EnemyBuffs::default(),
         debuffs: EnemyDebuffs::default(),
-        ..Enemy::default()
+        block: 0,
     }
 }

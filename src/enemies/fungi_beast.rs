@@ -38,6 +38,6 @@ pub fn generate_fungi_beast(rng: &mut Rng) -> Enemy {
         max_hp: hp,
         buffs,
         debuffs: EnemyDebuffs::default(),
-        ..Enemy::default()
+        block: 0,
     }
 }
