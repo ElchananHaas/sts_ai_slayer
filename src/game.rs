@@ -22,6 +22,7 @@ pub struct Game {
     base_deck: Vec<Card>,
     gold: i32,
     rng: Rng,
+    pub floor: i32,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -30,7 +31,7 @@ pub enum ChoiceState<'a> {
     ChooseEnemyState(ChooseEnemyState<'a>),
     WinState(&'a mut Game),
     LossState(&'a mut Game),
-    MapState(&'a mut Game),
+    RewardState(RewardState<'a>),
 }
 
 impl<'a> ChoiceState<'a> {
@@ -39,6 +40,34 @@ impl<'a> ChoiceState<'a> {
             ChoiceState::WinState(_) => true,
             ChoiceState::LossState(_) => true,
             _ => false,
+        }
+    }
+
+    //This function clones the choice state to another Game. It 
+    //will still behave differently due to the Rng returning different
+    //results. This can be used to simulate different outcomes
+    pub fn clone_to<'b>(&self, game: &'b mut Game) -> ChoiceState<'b> {
+        match self {
+            ChoiceState::PlayCardState(play_card_state) => {
+                *game = play_card_state.game.clone();
+                ChoiceState::PlayCardState(PlayCardState { game })
+            },
+            ChoiceState::ChooseEnemyState(choose_enemy_state) => {
+                *game = choose_enemy_state.game.clone();
+                ChoiceState::ChooseEnemyState(ChooseEnemyState { game, chosen_card: choose_enemy_state.chosen_card })
+            },
+            ChoiceState::WinState(cur_game) => {
+                *game = (*cur_game).clone();
+                ChoiceState::WinState(game)
+            },
+            ChoiceState::LossState(cur_game) => {
+                *game = (*cur_game).clone();
+                ChoiceState::LossState(game)   
+            },
+            ChoiceState::RewardState(reward_state) => {
+                *game = reward_state.game.clone();
+                ChoiceState::RewardState(RewardState { game })
+            },
         }
     }
 }
@@ -53,6 +82,11 @@ pub struct ChooseEnemyState<'a> {
     chosen_card: usize,
 }
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct RewardState<'a> {
+    game: &'a mut Game,
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum PlayCardAction {
     //Play the i'th card in hand
@@ -64,6 +98,12 @@ pub enum PlayCardAction {
 pub struct ChooseEnemyAction {
     //Target the i'th enemy
     pub enemy: u8,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum RewardStateAction {
+    //Proceed to choosing the next node.
+    Proceed,
 }
 
 fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> ChoiceState<'a> {
@@ -83,9 +123,16 @@ fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> 
     let card = game.fight.hand.remove(card_idx);
     game.fight.discard_pile.push(card);
     if game.fight.enemies.len() == 0 {
-        return ChoiceState::MapState(game);
+        return win_battle(game);
     }
     ChoiceState::PlayCardState(PlayCardState { game })
+}
+
+
+
+fn win_battle<'a>(game: &'a mut Game,) -> ChoiceState<'a> {
+     game.floor += 1;
+     return ChoiceState::RewardState(RewardState { game });
 }
 
 fn post_card_play<'a>(game: &'a mut Game) {
@@ -335,8 +382,7 @@ impl<'a> PlayCardState<'a> {
             }
         }
         if self.game.fight.enemies.len() == 0 {
-            //This should be changed to card reward state.
-            return ChoiceState::MapState(self.game);
+            return win_battle(self.game);
         }
         self.reset_for_next_turn();
         ChoiceState::PlayCardState(PlayCardState { game: self.game })
@@ -428,6 +474,22 @@ impl<'a> ChooseEnemyState<'a> {
     }
 }
 
+
+impl<'a> RewardState<'a> {
+    pub fn available_actions(&self) -> Vec<RewardStateAction> {
+        vec![RewardStateAction::Proceed]
+    }
+
+    pub fn take_action(self, _action: RewardStateAction) -> ChoiceState<'a> {
+        self.game.setup_jawworm_fight()
+    }
+
+    pub fn action_str(&self, action: RewardStateAction) -> &'static str {
+        match action {
+            RewardStateAction::Proceed => {"Proceed"},
+        }
+    }
+}
 impl Game {
     pub fn new(charachter: Charachter) -> Self {
         match charachter {
@@ -438,6 +500,7 @@ impl Game {
                 charachter,
                 fight: Fight::new(),
                 gold: 99,
+                floor: 0,
                 base_deck: vec![
                     CardEffect::Strike.to_card(),
                     CardEffect::Strike.to_card(),
@@ -588,7 +651,7 @@ impl<'a> Display for ChoiceState<'a> {
             }
             ChoiceState::WinState(game) => ("Win", &**game),
             ChoiceState::LossState(game) => ("Loss", &**game),
-            ChoiceState::MapState(game) => ("Map Choice", &**game),
+            ChoiceState::RewardState(reward_state) => ("Map Choice", &*reward_state.game),
         };
         dash_line(f)?;
         write!(f, "| ")?;
@@ -597,6 +660,7 @@ impl<'a> Display for ChoiceState<'a> {
         write!(f, "{}/{} hp | ", game.player_hp, game.player_max_hp)?;
         write!(f, "{}⚡︎ | ", game.fight.energy)?;
         write!(f, "{} block | ", game.fight.player_block)?;
+        write!(f, "floor {} | ", game.floor)?;
         write!(f, "\n")?;
         write!(f, "{:.<80}\n", "")?;
         write!(f, "| ")?;

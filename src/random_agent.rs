@@ -23,8 +23,11 @@ impl RandomAgent {
             ChoiceState::LossState(_) => {
                 panic!("Game is already lost!")
             }
-            ChoiceState::MapState(_) => {
-                todo!("Multiple floors aren't implemented yet!")
+            ChoiceState::RewardState(reward_state) => {
+                let actions = reward_state.available_actions();
+                let idx = rng.sample(actions.len());
+                println!("{}", reward_state.action_str(actions[idx]));
+                reward_state.take_action(actions[idx])
             }
         }
     }

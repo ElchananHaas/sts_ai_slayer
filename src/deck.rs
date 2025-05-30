@@ -35,7 +35,9 @@ impl Deck {
             DeckSegment::Shuffled(cards) => {
                 debug_assert!(self.num_cards + 1 == cards.len());
                 let idx = rng.sample(cards.len());
-                cards.swap_remove(idx)
+                //The order of cards is important, so remove is needed over swap remove. 
+                //I could use a better data structure, but I'll bechmark first.
+                cards.remove(idx)
             }
             DeckSegment::Known(cards) => {
                 debug_assert!(self.num_cards + 1 == cards.len());
@@ -51,6 +53,10 @@ impl Deck {
                     .expect("There is a nonempty deck")
                     .draw(rng)
             }
+            //There are some cases where the agent can "cheat" if a card that is shuffled into
+            //the deck that has the same name as a card already in the deck. 
+            //Knowing if the card that was shuffled into was drawn could give a player an edge.
+            //It would be very tricky to fix this so I will ignore it for now.
             DeckSegment::ShuffleInto { primary, shuffled } => {
                 debug_assert!(self.num_cards + 1 == primary.num_cards + shuffled.num_cards);
                 let total_cards = primary.num_cards + shuffled.num_cards;
@@ -64,7 +70,8 @@ impl Deck {
         }
     }
 
-    pub fn shuffled(cards: Vec<Card>) -> Deck {
+    pub fn shuffled(mut cards: Vec<Card>) -> Deck {
+        cards.sort();
         Deck {
             num_cards: cards.len(),
             segment: DeckSegment::Shuffled(cards),
