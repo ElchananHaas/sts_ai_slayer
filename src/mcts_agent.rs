@@ -6,7 +6,7 @@ pub struct MctsAgent {}
 
 impl MctsAgent {
     pub fn take_action<'a>(&self, state: ChoiceState<'a>, rng: &mut Rng) -> ChoiceState<'a> {
-        let choice = mcts(&state);
+        let choice = mcts(&state, rng);
         take_indexed_action(state, choice, true)
     }
 }
@@ -59,10 +59,24 @@ struct MctsEntry {
 const EXPLORE_FACTOR: f32 = 0.5;
 
 impl MctsEntry {
-    fn ucb(&self) -> usize {
+    fn ucb(&self, rng: &mut Rng) -> usize {
+        let mut zero_taken = 0;
         for i in 0..self.q_vals.len() {
             if self.q_vals[i].taken == 0.0 {
-                return i
+                zero_taken += 1;
+            }
+        }
+        if zero_taken > 0 {
+            //MCTS performs better when random actions are taken in an unexplored state.
+            let mut count = rng.sample(zero_taken);
+            for i in 0..self.q_vals.len() {
+                if self.q_vals[i].taken == 0.0 {
+                    if count == 0 {
+                        return i
+                    } else {
+                        count -= 1;
+                    }
+                }
             }
         }
         let ucb_action = self.q_vals.iter().map(|q| {
@@ -99,15 +113,15 @@ fn hash_choice_state(state: &ChoiceState) -> u64 {
     s.finish()
 }
 
-fn mcts<'a>(state: &ChoiceState<'a>) -> usize {
+fn mcts<'a>(state: &ChoiceState<'a>, rng: &mut Rng) -> usize {
     let mut total_reward = 0.0;
     //This should be changed to an identity hasher.
     let mut value_map: HashMap<u64, MctsEntry> = HashMap::new();
     //This will be overwritten.
     let mut temp_game = Game::new(crate::game::Charachter::IRONCLAD);
-    for i in 0..100000 {
+    for i in 0..20000 {
         let choice_copy = state.clone_to(&mut temp_game);
-        let reward = mcts_rollout(choice_copy, &mut value_map);
+        let reward = mcts_rollout(choice_copy, &mut value_map, rng);
         total_reward += reward;
         if i % 1000 == 999 {
             println!("Average rewards are {}", total_reward/(i as f32));
@@ -118,7 +132,7 @@ fn mcts<'a>(state: &ChoiceState<'a>) -> usize {
 }
 
 //This function rolls out a game. It mutatates its input
-fn mcts_rollout(mut state: ChoiceState, value_map: &mut HashMap<u64, MctsEntry>) -> f32 { 
+fn mcts_rollout(mut state: ChoiceState, value_map: &mut HashMap<u64, MctsEntry>, rng: &mut Rng) -> f32 { 
     let mut state_hashes = Vec::new();
     let mut taken_actions = Vec::new();
     let reward: i32 = loop {
@@ -131,13 +145,13 @@ fn mcts_rollout(mut state: ChoiceState, value_map: &mut HashMap<u64, MctsEntry>)
             ChoiceState::RewardState(reward_state) => {reward_state.available_actions().len()},
         };
         let state_hash = hash_choice_state(&state);
-        state_hashes.push(state_hash);
         let mcts_entry = value_map.entry(state_hash)
         .or_insert_with(|| MctsEntry {
             visit_count: 0.0,
             q_vals: vec![QEntry { taken: 0.0, reward_sum: 0.0 } ;num_actions],
         });
-        let action_idx = mcts_entry.ucb();
+        let action_idx = mcts_entry.ucb(rng);
+        state_hashes.push(state_hash);
         taken_actions.push(action_idx);
         state = take_indexed_action(state, action_idx, false);
     };
