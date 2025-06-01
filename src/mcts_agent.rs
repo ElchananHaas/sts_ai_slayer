@@ -119,13 +119,17 @@ fn mcts<'a>(state: &ChoiceState<'a>, rng: &mut Rng) -> usize {
     let mut value_map: HashMap<u64, MctsEntry> = HashMap::new();
     //This will be overwritten.
     let mut temp_game = Game::new(crate::game::Charachter::IRONCLAD);
+    
     for i in 0..20000 {
+        const REWARD_PRINT_INTERVAL: i32 = 1000;
         let choice_copy = state.clone_to(&mut temp_game);
         let reward = mcts_rollout(choice_copy, &mut value_map, rng);
-        total_reward += reward;
-        if i % 1000 == 999 {
-            println!("Average rewards are {}", total_reward/(i as f32));
+        if i > 0 && i % REWARD_PRINT_INTERVAL == 0 {
+            println!("Average rewards are {}", total_reward/(REWARD_PRINT_INTERVAL as f32));
+            total_reward = 0.0;
         }
+        //Add to the total reward after the print statement to get accurate average rewards.
+        total_reward += reward;
     }
     let state_hash = hash_choice_state(&state);
     value_map.get_mut(&state_hash).expect("State found").choice()

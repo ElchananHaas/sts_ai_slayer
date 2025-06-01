@@ -13,6 +13,7 @@ mod fight;
 mod game;
 mod rng;
 mod mcts_agent;
+mod util;
 fn main() {
     let mut game = Game::new(Charachter::IRONCLAD);
     let mut choice = game.setup_cultist_fight();

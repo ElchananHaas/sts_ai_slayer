@@ -9,7 +9,7 @@ use crate::{
         red_louse::generate_red_louse,
     },
     fight::{Enemies, Enemy, EnemyAction, EnemyIdx, Fight},
-    rng::Rng,
+    rng::Rng, util::insert_sorted,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -121,7 +121,7 @@ fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> 
         }
     }
     let card = game.fight.hand.remove(card_idx);
-    game.fight.discard_pile.push(card);
+    insert_sorted(card, &mut game.fight.discard_pile);
     if game.fight.enemies.len() == 0 {
         return win_battle(game);
     }
@@ -363,6 +363,9 @@ impl<'a> PlayCardState<'a> {
                     }
                     EnemyAction::AddToDiscard(cards) => {
                         self.game.fight.discard_pile.extend(*cards);
+                        //Sort for greater MCTS efficiency. Technically, this is different from STS
+                        //with regards to All For One, but I will accept this for now.
+                        self.game.fight.discard_pile.sort();
                     }
                     EnemyAction::Split => {
                         split(&mut self.game, i);

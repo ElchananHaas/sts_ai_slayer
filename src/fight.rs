@@ -6,7 +6,7 @@ use std::{
 use crate::{
     card::{Buff, Card, CardType, Debuff},
     deck::Deck,
-    rng::Rng,
+    rng::Rng, util::insert_sorted,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -59,9 +59,9 @@ impl Fight {
             //rather than use a fancier data structure.
             //Be careful to always maintain the hand as sorted when doing other operations 
             //on the hand, such as creating cards.
+            //Maintaining the sorted order helps with MCTS and idenitfying identical states.
             let card = self.deck.draw(rng);
-            let pos = self.hand.binary_search(&card).unwrap_or_else(|e| e);
-            self.hand.insert(pos, card);
+            insert_sorted(card, &mut self.hand);
         }
     }
 }
