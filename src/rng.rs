@@ -1,16 +1,34 @@
+use std::cell::RefCell;
+use std::fmt::Debug;
 use std::hash::Hash;
-use std::random::DefaultRandomSource;
-use std::random::Random;
+use std::rc::Rc;
 
-#[derive(Debug, Clone)]
+use rand_chacha::rand_core::RngCore;
+use rand_chacha::rand_core::SeedableRng;
+use rand_chacha::ChaCha8Rng;
+
 pub struct Rng {
-    source: DefaultRandomSource,
+    //This RNG is not seedable. So it is fine to clone it. Clones should share an 
+    //RNG state to ensure that in MCTS distinct numbers are generated.
+    source: Rc<RefCell<ChaCha8Rng>>,
+}
+
+impl Debug for Rng {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Rng").field("source", &"[Redacted]").finish()
+    }
+}
+
+impl Clone for Rng {
+    fn clone(&self) -> Self {
+        Self { source: Rc::clone(&self.source)}
+    }
 }
 
 impl Rng {
     pub fn new() -> Self {
         Self {
-            source: DefaultRandomSource,
+            source:Rc::new(RefCell::new(ChaCha8Rng::from_os_rng())),
         }
     }
     //The samples is exclusive on max. It utilizes rejection sampling.
@@ -21,8 +39,15 @@ impl Rng {
         let next_pow_2 = max.next_power_of_two();
         let mask = next_pow_2 - 1;
         loop {
-            let rand = mask & usize::random(&mut self.source);
+            //self.source.next_u64() as usize
+            //usize::random(&mut DefaultRandomSource)
+            let rand ={self.source.borrow_mut().next_u64()};
+            //let rand = u64::random(&mut DefaultRandomSource);
+            //let rand = getrandom::u64().expect("RNG call successful");
+            //dbg!(rand);
+            let rand = mask & (rand as usize);
             if rand < max {
+                //dbg!((rand, max));
                 return rand;
             }
         }

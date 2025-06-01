@@ -1,2 +1,4 @@
 /target
 log.txt
+perf.data
+flamegraph.svg
