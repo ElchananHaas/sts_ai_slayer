@@ -39,15 +39,9 @@ impl Rng {
         let next_pow_2 = max.next_power_of_two();
         let mask = next_pow_2 - 1;
         loop {
-            //self.source.next_u64() as usize
-            //usize::random(&mut DefaultRandomSource)
             let rand ={self.source.borrow_mut().next_u64()};
-            //let rand = u64::random(&mut DefaultRandomSource);
-            //let rand = getrandom::u64().expect("RNG call successful");
-            //dbg!(rand);
             let rand = mask & (rand as usize);
             if rand < max {
-                //dbg!((rand, max));
                 return rand;
             }
         }

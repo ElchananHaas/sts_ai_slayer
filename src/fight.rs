@@ -55,7 +55,13 @@ impl Fight {
             self.deck = Deck::shuffled(old_discard);
         }
         if self.deck.len() > 0 {
-            self.hand.push(self.deck.draw(rng));
+            //Since there are at most 10 cards in hand, just insert into a vec
+            //rather than use a fancier data structure.
+            //Be careful to always maintain the hand as sorted when doing other operations 
+            //on the hand, such as creating cards.
+            let card = self.deck.draw(rng);
+            let pos = self.hand.binary_search(&card).unwrap_or_else(|e| e);
+            self.hand.insert(pos, card);
         }
     }
 }
