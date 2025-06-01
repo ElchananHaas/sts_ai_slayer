@@ -35,7 +35,7 @@ impl Deck {
             DeckSegment::Shuffled(cards) => {
                 debug_assert!(self.num_cards + 1 == cards.len());
                 let idx = rng.sample(cards.len());
-                //The order of cards is important, so remove is needed over swap remove. 
+                //The order of cards is important, so remove is needed over swap remove.
                 //I could use a better data structure, but I'll bechmark first.
                 cards.remove(idx)
             }
@@ -54,7 +54,7 @@ impl Deck {
                     .draw(rng)
             }
             //There are some cases where the agent can "cheat" if a card that is shuffled into
-            //the deck that has the same name as a card already in the deck. 
+            //the deck that has the same name as a card already in the deck.
             //Knowing if the card that was shuffled into was drawn could give a player an edge.
             //It would be very tricky to fix this so I will ignore it for now.
             DeckSegment::ShuffleInto { primary, shuffled } => {

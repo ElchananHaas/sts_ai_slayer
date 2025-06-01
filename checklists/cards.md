@@ -4,10 +4,31 @@
 - [x] Bash
 
 ### Common Ironclad Cards
-TODO
+- [x] Anger
+- [ ] Armaments
+- [ ] Body Slam
+- [ ] Clash
+- [ ] Cleave
+- [ ] Clothesline
+- [ ] Flex
+- [ ] Havoc
+- [ ] Headbutt 	
+- [ ] Heavy Blade
+- [ ] Iron Wave
+- [ ] Perfected Strike
+- [ ] Pommel Strike
+- [ ] Shrug It Off
+- [ ] Sword Boomerang
+- [ ] True Grit
+- [ ] Twin Strike
+- [ ] Warcry
+- [ ] Wild Strike
+
 
 ### Uncommon Ironclad Cards
-TODO
+- [ ] Battle Trance
+- [ ] Blood For Blood
+
 
 ### Rare Ironclad Cards
 TODO

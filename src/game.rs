@@ -9,7 +9,8 @@ use crate::{
         red_louse::generate_red_louse,
     },
     fight::{Enemies, Enemy, EnemyAction, EnemyIdx, Fight},
-    rng::Rng, util::insert_sorted,
+    rng::Rng,
+    util::insert_sorted,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -43,7 +44,7 @@ impl<'a> ChoiceState<'a> {
         }
     }
 
-    //This function clones the choice state to another Game. It 
+    //This function clones the choice state to another Game. It
     //will still behave differently due to the Rng returning different
     //results. This can be used to simulate different outcomes
     pub fn clone_to<'b>(&self, game: &'b mut Game) -> ChoiceState<'b> {
@@ -51,23 +52,26 @@ impl<'a> ChoiceState<'a> {
             ChoiceState::PlayCardState(play_card_state) => {
                 *game = play_card_state.game.clone();
                 ChoiceState::PlayCardState(PlayCardState { game })
-            },
+            }
             ChoiceState::ChooseEnemyState(choose_enemy_state) => {
                 *game = choose_enemy_state.game.clone();
-                ChoiceState::ChooseEnemyState(ChooseEnemyState { game, chosen_card: choose_enemy_state.chosen_card })
-            },
+                ChoiceState::ChooseEnemyState(ChooseEnemyState {
+                    game,
+                    chosen_card: choose_enemy_state.chosen_card,
+                })
+            }
             ChoiceState::WinState(cur_game) => {
                 *game = (*cur_game).clone();
                 ChoiceState::WinState(game)
-            },
+            }
             ChoiceState::LossState(cur_game) => {
                 *game = (*cur_game).clone();
-                ChoiceState::LossState(game)   
-            },
+                ChoiceState::LossState(game)
+            }
             ChoiceState::RewardState(reward_state) => {
                 *game = reward_state.game.clone();
                 ChoiceState::RewardState(RewardState { game })
-            },
+            }
         }
     }
 }
@@ -108,13 +112,14 @@ pub enum RewardStateAction {
 
 fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> ChoiceState<'a> {
     let fight = &mut game.fight;
-    let card = &fight.hand[card_idx];
+    //Cards are small and cheap to clone. They aren't copy because they are mutable.
+    let card = fight.hand[card_idx].clone();
     if !fight.is_playable(card_idx) {
         panic!("Attempted to play an unplayable card.");
     }
     fight.energy -= card.cost.expect("Card has a cost");
     for action in card.effect.actions() {
-        handle_action(game, action, target);
+        handle_action(game, card.clone(), action, target);
         post_card_play(game);
         if game.player_hp <= 0 {
             return ChoiceState::LossState(game);
@@ -128,11 +133,9 @@ fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> 
     ChoiceState::PlayCardState(PlayCardState { game })
 }
 
-
-
-fn win_battle<'a>(game: &'a mut Game,) -> ChoiceState<'a> {
-     game.floor += 1;
-     return ChoiceState::RewardState(RewardState { game });
+fn win_battle<'a>(game: &'a mut Game) -> ChoiceState<'a> {
+    game.floor += 1;
+    return ChoiceState::RewardState(RewardState { game });
 }
 
 fn post_card_play<'a>(game: &'a mut Game) {
@@ -144,63 +147,66 @@ fn post_card_play<'a>(game: &'a mut Game) {
         }
     }
 }
-//Returns if the action is interrupted due to an enemy dying.
-fn handle_action<'a>(game: &'a mut Game, action: &PlayEffect, target: usize) {
+
+fn handle_action<'a>(game: &'a mut Game, card: Card, action: &PlayEffect, target: usize) {
     match action {
         PlayEffect::Attack(attack) => {
-            //TODO handle player buffs and debuffs.
-            let mut damage: f32 = *attack as f32;
-            let Some(enemy) = &mut game.fight.enemies[target] else {
-                return;
-            };
-            if enemy.debuffs.vulnerable > 0 {
-                damage *= 1.5;
+                        //TODO handle player buffs and debuffs.
+                        let mut damage: f32 = *attack as f32;
+                        let Some(enemy) = &mut game.fight.enemies[target] else {
+                            return;
+                        };
+                        if enemy.debuffs.vulnerable > 0 {
+                            damage *= 1.5;
+                        }
+                        if game.fight.player_debuffs.weak > 0 {
+                            damage *= 0.75;
+                        }
+                        let mut damage = damage as i32;
+                        if damage < enemy.block {
+                            enemy.block -= damage;
+                            damage = 0;
+                        } else {
+                            damage -= enemy.block;
+                            enemy.block = 0;
+                        }
+                        damage = std::cmp::min(damage, enemy.hp);
+                        if damage > 0 {
+                            if enemy.buffs.curl_up > 0 {
+                                enemy.buffs.queued_block += enemy.buffs.curl_up;
+                                enemy.buffs.curl_up = 0;
+                            }
+                            enemy.buffs.strength += enemy.buffs.angry;
+                        }
+                        enemy.hp -= damage as i32;
+                        if enemy.hp <= 0 {
+                            if enemy.buffs.spore_cloud > 0 {
+                                game.fight.player_debuffs.vulnerable += 2;
+                            }
+                            game.fight.stolen_back_gold += enemy.buffs.stolen_gold;
+                            game.fight.enemies[target] = None;
+                            return;
+                        }
             }
-            if game.fight.player_debuffs.weak > 0 {
-                damage *= 0.75;
-            }
-            let mut damage = damage as i32;
-            if damage < enemy.block {
-                enemy.block -= damage;
-                damage = 0;
-            } else {
-                damage -= enemy.block;
-                enemy.block = 0;
-            }
-            damage = std::cmp::min(damage, enemy.hp);
-            if damage > 0 {
-                if enemy.buffs.curl_up > 0 {
-                    enemy.buffs.queued_block += enemy.buffs.curl_up;
-                    enemy.buffs.curl_up = 0;
-                }
-                enemy.buffs.strength += enemy.buffs.angry;
-            }
-            enemy.hp -= damage as i32;
-            if enemy.hp <= 0 {
-                if enemy.buffs.spore_cloud > 0 {
-                    game.fight.player_debuffs.vulnerable += 2;
-                }
-                game.fight.stolen_back_gold += enemy.buffs.stolen_gold;
-                game.fight.enemies[target] = None;
-                return;
-            }
-        }
         PlayEffect::DebuffEnemy(debuff) => {
-            //This handles the case where the enemy dies during the card effect.
-            let Some(enemy) = &mut game.fight.enemies[target] else {
-                return;
-            };
-            apply_debuff_to_enemy(enemy, *debuff);
-        }
-        PlayEffect::Block(block) => {
-            //TODO handle player buffs and debuffs.
-            let mut block = *block as f32;
-            if game.fight.player_debuffs.frail > 0 {
-                block *= 0.75;
+                //This handles the case where the enemy dies during the card effect.
+                let Some(enemy) = &mut game.fight.enemies[target] else {
+                    return;
+                };
+                apply_debuff_to_enemy(enemy, *debuff);
             }
-            let block = block as i32;
-            game.fight.player_block += block;
-        }
+        PlayEffect::Block(block) => {
+                //TODO handle player buffs and debuffs.
+                let mut block = *block as f32;
+                if game.fight.player_debuffs.frail > 0 {
+                    block *= 0.75;
+                }
+                let block = block as i32;
+                game.fight.player_block += block;
+            }
+        PlayEffect::AddCopyToDiscard => {
+            insert_sorted(card, &mut game.fight.discard_pile);
+        },
     }
 }
 
@@ -362,7 +368,7 @@ impl<'a> PlayCardState<'a> {
                         self.apply_debuff_to_player(*debuff);
                     }
                     EnemyAction::AddToDiscard(cards) => {
-                        self.game.fight.discard_pile.extend(*cards);
+                        self.game.fight.discard_pile.extend(cards.into_iter().cloned());
                         //Sort for greater MCTS efficiency. Technically, this is different from STS
                         //with regards to All For One, but I will accept this for now.
                         self.game.fight.discard_pile.sort();
@@ -477,7 +483,6 @@ impl<'a> ChooseEnemyState<'a> {
     }
 }
 
-
 impl<'a> RewardState<'a> {
     pub fn available_actions(&self) -> Vec<RewardStateAction> {
         vec![RewardStateAction::Proceed]
@@ -489,7 +494,7 @@ impl<'a> RewardState<'a> {
 
     pub fn action_str(&self, action: RewardStateAction) -> &'static str {
         match action {
-            RewardStateAction::Proceed => {"Proceed"},
+            RewardStateAction::Proceed => "Proceed",
         }
     }
 }

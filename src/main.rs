@@ -1,18 +1,18 @@
 #![feature(random)]
 
+use game::{Charachter, ChoiceState, Game};
 use mcts_agent::MctsAgent;
 use random_agent::RandomAgent;
-use game::{Charachter, ChoiceState, Game};
 use rng::Rng;
 
-mod random_agent;
 mod card;
 mod deck;
 mod enemies;
 mod fight;
 mod game;
-mod rng;
 mod mcts_agent;
+mod random_agent;
+mod rng;
 mod util;
 fn main() {
     let mut game = Game::new(Charachter::IRONCLAD);

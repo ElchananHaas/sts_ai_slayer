@@ -3,32 +3,36 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
 
+use rand_chacha::ChaCha8Rng;
 use rand_chacha::rand_core::RngCore;
 use rand_chacha::rand_core::SeedableRng;
-use rand_chacha::ChaCha8Rng;
 
 pub struct Rng {
-    //This RNG is not seedable. So it is fine to clone it. Clones should share an 
+    //This RNG is not seedable. So it is fine to clone it. Clones should share an
     //RNG state to ensure that in MCTS distinct numbers are generated.
     source: Rc<RefCell<ChaCha8Rng>>,
 }
 
 impl Debug for Rng {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Rng").field("source", &"[Redacted]").finish()
+        f.debug_struct("Rng")
+            .field("source", &"[Redacted]")
+            .finish()
     }
 }
 
 impl Clone for Rng {
     fn clone(&self) -> Self {
-        Self { source: Rc::clone(&self.source)}
+        Self {
+            source: Rc::clone(&self.source),
+        }
     }
 }
 
 impl Rng {
     pub fn new() -> Self {
         Self {
-            source:Rc::new(RefCell::new(ChaCha8Rng::from_os_rng())),
+            source: Rc::new(RefCell::new(ChaCha8Rng::from_os_rng())),
         }
     }
     //The samples is exclusive on max. It utilizes rejection sampling.
@@ -39,7 +43,7 @@ impl Rng {
         let next_pow_2 = max.next_power_of_two();
         let mask = next_pow_2 - 1;
         loop {
-            let rand ={self.source.borrow_mut().next_u64()};
+            let rand = { self.source.borrow_mut().next_u64() };
             let rand = mask & (rand as usize);
             if rand < max {
                 return rand;

@@ -6,7 +6,8 @@ use std::{
 use crate::{
     card::{Buff, Card, CardType, Debuff},
     deck::Deck,
-    rng::Rng, util::insert_sorted,
+    rng::Rng,
+    util::insert_sorted,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -42,7 +43,7 @@ impl Fight {
             player_block: 0,
             player_debuffs: PlayerDebuffs::default(),
             discard_pile: vec![],
-            stolen_back_gold: 0
+            stolen_back_gold: 0,
         }
     }
     pub fn draw(&mut self, rng: &mut Rng) {
@@ -57,7 +58,7 @@ impl Fight {
         if self.deck.len() > 0 {
             //Since there are at most 10 cards in hand, just insert into a vec
             //rather than use a fancier data structure.
-            //Be careful to always maintain the hand as sorted when doing other operations 
+            //Be careful to always maintain the hand as sorted when doing other operations
             //on the hand, such as creating cards.
             //Maintaining the sorted order helps with MCTS and idenitfying identical states.
             let card = self.deck.draw(rng);
@@ -153,7 +154,7 @@ impl Fight {
         } else {
             //TODO handle Blue Candle and Medical kit.
             //TODO handle can't play attack effects (Entangled, Awakened One dead)
-            let card = self.hand[idx];
+            let card = self.hand[idx].clone();
             if self.player_debuffs.entangled && card.effect.card_type() == CardType::Attack {
                 return false;
             }
