@@ -27,68 +27,9 @@ pub struct Game {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub enum ChoiceState<'a> {
-    PlayCardState(PlayCardState<'a>),
-    ChooseEnemyState(ChooseEnemyState<'a>),
-    WinState(&'a mut Game),
-    LossState(&'a mut Game),
-    RewardState(RewardState<'a>),
-}
-
-impl<'a> ChoiceState<'a> {
-    pub fn is_over(&self) -> bool {
-        match self {
-            ChoiceState::WinState(_) => true,
-            ChoiceState::LossState(_) => true,
-            _ => false,
-        }
-    }
-
-    //This function clones the choice state to another Game. It
-    //will still behave differently due to the Rng returning different
-    //results. This can be used to simulate different outcomes
-    pub fn clone_to<'b>(&self, game: &'b mut Game) -> ChoiceState<'b> {
-        match self {
-            ChoiceState::PlayCardState(play_card_state) => {
-                *game = play_card_state.game.clone();
-                ChoiceState::PlayCardState(PlayCardState { game })
-            }
-            ChoiceState::ChooseEnemyState(choose_enemy_state) => {
-                *game = choose_enemy_state.game.clone();
-                ChoiceState::ChooseEnemyState(ChooseEnemyState {
-                    game,
-                    chosen_card: choose_enemy_state.chosen_card,
-                })
-            }
-            ChoiceState::WinState(cur_game) => {
-                *game = (*cur_game).clone();
-                ChoiceState::WinState(game)
-            }
-            ChoiceState::LossState(cur_game) => {
-                *game = (*cur_game).clone();
-                ChoiceState::LossState(game)
-            }
-            ChoiceState::RewardState(reward_state) => {
-                *game = reward_state.game.clone();
-                ChoiceState::RewardState(RewardState { game })
-            }
-        }
-    }
-}
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct PlayCardState<'a> {
+pub struct ChoiceState<'a> {
     game: &'a mut Game,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct ChooseEnemyState<'a> {
-    game: &'a mut Game,
-    chosen_card: usize,
-}
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct RewardState<'a> {
-    game: &'a mut Game,
+    choice: Choice,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -110,32 +51,339 @@ pub enum RewardStateAction {
     Proceed,
 }
 
-fn play_card_targets<'a>(game: &'a mut Game, card_idx: usize, target: usize) -> ChoiceState<'a> {
-    let fight = &mut game.fight;
-    //Cards are small and cheap to clone. They aren't copy because they are mutable.
-    let card = fight.hand[card_idx].clone();
-    if !fight.is_playable(card_idx) {
-        panic!("Attempted to play an unplayable card.");
-    }
-    fight.energy -= card.cost.expect("Card has a cost");
-    for action in card.effect.actions() {
-        handle_action(game, card.clone(), action, target);
-        post_card_play(game);
-        if game.player_hp <= 0 {
-            return ChoiceState::LossState(game);
-        }
-    }
-    let card = game.fight.hand.remove(card_idx);
-    insert_sorted(card, &mut game.fight.discard_pile);
-    if game.fight.enemies.len() == 0 {
-        return win_battle(game);
-    }
-    ChoiceState::PlayCardState(PlayCardState { game })
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub enum Choice {
+    //See if this can be improved for morre allocation reuse.
+    PlayCardState(Vec<PlayCardAction>),
+    ChooseEnemyState(Vec<ChooseEnemyAction>, usize),
+    Win,
+    Loss,
+    RewardState(Vec<RewardStateAction>),
 }
 
-fn win_battle<'a>(game: &'a mut Game) -> ChoiceState<'a> {
-    game.floor += 1;
-    return ChoiceState::RewardState(RewardState { game });
+impl<'a> ChoiceState<'a> {
+    pub fn is_over(&self) -> bool {
+        match self.choice {
+            Choice::Win | Choice::Loss => true,
+            _ => false,
+        }
+    }
+
+    //This function clones the choice state to another Game. It
+    //will still behave differently due to the Rng returning different
+    //results. This can be used to simulate different outcomes
+    pub fn clone_to<'b>(&self, game: &'b mut Game) -> ChoiceState<'b> {
+        *game = self.game.clone();
+        return ChoiceState {
+            game: game,
+            choice: self.choice.clone(),
+        };
+    }
+    //This function handles an action being taken.
+    pub fn take_action(&mut self, action_idx: usize) {
+        match &self.choice {
+            Choice::PlayCardState(play_card_actions) => {
+                let action = play_card_actions[action_idx];
+                self.take_play_card_action(action);
+            }
+            Choice::ChooseEnemyState(choose_enemy_actions, card_idx) => {
+                let action = choose_enemy_actions[action_idx];
+                self.take_choose_enemy_action(*card_idx, action);
+            }
+            Choice::Win => {
+                panic!("The game is won, no actions can be taken");
+            }
+            Choice::Loss => {
+                panic!("The game is lost, no actions can be taken");
+            }
+            Choice::RewardState(reward_state_actions) => {
+                let action = reward_state_actions[action_idx];
+                self.take_reward_state_action(action);
+            }
+        }
+    }
+    //Outside the game only immutable access should be granted.
+    pub fn get_choice(&self) -> &Choice {
+        &self.choice
+    }
+
+    //Outside the game only immutable access should be granted.
+    pub fn get_game(&self) -> &Game {
+        &self.game
+    }
+
+    pub fn action_str(&self, action_idx: usize) -> String {
+        match &self.choice {
+            Choice::PlayCardState(play_card_actions) => {
+                let action = play_card_actions[action_idx];
+                match action {
+                    PlayCardAction::PlayCard(card_idx) => {
+                        format!("{:?}", self.game.fight.hand[card_idx as usize].effect)
+                    }
+                    PlayCardAction::EndTurn => "End Turn".to_owned(),
+                }
+            }
+            Choice::ChooseEnemyState(choose_enemy_actions, _) => {
+                format!(
+                    "Target {:?}",
+                    self.game.fight.enemies[choose_enemy_actions[action_idx].enemy as usize]
+                        .as_ref()
+                        .map_or("", |enemy| enemy.name)
+                )
+            }
+            Choice::Win => {
+                panic!("Win state has no actions.")
+            }
+            Choice::Loss => {
+                panic!("Loss state has no actions.")
+            }
+            Choice::RewardState(reward_state_actions) => match reward_state_actions[action_idx] {
+                RewardStateAction::Proceed => "Proceed".to_owned(),
+            },
+        }
+    }
+
+    //This function starts a fight in the given game. Useful for testing.
+    pub fn start_fight(game: &'a mut Game) -> Self {
+        let mut state = ChoiceState {
+            game,
+            choice: Choice::PlayCardState(vec![]),
+        };
+        state.game.draw_initial_hand();
+        state.goto_play_card_state();
+        state
+    }
+
+    fn goto_play_card_state(&mut self) {
+        let fight = &self.game.fight;
+        let mut actions = vec![PlayCardAction::EndTurn];
+        for i in 0..fight.hand.len() {
+            if fight.is_playable(i) {
+                actions.push(PlayCardAction::PlayCard(i as u8));
+            }
+        }
+        self.choice = Choice::PlayCardState(actions)
+    }
+
+    fn goto_choose_enemy_state(&mut self, chosen_card_idx: usize) {
+        let fight = &self.game.fight;
+        let mut actions = vec![];
+        for i in fight.enemies.indicies() {
+            actions.push(ChooseEnemyAction { enemy: i.0 });
+        }
+        self.choice = Choice::ChooseEnemyState(actions, chosen_card_idx)
+    }
+    fn take_play_card_action(&mut self, action: PlayCardAction) {
+        match action {
+            PlayCardAction::PlayCard(idx) => {
+                let card = &self.game.fight.hand[idx as usize];
+                if card.effect.requires_target() {
+                    self.goto_choose_enemy_state(idx as usize);
+                    return;
+                }
+                //If a card doesn't require targets supply 0 as a target since it won't matter.
+                self.play_card_targets(idx as usize, 0)
+            }
+            PlayCardAction::EndTurn => self.enemy_phase(),
+        }
+    }
+
+    fn take_choose_enemy_action(&mut self, card_idx: usize, action: ChooseEnemyAction) {
+        self.play_card_targets(card_idx, action.enemy as usize);
+    }
+
+    fn take_reward_state_action(&mut self, action: RewardStateAction) {
+        match &action {
+            RewardStateAction::Proceed => {
+                self.game.setup_jawworm_fight();
+                self.goto_play_card_state();
+            },
+        }
+    }
+
+    fn enemy_phase(&mut self) {
+        self.discard_hand_end_of_turn();
+        for i in self.game.fight.enemies.indicies() {
+            let enemy_actions;
+            {
+                let enemy = &self.game.fight.enemies[i];
+                enemy_actions =
+                    (enemy.behavior)(&mut self.game.rng, &self.game.fight, enemy, enemy.ai_state);
+                self.game.fight.enemies[i].ai_state = enemy_actions.0;
+            }
+
+            for action in enemy_actions.1 {
+                match action {
+                    EnemyAction::Attack(damage) => {
+                        let enemy = &self.game.fight.enemies[i];
+                        let damage = *damage + enemy.buffs.strength + enemy.buffs.implicit_strength;
+                        let mut damage = damage as f32;
+                        //Weak and vulnerable calculations require using floats then rounding down afterwards.
+                        if enemy.debuffs.weak > 0 {
+                            damage *= 0.75;
+                        }
+                        if self.game.fight.player_debuffs.vulnerable > 0 {
+                            damage *= 1.5;
+                        }
+                        let damage = damage as i32;
+                        if damage > self.game.fight.player_block {
+                            let dealt = damage - self.game.fight.player_block;
+                            self.player_lose_life(dealt);
+                        } else {
+                            self.game.fight.player_block -= damage;
+                        }
+                        if self.game.player_hp <= 0 {
+                            self.game.player_hp = 0;
+                            self.choice = Choice::Loss;
+                            return;
+                        }
+                    }
+                    EnemyAction::Block(block) => {
+                        self.game.fight.enemies[i].block += block;
+                    }
+                    EnemyAction::Buff(buff) => {
+                        Self::enemy_buff(&mut self.game.fight.enemies[i], *buff);
+                    }
+                    EnemyAction::Debuff(debuff) => {
+                        self.apply_debuff_to_player(*debuff);
+                    }
+                    EnemyAction::AddToDiscard(cards) => {
+                        self.game
+                            .fight
+                            .discard_pile
+                            .extend(cards.into_iter().cloned());
+                        //Sort for greater MCTS efficiency. Technically, this is different from STS
+                        //with regards to All For One, but I will accept this for now.
+                        self.game.fight.discard_pile.sort();
+                    }
+                    EnemyAction::Split => {
+                        split(&mut self.game, i);
+                    }
+                    EnemyAction::DefendAlly(amount) => {
+                        defend_ally(&mut self.game, i, *amount);
+                    }
+                    EnemyAction::Escape => {
+                        self.game.fight.enemies.enemies[i.0 as usize] = None;
+                    }
+                    EnemyAction::StealGold(amount) => {
+                        let steal_amount = std::cmp::min(self.game.gold, *amount);
+                        self.game.gold -= steal_amount;
+                        self.game.fight.enemies[i].buffs.stolen_gold += steal_amount;
+                    }
+                }
+            }
+        }
+        if self.game.fight.enemies.len() == 0 {
+            self.win_battle();
+            return;
+        }
+        self.reset_for_next_turn();
+        self.goto_play_card_state();
+    }
+
+    fn reset_for_next_turn(&mut self) {
+        //TODO implement relics that affect energy.
+        //TODO implement cards that affect energy.
+        for enemy_idx in self.game.fight.enemies.indicies() {
+            let enemy: &mut Enemy = &mut self.game.fight.enemies[enemy_idx];
+            enemy.buffs.strength += enemy.buffs.ritual;
+            //Cultists skip the ritual buff the turn they play it.
+            enemy.buffs.ritual += enemy.buffs.ritual_skip_first;
+            enemy.buffs.ritual_skip_first = 0;
+            decrement(&mut enemy.debuffs.vulnerable);
+            decrement(&mut enemy.debuffs.weak);
+            decrement(&mut self.game.fight.player_debuffs.vulnerable);
+            decrement(&mut self.game.fight.player_debuffs.weak);
+        }
+        for _ in 0..5 {
+            self.game.fight.draw(&mut self.game.rng);
+        }
+        self.game.fight.player_block = 0;
+        self.game.fight.energy = 3;
+    }
+
+    fn discard_hand_end_of_turn(&mut self) {
+        //TODO handle retained cards.
+        //TODO handle statuses+curses with effects at the end of turn.
+        self.game
+            .fight
+            .discard_pile
+            .append(&mut self.game.fight.hand);
+        self.game.fight.player_debuffs.entangled = false;
+        for idx in self.game.fight.enemies.indicies() {
+            self.game.fight.enemies[idx].block = 0;
+        }
+    }
+    //TODO handle various effects of HP loss.
+    fn player_lose_life(&mut self, amount: i32) {
+        self.game.player_hp -= amount;
+    }
+
+    fn play_card_targets(&mut self, card_idx: usize, target: usize) {
+        let fight = &mut self.game.fight;
+        //Cards are small and cheap to clone. They aren't copy because they are mutable.
+        let card = fight.hand[card_idx].clone();
+        if !fight.is_playable(card_idx) {
+            panic!("Attempted to play an unplayable card.");
+        }
+        fight.energy -= card.cost.expect("Card has a cost");
+        for action in card.effect.actions() {
+            handle_action(self.game, card.clone(), action, target);
+            if self.game.player_hp <= 0 {
+                self.game.player_hp = 0;
+                self.choice = Choice::Loss;
+                return;
+            }
+        }
+        post_card_play(self.game);
+        let card = self.game.fight.hand.remove(card_idx);
+        insert_sorted(card, &mut self.game.fight.discard_pile);
+        if self.game.fight.enemies.len() == 0 {
+            self.win_battle();
+            return;
+        }
+        self.goto_play_card_state();
+        return;
+    }
+
+    fn win_battle(&mut self) {
+        self.game.floor += 1;
+        self.choice = Choice::RewardState(vec![RewardStateAction::Proceed]);
+    }
+
+    fn apply_debuff_to_player(&mut self, debuff: Debuff) {
+        match debuff {
+            Debuff::Vulnerable(amount) => {
+                debuff_player_turn_wind_down(
+                    &mut self.game.fight.player_debuffs.vulnerable,
+                    amount,
+                );
+            }
+            Debuff::Weak(amount) => {
+                debuff_player_turn_wind_down(&mut self.game.fight.player_debuffs.weak, amount);
+            }
+            Debuff::Frail(amount) => {
+                debuff_player_turn_wind_down(&mut self.game.fight.player_debuffs.frail, amount);
+            }
+            Debuff::Entangled => {
+                self.game.fight.player_debuffs.entangled = true;
+            }
+        }
+    }
+
+    fn enemy_buff(enemy: &mut Enemy, buff: Buff) {
+        match buff {
+            Buff::Strength(x) => {
+                enemy.buffs.strength += x;
+            }
+            Buff::Ritual(x) => {
+                enemy.buffs.ritual += x;
+            }
+            Buff::RitualSkipFirst(x) => {
+                enemy.buffs.ritual_skip_first += x;
+            }
+        }
+    }
 }
 
 fn post_card_play<'a>(game: &'a mut Game) {
@@ -151,62 +399,65 @@ fn post_card_play<'a>(game: &'a mut Game) {
 fn handle_action<'a>(game: &'a mut Game, card: Card, action: &PlayEffect, target: usize) {
     match action {
         PlayEffect::Attack(attack) => {
-                        //TODO handle player buffs and debuffs.
-                        let mut damage: f32 = *attack as f32;
-                        let Some(enemy) = &mut game.fight.enemies[target] else {
-                            return;
-                        };
-                        if enemy.debuffs.vulnerable > 0 {
-                            damage *= 1.5;
-                        }
-                        if game.fight.player_debuffs.weak > 0 {
-                            damage *= 0.75;
-                        }
-                        let mut damage = damage as i32;
-                        if damage < enemy.block {
-                            enemy.block -= damage;
-                            damage = 0;
-                        } else {
-                            damage -= enemy.block;
-                            enemy.block = 0;
-                        }
-                        damage = std::cmp::min(damage, enemy.hp);
-                        if damage > 0 {
-                            if enemy.buffs.curl_up > 0 {
-                                enemy.buffs.queued_block += enemy.buffs.curl_up;
-                                enemy.buffs.curl_up = 0;
-                            }
-                            enemy.buffs.strength += enemy.buffs.angry;
-                        }
-                        enemy.hp -= damage as i32;
-                        if enemy.hp <= 0 {
-                            if enemy.buffs.spore_cloud > 0 {
-                                game.fight.player_debuffs.vulnerable += 2;
-                            }
-                            game.fight.stolen_back_gold += enemy.buffs.stolen_gold;
-                            game.fight.enemies[target] = None;
-                            return;
-                        }
+            //TODO handle player buffs and debuffs.
+            let mut damage: f32 = *attack as f32;
+            let Some(enemy) = &mut game.fight.enemies[target] else {
+                return;
+            };
+            if enemy.debuffs.vulnerable > 0 {
+                damage *= 1.5;
             }
-        PlayEffect::DebuffEnemy(debuff) => {
-                //This handles the case where the enemy dies during the card effect.
-                let Some(enemy) = &mut game.fight.enemies[target] else {
-                    return;
-                };
-                apply_debuff_to_enemy(enemy, *debuff);
+            if game.fight.player_debuffs.weak > 0 {
+                damage *= 0.75;
             }
-        PlayEffect::Block(block) => {
-                //TODO handle player buffs and debuffs.
-                let mut block = *block as f32;
-                if game.fight.player_debuffs.frail > 0 {
-                    block *= 0.75;
+            let mut damage = damage as i32;
+            if damage < enemy.block {
+                enemy.block -= damage;
+                damage = 0;
+            } else {
+                damage -= enemy.block;
+                enemy.block = 0;
+            }
+            damage = std::cmp::min(damage, enemy.hp);
+            if damage > 0 {
+                if enemy.buffs.curl_up > 0 {
+                    enemy.buffs.queued_block += enemy.buffs.curl_up;
+                    enemy.buffs.curl_up = 0;
                 }
-                let block = block as i32;
-                game.fight.player_block += block;
+                enemy.buffs.strength += enemy.buffs.angry;
             }
+            enemy.hp -= damage as i32;
+            if enemy.hp <= 0 {
+                if enemy.buffs.spore_cloud > 0 {
+                    game.fight.player_debuffs.vulnerable += 2;
+                }
+                game.fight.stolen_back_gold += enemy.buffs.stolen_gold;
+                game.fight.enemies[target] = None;
+                return;
+            }
+        }
+        PlayEffect::DebuffEnemy(debuff) => {
+            //This handles the case where the enemy dies during the card effect.
+            let Some(enemy) = &mut game.fight.enemies[target] else {
+                return;
+            };
+            apply_debuff_to_enemy(enemy, *debuff);
+        }
+        PlayEffect::Block(block) => {
+            //TODO handle player buffs and debuffs.
+            let mut block = *block as f32;
+            if game.fight.player_debuffs.frail > 0 {
+                block *= 0.75;
+            }
+            let block = block as i32;
+            game.fight.player_block += block;
+        }
         PlayEffect::AddCopyToDiscard => {
             insert_sorted(card, &mut game.fight.discard_pile);
-        },
+        }
+        PlayEffect::UpgradeCardInHand => {
+            todo!("Implement upgrading cards in hand.");
+        }
     }
 }
 
@@ -293,211 +544,7 @@ fn defend_ally(game: &mut Game, i: EnemyIdx, amount: i32) {
         }
     }
 }
-impl<'a> PlayCardState<'a> {
-    pub fn available_actions(&self) -> Vec<PlayCardAction> {
-        let fight = &self.game.fight;
-        let mut res = vec![PlayCardAction::EndTurn];
-        for i in 0..fight.hand.len() {
-            if fight.is_playable(i) {
-                res.push(PlayCardAction::PlayCard(i as u8));
-            }
-        }
-        res
-    }
 
-    pub fn take_action(self, action: PlayCardAction) -> ChoiceState<'a> {
-        match action {
-            PlayCardAction::PlayCard(idx) => {
-                let card = &self.game.fight.hand[idx as usize];
-                if card.effect.requires_target() {
-                    return ChoiceState::ChooseEnemyState(ChooseEnemyState {
-                        game: self.game,
-                        chosen_card: idx as usize,
-                    });
-                }
-                //If a card doesn't require targets supply 0 as a target since it won't matter.
-                play_card_targets(self.game, idx as usize, 0)
-            }
-            PlayCardAction::EndTurn => self.enemy_phase(),
-        }
-    }
-
-    fn enemy_phase(mut self) -> ChoiceState<'a> {
-        self.discard_hand_end_of_turn();
-        for i in self.game.fight.enemies.indicies() {
-            let enemy_actions;
-            {
-                let enemy = &self.game.fight.enemies[i];
-                enemy_actions =
-                    (enemy.behavior)(&mut self.game.rng, &self.game.fight, enemy, enemy.ai_state);
-                self.game.fight.enemies[i].ai_state = enemy_actions.0;
-            }
-
-            for action in enemy_actions.1 {
-                match action {
-                    EnemyAction::Attack(damage) => {
-                        let enemy = &self.game.fight.enemies[i];
-                        let damage = *damage + enemy.buffs.strength + enemy.buffs.implicit_strength;
-                        let mut damage = damage as f32;
-                        //Weak and vulnerable calculations require using floats then rounding down afterwards.
-                        if enemy.debuffs.weak > 0 {
-                            damage *= 0.75;
-                        }
-                        if self.game.fight.player_debuffs.vulnerable > 0 {
-                            damage *= 1.5;
-                        }
-                        let damage = damage as i32;
-                        if damage > self.game.fight.player_block {
-                            let dealt = damage - self.game.fight.player_block;
-                            self.player_lose_life(dealt);
-                        } else {
-                            self.game.fight.player_block -= damage;
-                        }
-                        if self.game.player_hp <= 0 {
-                            self.game.player_hp = 0;
-                            return ChoiceState::LossState(self.game);
-                        }
-                    }
-                    EnemyAction::Block(block) => {
-                        self.game.fight.enemies[i].block += block;
-                    }
-                    EnemyAction::Buff(buff) => {
-                        Self::enemy_buff(&mut self.game.fight.enemies[i], *buff);
-                    }
-                    EnemyAction::Debuff(debuff) => {
-                        self.apply_debuff_to_player(*debuff);
-                    }
-                    EnemyAction::AddToDiscard(cards) => {
-                        self.game.fight.discard_pile.extend(cards.into_iter().cloned());
-                        //Sort for greater MCTS efficiency. Technically, this is different from STS
-                        //with regards to All For One, but I will accept this for now.
-                        self.game.fight.discard_pile.sort();
-                    }
-                    EnemyAction::Split => {
-                        split(&mut self.game, i);
-                    }
-                    EnemyAction::DefendAlly(amount) => {
-                        defend_ally(&mut self.game, i, *amount);
-                    }
-                    EnemyAction::Escape => {
-                        self.game.fight.enemies.enemies[i.0 as usize] = None;
-                    }
-                    EnemyAction::StealGold(amount) => {
-                        let steal_amount = std::cmp::min(self.game.gold, *amount);
-                        self.game.gold -= steal_amount;
-                        self.game.fight.enemies[i].buffs.stolen_gold += steal_amount;
-                    }
-                }
-            }
-        }
-        if self.game.fight.enemies.len() == 0 {
-            return win_battle(self.game);
-        }
-        self.reset_for_next_turn();
-        ChoiceState::PlayCardState(PlayCardState { game: self.game })
-    }
-
-    fn apply_debuff_to_player(&mut self, debuff: Debuff) {
-        match debuff {
-            Debuff::Vulnerable(amount) => {
-                debuff_player_turn_wind_down(
-                    &mut self.game.fight.player_debuffs.vulnerable,
-                    amount,
-                );
-            }
-            Debuff::Weak(amount) => {
-                debuff_player_turn_wind_down(&mut self.game.fight.player_debuffs.weak, amount);
-            }
-            Debuff::Frail(amount) => {
-                debuff_player_turn_wind_down(&mut self.game.fight.player_debuffs.frail, amount);
-            }
-            Debuff::Entangled => {
-                self.game.fight.player_debuffs.entangled = true;
-            }
-        }
-    }
-
-    fn discard_hand_end_of_turn(&mut self) {
-        //TODO handle retained cards.
-        //TODO handle statuses+curses with effects at the end of turn.
-        self.game
-            .fight
-            .discard_pile
-            .append(&mut self.game.fight.hand);
-        self.game.fight.player_debuffs.entangled = false;
-        for idx in self.game.fight.enemies.indicies() {
-            self.game.fight.enemies[idx].block = 0;
-        }
-    }
-    fn reset_for_next_turn(&mut self) {
-        //TODO implement relics that affect energy.
-        //TODO implement cards that affect energy.
-        for enemy_idx in self.game.fight.enemies.indicies() {
-            let enemy: &mut Enemy = &mut self.game.fight.enemies[enemy_idx];
-            enemy.buffs.strength += enemy.buffs.ritual;
-            //Cultists skip the ritual buff the turn they play it.
-            enemy.buffs.ritual += enemy.buffs.ritual_skip_first;
-            enemy.buffs.ritual_skip_first = 0;
-            decrement(&mut enemy.debuffs.vulnerable);
-            decrement(&mut enemy.debuffs.weak);
-            decrement(&mut self.game.fight.player_debuffs.vulnerable);
-            decrement(&mut self.game.fight.player_debuffs.weak);
-        }
-        for _ in 0..5 {
-            self.game.fight.draw(&mut self.game.rng);
-        }
-        self.game.fight.player_block = 0;
-        self.game.fight.energy = 3;
-    }
-    fn enemy_buff(enemy: &mut Enemy, buff: Buff) {
-        match buff {
-            Buff::Strength(x) => {
-                enemy.buffs.strength += x;
-            }
-            Buff::Ritual(x) => {
-                enemy.buffs.ritual += x;
-            }
-            Buff::RitualSkipFirst(x) => {
-                enemy.buffs.ritual_skip_first += x;
-            }
-        }
-    }
-    //TODO handle various effects of HP loss.
-    fn player_lose_life(&mut self, amount: i32) {
-        self.game.player_hp -= amount;
-    }
-}
-
-impl<'a> ChooseEnemyState<'a> {
-    pub fn available_actions(&self) -> Vec<ChooseEnemyAction> {
-        let fight = &self.game.fight;
-        let mut res = vec![];
-        for i in fight.enemies.indicies() {
-            res.push(ChooseEnemyAction { enemy: i.0 });
-        }
-        res
-    }
-
-    pub fn take_action(self, action: ChooseEnemyAction) -> ChoiceState<'a> {
-        play_card_targets(self.game, self.chosen_card, action.enemy as usize)
-    }
-}
-
-impl<'a> RewardState<'a> {
-    pub fn available_actions(&self) -> Vec<RewardStateAction> {
-        vec![RewardStateAction::Proceed]
-    }
-
-    pub fn take_action(self, _action: RewardStateAction) -> ChoiceState<'a> {
-        self.game.setup_jawworm_fight()
-    }
-
-    pub fn action_str(&self, action: RewardStateAction) -> &'static str {
-        match action {
-            RewardStateAction::Proceed => "Proceed",
-        }
-    }
-}
 impl Game {
     pub fn new(charachter: Charachter) -> Self {
         match charachter {
@@ -550,29 +597,25 @@ impl Game {
     pub fn setup_jawworm_fight(&mut self) -> ChoiceState {
         self.setup_fight();
         self.fight.enemies[0] = Some(generate_jaw_worm(&mut self.rng));
-        self.draw_initial_hand();
-        ChoiceState::PlayCardState(PlayCardState { game: self })
+        ChoiceState::start_fight(self)
     }
 
     pub fn setup_cultist_fight(&mut self) -> ChoiceState {
         self.setup_fight();
         self.fight.enemies[0] = Some(generate_cultist(&mut self.rng));
-        self.draw_initial_hand();
-        ChoiceState::PlayCardState(PlayCardState { game: self })
+        ChoiceState::start_fight(self)
     }
 
     pub fn setup_redlouse_fight(&mut self) -> ChoiceState {
         self.setup_fight();
         self.fight.enemies[0] = Some(generate_red_louse(&mut self.rng));
-        self.draw_initial_hand();
-        ChoiceState::PlayCardState(PlayCardState { game: self })
+        ChoiceState::start_fight(self)
     }
 
     pub fn setup_greenlouse_fight(&mut self) -> ChoiceState {
         self.setup_fight();
         self.fight.enemies[0] = Some(generate_green_louse(&mut self.rng));
-        self.draw_initial_hand();
-        ChoiceState::PlayCardState(PlayCardState { game: self })
+        ChoiceState::start_fight(self)
     }
 }
 
@@ -595,29 +638,6 @@ impl Charachter {
     }
 }
 
-impl<'a> PlayCardState<'a> {
-    pub fn action_str(&self, action: PlayCardAction) -> String {
-        match action {
-            PlayCardAction::PlayCard(idx) => {
-                format!("{:?}", self.game.fight.hand[idx as usize].effect)
-            }
-            PlayCardAction::EndTurn => "EndTurn".to_owned(),
-        }
-    }
-}
-
-impl<'a> ChooseEnemyState<'a> {
-    pub fn action_str(&self, action: ChooseEnemyAction) -> String {
-        match action {
-            ChooseEnemyAction { enemy } => format!(
-                "Target {:?}",
-                self.game.fight.enemies[enemy as usize]
-                    .as_ref()
-                    .map_or("", |enemy| enemy.name)
-            ),
-        }
-    }
-}
 impl<'a> Display for ChoiceState<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn dash_line(f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -652,14 +672,13 @@ impl<'a> Display for ChoiceState<'a> {
             dash_line(f)?;
             Ok(())
         }
-        let (state_name, game) = match self {
-            ChoiceState::PlayCardState(play_card_state) => ("PlayCard", &*play_card_state.game),
-            ChoiceState::ChooseEnemyState(choose_enemy_state) => {
-                ("ChooseEnemy", &*choose_enemy_state.game)
-            }
-            ChoiceState::WinState(game) => ("Win", &**game),
-            ChoiceState::LossState(game) => ("Loss", &**game),
-            ChoiceState::RewardState(reward_state) => ("Map Choice", &*reward_state.game),
+        let game = &*self.game;
+        let state_name = match &self.choice {
+            Choice::PlayCardState(_) => "PlayCard",
+            Choice::ChooseEnemyState(_, _) => "ChooseEnemy",
+            Choice::Win => "Win",
+            Choice::Loss => "Loss",
+            Choice::RewardState(_) => "Rewards",
         };
         dash_line(f)?;
         write!(f, "| ")?;

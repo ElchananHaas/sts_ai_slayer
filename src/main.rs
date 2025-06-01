@@ -21,7 +21,7 @@ fn main() {
     let agent = MctsAgent {};
     while !choice.is_over() {
         println!("{}", &choice);
-        choice = agent.take_action(choice, &mut rng);
+        agent.take_action(&mut choice, &mut rng);
     }
     println!("{}", &choice);
 }

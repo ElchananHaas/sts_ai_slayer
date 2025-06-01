@@ -11,42 +11,10 @@ use crate::{
 pub struct MctsAgent {}
 
 impl MctsAgent {
-    pub fn take_action<'a>(&self, state: ChoiceState<'a>, rng: &mut Rng) -> ChoiceState<'a> {
+    pub fn take_action<'a>(&self, state: &mut ChoiceState<'a>, rng: &mut Rng) {
         let choice = mcts(&state, rng);
-        take_indexed_action(state, choice, true)
-    }
-}
-
-fn take_indexed_action<'a>(state: ChoiceState<'a>, idx: usize, verbose: bool) -> ChoiceState<'a> {
-    match state {
-        ChoiceState::PlayCardState(play_card_state) => {
-            let actions = play_card_state.available_actions();
-            if verbose {
-                println!("{}", play_card_state.action_str(actions[idx]));
-            }
-            play_card_state.take_action(actions[idx])
-        }
-        ChoiceState::ChooseEnemyState(choose_enemy_state) => {
-            let actions: Vec<crate::game::ChooseEnemyAction> =
-                choose_enemy_state.available_actions();
-            if verbose {
-                println!("{}", choose_enemy_state.action_str(actions[idx]));
-            }
-            choose_enemy_state.take_action(actions[idx])
-        }
-        ChoiceState::WinState(_) => {
-            panic!("Game is already won!");
-        }
-        ChoiceState::LossState(_) => {
-            panic!("Game is already lost!")
-        }
-        ChoiceState::RewardState(reward_state) => {
-            let actions = reward_state.available_actions();
-            if verbose {
-                println!("{}", reward_state.action_str(actions[idx]));
-            }
-            reward_state.take_action(actions[idx])
-        }
+        println!("{}", state.action_str(choice));
+        state.take_action(choice);
     }
 }
 
@@ -132,10 +100,10 @@ fn mcts<'a>(state: &ChoiceState<'a>, rng: &mut Rng) -> usize {
     //This will be overwritten.
     let mut temp_game = Game::new(crate::game::Charachter::IRONCLAD);
 
-    for i in 0..20000 {
+    for i in 0..10000 {
         const REWARD_PRINT_INTERVAL: i32 = 1000;
-        let choice_copy = state.clone_to(&mut temp_game);
-        let reward = mcts_rollout(choice_copy, &mut value_map, rng);
+        let mut choice_copy = state.clone_to(&mut temp_game);
+        let reward = mcts_rollout(&mut choice_copy, &mut value_map, rng);
         if i > 0 && i % REWARD_PRINT_INTERVAL == 0 {
             println!(
                 "Average rewards are {}",
@@ -155,7 +123,7 @@ fn mcts<'a>(state: &ChoiceState<'a>, rng: &mut Rng) -> usize {
 
 //This function rolls out a game. It mutatates its input
 fn mcts_rollout(
-    mut state: ChoiceState,
+    state: &mut ChoiceState,
     value_map: &mut HashMap<u64, MctsEntry>,
     rng: &mut Rng,
 ) -> f32 {
@@ -163,20 +131,14 @@ fn mcts_rollout(
     let mut taken_actions = Vec::new();
     let reward: i32 = loop {
         //Check if the game is over before computing any hashes
-        let num_actions = match &state {
-            ChoiceState::PlayCardState(play_card_state) => {
-                play_card_state.available_actions().len()
+        let num_actions = match &state.get_choice() {
+            crate::game::Choice::PlayCardState(play_card_actions) => play_card_actions.len(),
+            crate::game::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
+                choose_enemy_actions.len()
             }
-            ChoiceState::ChooseEnemyState(choose_enemy_state) => {
-                choose_enemy_state.available_actions().len()
-            }
-            ChoiceState::WinState(game) => {
-                break game.floor;
-            }
-            ChoiceState::LossState(game) => {
-                break game.floor;
-            }
-            ChoiceState::RewardState(reward_state) => reward_state.available_actions().len(),
+            crate::game::Choice::Win => {break state.get_game().floor;},
+            crate::game::Choice::Loss => {break state.get_game().floor;},
+            crate::game::Choice::RewardState(reward_state_actions) => reward_state_actions.len(),
         };
         let state_hash = hash_choice_state(&state);
         let mcts_entry = value_map.entry(state_hash).or_insert_with(|| MctsEntry {
@@ -192,7 +154,7 @@ fn mcts_rollout(
         let action_idx = mcts_entry.ucb(rng);
         state_hashes.push(state_hash);
         taken_actions.push(action_idx);
-        state = take_indexed_action(state, action_idx, false);
+        state.take_action(action_idx);
     };
     let reward = reward as f32;
     for i in 0..state_hashes.len() {
