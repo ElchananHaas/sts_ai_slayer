@@ -458,6 +458,23 @@ fn handle_action<'a>(game: &'a mut Game, card: Card, action: &PlayEffect, target
         PlayEffect::UpgradeCardInHand => {
             todo!("Implement upgrading cards in hand.");
         }
+        PlayEffect::UpgradeAllCardsInHand => {
+            for card in &mut game.fight.hand {
+                upgrade(card);
+            }
+        }
+    }
+}
+
+fn upgrade(card: &mut Card) {
+    if let Some(upgraded) = card.effect.upgraded() {
+        let current_cost = card.cost;
+        let base_cost = card.effect.default_cost();
+        card.effect = upgraded;
+        if current_cost == base_cost {
+            card.cost = upgraded.default_cost();
+        }
+
     }
 }
 

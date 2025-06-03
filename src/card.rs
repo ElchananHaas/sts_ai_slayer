@@ -7,11 +7,16 @@ pub struct Card {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum CardEffect {
     Strike,
+    StrikePlus,
     Bash,
+    BashPlus,
     Defend,
+    DefendPlus,
     Slimed,
     Anger,
+    AngerPlus,
     Armaments,
+    ArmamentsPlus
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -21,6 +26,7 @@ pub enum PlayEffect {
     Block(i32),
     AddCopyToDiscard,
     UpgradeCardInHand,
+    UpgradeAllCardsInHand
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -52,7 +58,7 @@ pub struct CardProps {
     pub cost: Option<i32>,
     pub requires_target: bool,
     pub card_type: CardType,
-    //pub upgrade_to: CardEffect,
+    pub upgrade_to: Option<CardEffect>,
 }
 
 impl CardEffect {
@@ -63,6 +69,15 @@ impl CardEffect {
                 cost: Some(1),
                 requires_target: true,
                 card_type: CardType::Attack,
+                upgrade_to: Some(CardEffect::StrikePlus)
+            },
+                       
+            CardEffect::StrikePlus => &CardProps {
+                actions: &[PlayEffect::Attack(9)],
+                cost: Some(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+                upgrade_to: None
             },
             CardEffect::Bash => &CardProps {
                 actions: &[
@@ -72,30 +87,66 @@ impl CardEffect {
                 cost: Some(2),
                 requires_target: true,
                 card_type: CardType::Attack,
+                upgrade_to: Some(CardEffect::BashPlus)
+            },
+            CardEffect::BashPlus => &CardProps {
+                actions: &[
+                    PlayEffect::Attack(10),
+                    PlayEffect::DebuffEnemy(Debuff::Vulnerable(3)),
+                ],
+                cost: Some(2),
+                requires_target: true,
+                card_type: CardType::Attack,
+                upgrade_to: None
             },
             CardEffect::Defend => &CardProps {
                 actions: &[PlayEffect::Block(5)],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
+                upgrade_to: Some(CardEffect::DefendPlus)
+            },
+            CardEffect::DefendPlus => &CardProps {
+                actions: &[PlayEffect::Block(8)],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+                upgrade_to: None
             },
             CardEffect::Slimed => &CardProps {
                 actions: &[],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Status,
+                upgrade_to: None
             },
             CardEffect::Anger => &CardProps {
                 actions: &[PlayEffect::Attack(6), PlayEffect::AddCopyToDiscard],
                 cost: Some(0),
                 requires_target: true,
                 card_type: CardType::Attack,
+                upgrade_to: Some(CardEffect::AngerPlus)
+            },
+            CardEffect::AngerPlus => &CardProps {
+                actions: &[PlayEffect::Attack(8), PlayEffect::AddCopyToDiscard],
+                cost: Some(0),
+                requires_target: true,
+                card_type: CardType::Attack,
+                upgrade_to: None
             },
             CardEffect::Armaments => &CardProps {
                 actions: &[PlayEffect::Block(5), PlayEffect::UpgradeCardInHand],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
+                upgrade_to: Some(CardEffect::ArmamentsPlus)
+            },
+            CardEffect::ArmamentsPlus => &CardProps {
+                actions: &[PlayEffect::Block(5), PlayEffect::UpgradeAllCardsInHand],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+                upgrade_to: None
             },
         }
     }
@@ -108,7 +159,7 @@ impl CardEffect {
     pub fn actions(&self) -> &'static [PlayEffect] {
         self.props().actions
     }
-    const fn default_cost(&self) -> Option<i32> {
+    pub const fn default_cost(&self) -> Option<i32> {
         self.props().cost
     }
     pub fn requires_target(&self) -> bool {
@@ -116,5 +167,8 @@ impl CardEffect {
     }
     pub fn card_type(&self) -> CardType {
         self.props().card_type
+    }
+    pub fn upgraded(&self) -> Option<CardEffect> {
+        self.props().upgrade_to
     }
 }
