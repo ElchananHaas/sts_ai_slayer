@@ -195,6 +195,29 @@ impl<'a> ChoiceState<'a> {
             }
         }
     }
+
+    pub fn num_actions(&self) -> usize {
+        match &self.choice {
+            crate::game::Choice::PlayCardState(play_card_actions) => {
+                play_card_actions.len()
+            }
+            crate::game::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
+                choose_enemy_actions.len()
+            }
+            crate::game::Choice::Win => 0,
+            crate::game::Choice::Loss => 0,
+            crate::game::Choice::RewardState(reward_state_actions) => {
+                reward_state_actions.len()
+            }
+            crate::game::Choice::SelectCardState(
+                play_card_context,
+                select_card_actions,
+                selection_type,
+            ) => {
+                select_card_actions.len()
+            }
+        }
+    }
 }
 
 impl Game {

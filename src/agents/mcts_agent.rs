@@ -7,10 +7,12 @@ use crate::{
     rng::Rng,
 };
 
+use super::agent_helper::{Agent};
+
 pub struct MctsAgent {}
 
-impl MctsAgent {
-    pub fn take_action<'a>(&self, state: &mut ChoiceState<'a>, rng: &mut Rng) {
+impl Agent for MctsAgent {
+    fn take_action<'a>(&mut self, state: &mut ChoiceState<'a>, rng: &mut Rng) {
         let choice = mcts(&state, rng);
         println!("{}", state.action_str(choice));
         state.take_action(choice);
@@ -30,7 +32,7 @@ struct MctsEntry {
 }
 
 const EXPLORE_FACTOR: f32 = 10.0;
-const MCTS_ITERATIONS: usize = 50000;
+const MCTS_ITERATIONS: usize = 20000;
 const REWARD_PRINT_INTERVAL: usize = 3000;
 impl MctsEntry {
     fn ucb(&self, rng: &mut Rng) -> usize {
