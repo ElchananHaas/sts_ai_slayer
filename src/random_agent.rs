@@ -16,6 +16,13 @@ impl RandomAgent {
             crate::game::Choice::RewardState(reward_state_actions) => {
                 play_random(state, sample_random(reward_state_actions, rng));
             }
+            crate::game::Choice::SelectCardState(
+                play_card_context,
+                select_card_actions,
+                selection_type,
+            ) => {
+                play_random(state, sample_random(select_card_actions, rng));
+            }
         }
     }
 }

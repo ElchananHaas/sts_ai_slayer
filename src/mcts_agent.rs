@@ -136,9 +136,18 @@ fn mcts_rollout(
             crate::game::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
                 choose_enemy_actions.len()
             }
-            crate::game::Choice::Win => {break state.get_game().floor;},
-            crate::game::Choice::Loss => {break state.get_game().floor;},
+            crate::game::Choice::Win => {
+                break state.get_game().floor;
+            }
+            crate::game::Choice::Loss => {
+                break state.get_game().floor;
+            }
             crate::game::Choice::RewardState(reward_state_actions) => reward_state_actions.len(),
+            crate::game::Choice::SelectCardState(
+                play_card_context,
+                select_card_actions,
+                selection_type,
+            ) => select_card_actions.len(),
         };
         let state_hash = hash_choice_state(&state);
         let mcts_entry = value_map.entry(state_hash).or_insert_with(|| MctsEntry {

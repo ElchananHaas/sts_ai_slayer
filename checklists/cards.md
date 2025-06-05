@@ -5,7 +5,7 @@
 
 ### Common Ironclad Cards
 - [x] Anger
-- [ ] Armaments
+- [x] Armaments
 - [ ] Body Slam
 - [ ] Clash
 - [ ] Cleave

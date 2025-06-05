@@ -16,7 +16,7 @@ pub enum CardEffect {
     Anger,
     AngerPlus,
     Armaments,
-    ArmamentsPlus
+    ArmamentsPlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -25,8 +25,13 @@ pub enum PlayEffect {
     DebuffEnemy(Debuff),
     Block(i32),
     AddCopyToDiscard,
+    SelectCardEffect(SelectCardEffect),
+    UpgradeAllCardsInHand,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum SelectCardEffect {
     UpgradeCardInHand,
-    UpgradeAllCardsInHand
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -69,15 +74,15 @@ impl CardEffect {
                 cost: Some(1),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardEffect::StrikePlus)
+                upgrade_to: Some(CardEffect::StrikePlus),
             },
-                       
+
             CardEffect::StrikePlus => &CardProps {
                 actions: &[PlayEffect::Attack(9)],
                 cost: Some(1),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None
+                upgrade_to: None,
             },
             CardEffect::Bash => &CardProps {
                 actions: &[
@@ -87,7 +92,7 @@ impl CardEffect {
                 cost: Some(2),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardEffect::BashPlus)
+                upgrade_to: Some(CardEffect::BashPlus),
             },
             CardEffect::BashPlus => &CardProps {
                 actions: &[
@@ -97,56 +102,59 @@ impl CardEffect {
                 cost: Some(2),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None
+                upgrade_to: None,
             },
             CardEffect::Defend => &CardProps {
                 actions: &[PlayEffect::Block(5)],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: Some(CardEffect::DefendPlus)
+                upgrade_to: Some(CardEffect::DefendPlus),
             },
             CardEffect::DefendPlus => &CardProps {
                 actions: &[PlayEffect::Block(8)],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: None
+                upgrade_to: None,
             },
             CardEffect::Slimed => &CardProps {
                 actions: &[],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Status,
-                upgrade_to: None
+                upgrade_to: None,
             },
             CardEffect::Anger => &CardProps {
                 actions: &[PlayEffect::Attack(6), PlayEffect::AddCopyToDiscard],
                 cost: Some(0),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardEffect::AngerPlus)
+                upgrade_to: Some(CardEffect::AngerPlus),
             },
             CardEffect::AngerPlus => &CardProps {
                 actions: &[PlayEffect::Attack(8), PlayEffect::AddCopyToDiscard],
                 cost: Some(0),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None
+                upgrade_to: None,
             },
             CardEffect::Armaments => &CardProps {
-                actions: &[PlayEffect::Block(5), PlayEffect::UpgradeCardInHand],
+                actions: &[
+                    PlayEffect::Block(5),
+                    PlayEffect::SelectCardEffect(SelectCardEffect::UpgradeCardInHand),
+                ],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: Some(CardEffect::ArmamentsPlus)
+                upgrade_to: Some(CardEffect::ArmamentsPlus),
             },
             CardEffect::ArmamentsPlus => &CardProps {
                 actions: &[PlayEffect::Block(5), PlayEffect::UpgradeAllCardsInHand],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: None
+                upgrade_to: None,
             },
         }
     }
