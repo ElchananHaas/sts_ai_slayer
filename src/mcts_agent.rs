@@ -1,6 +1,5 @@
 use std::{
-    collections::HashMap,
-    hash::{DefaultHasher, Hash, Hasher},
+    collections::HashMap, fmt::Write, hash::{DefaultHasher, Hash, Hasher}
 };
 
 use crate::{
@@ -30,8 +29,9 @@ struct MctsEntry {
     q_vals: Vec<QEntry>,
 }
 
-const EXPLORE_FACTOR: f32 = 0.5;
-
+const EXPLORE_FACTOR: f32 = 10.0;
+const MCTS_ITERATIONS: usize = 50000;
+const REWARD_PRINT_INTERVAL: usize = 3000;
 impl MctsEntry {
     fn ucb(&self, rng: &mut Rng) -> usize {
         let mut zero_taken = 0;
@@ -85,6 +85,16 @@ impl MctsEntry {
             .expect("Non-empty list of actions");
         ucb_action
     }
+
+    fn print_values(&self) {
+        let mut s: String = String::new();
+        write!(&mut s, "[ ").expect("Write OK");
+        for entry in &self.q_vals {
+            write!(&mut s, " {},", entry.reward_sum/entry.taken).expect("Write OK");
+        }
+        write!(&mut s, "]").expect("Write OK");
+        println!("{}", s);
+    }
 }
 
 fn hash_choice_state(state: &ChoiceState) -> u64 {
@@ -99,9 +109,8 @@ fn mcts<'a>(state: &ChoiceState<'a>, rng: &mut Rng) -> usize {
     let mut value_map: HashMap<u64, MctsEntry> = HashMap::new();
     //This will be overwritten.
     let mut temp_game = Game::new(crate::game::Charachter::IRONCLAD);
-
-    for i in 0..10000 {
-        const REWARD_PRINT_INTERVAL: i32 = 1000;
+    let state_hash = hash_choice_state(&state);
+    for i in 0..MCTS_ITERATIONS {
         let mut choice_copy = state.clone_to(&mut temp_game);
         let reward = mcts_rollout(&mut choice_copy, &mut value_map, rng);
         if i > 0 && i % REWARD_PRINT_INTERVAL == 0 {
@@ -109,12 +118,16 @@ fn mcts<'a>(state: &ChoiceState<'a>, rng: &mut Rng) -> usize {
                 "Average rewards are {}",
                 total_reward / (REWARD_PRINT_INTERVAL as f32)
             );
+            value_map
+                .get_mut(&state_hash)
+                .expect("State found")
+                .print_values();
             total_reward = 0.0;
         }
         //Add to the total reward after the print statement to get accurate average rewards.
         total_reward += reward;
     }
-    let state_hash = hash_choice_state(&state);
+    
     value_map
         .get_mut(&state_hash)
         .expect("State found")
@@ -144,9 +157,9 @@ fn mcts_rollout(
             }
             crate::game::Choice::RewardState(reward_state_actions) => reward_state_actions.len(),
             crate::game::Choice::SelectCardState(
-                play_card_context,
+                _play_card_context,
                 select_card_actions,
-                selection_type,
+                _selection_type,
             ) => select_card_actions.len(),
         };
         let state_hash = hash_choice_state(&state);
