@@ -163,6 +163,7 @@ fn mcts_rollout(
             crate::game::Choice::RewardState(reward_state_actions) => reward_state_actions.len(),
             crate::game::Choice::SelectCardState(
                 _play_card_context,
+                _effect, 
                 select_card_actions,
                 _selection_type,
             ) => select_card_actions.len(),

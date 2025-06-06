@@ -26,7 +26,9 @@ pub enum CardEffect {
     Clothesline,
     ClotheslinePlus,
     Flex,
-    FlexPlus
+    FlexPlus,
+    Havoc,
+    HavocPlus
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -40,7 +42,8 @@ pub enum PlayEffect {
     AttackEqualBlock, //Used for Body Slam
     AttackAll(i32),
     Buff(Buff),
-    DebuffSelf(Debuff)
+    DebuffSelf(Debuff),
+    PlayExhaustTop
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -237,6 +240,20 @@ impl CardEffect {
             CardEffect::FlexPlus => &CardProps {
                 actions: &[PlayEffect::Buff(Buff::Strength(4)), PlayEffect::DebuffSelf(Debuff::StrengthDown(4))],
                 cost: Some(0),
+                requires_target: false,
+                card_type: CardType::Skill,
+                upgrade_to: None,
+            },
+            CardEffect::Havoc => &CardProps {
+                actions: &[PlayEffect::PlayExhaustTop],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+                upgrade_to: Some(CardEffect::HavocPlus),
+            },
+            CardEffect::HavocPlus => &CardProps {
+                actions: &[PlayEffect::PlayExhaustTop],
+                cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
                 upgrade_to: None,

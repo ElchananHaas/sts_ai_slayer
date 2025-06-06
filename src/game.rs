@@ -1,4 +1,4 @@
-use std::{fmt::Display};
+use std::{collections::VecDeque, fmt::Display};
 
 use crate::{
     card::{Buff, Card, CardEffect, Debuff, PlayEffect, SelectCardEffect},
@@ -23,6 +23,9 @@ pub struct Game {
     base_deck: Vec<Card>,
     gold: i32,
     rng: Rng,
+    //This queue is ordered with standard VecDequeue ordering. 
+    //By default PlayEffects are pushed onto the back and popped from the front.
+    action_queue: VecDeque<PlayEffect>,
     pub floor: i32,
 }
 
@@ -59,13 +62,11 @@ pub enum Choice {
     Win,
     Loss,
     RewardState(Vec<RewardStateAction>),
-    SelectCardState(PlayCardContext, Vec<SelectCardAction>, SelectionType),
+    SelectCardState(PlayCardContext, SelectCardEffect, Vec<SelectCardAction>, SelectionType),
 }
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct PlayCardContext {
     card: Card,
-    actions: &'static [PlayEffect],
-    actions_index: usize,
     target: usize,
 }
 
@@ -89,7 +90,7 @@ pub enum SelectCardAction {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ActionControlFlow {
     Continue,
-    SelectCards(Vec<SelectCardAction>, SelectionType),
+    SelectCards(Vec<SelectCardAction>, SelectCardEffect, SelectionType),
 }
 impl<'a> ChoiceState<'a> {
     pub fn is_over(&self) -> bool {
@@ -138,9 +139,9 @@ impl<'a> ChoiceState<'a> {
                 let action = reward_state_actions[action_idx];
                 game.take_reward_state_action(action)
             }
-            Choice::SelectCardState(play_card_context, select_card_actions, _selection_type) => {
+            Choice::SelectCardState(play_card_context, effect, select_card_actions, _selection_type) => {
                 let action = select_card_actions[action_idx];
-                game.handle_select_card_action(play_card_context, action)
+                game.handle_select_card_action(play_card_context, effect, action)
             }
         }
     }
@@ -183,7 +184,7 @@ impl<'a> ChoiceState<'a> {
             Choice::RewardState(reward_state_actions) => match reward_state_actions[action_idx] {
                 RewardStateAction::Proceed => "Proceed".to_owned(),
             },
-            Choice::SelectCardState(_play_card_context, select_card_actions, selection_type) => {
+            Choice::SelectCardState(_play_card_context, _effect, select_card_actions, selection_type) => {
                 let action = select_card_actions[action_idx];
                 match selection_type {
                     SelectionType::Hand => match action {
@@ -206,9 +207,10 @@ impl<'a> ChoiceState<'a> {
             crate::game::Choice::Loss => 0,
             crate::game::Choice::RewardState(reward_state_actions) => reward_state_actions.len(),
             crate::game::Choice::SelectCardState(
-                play_card_context,
+                _play_card_context,
+                _effect,
                 select_card_actions,
-                selection_type,
+                _selection_type,
             ) => select_card_actions.len(),
         }
     }
@@ -224,9 +226,10 @@ impl Game {
     fn handle_select_card_action(
         &mut self,
         mut context: PlayCardContext,
+        effect: SelectCardEffect,
         action: SelectCardAction,
     ) -> Choice {
-        self.handle_selected_action(&mut context, action);
+        self.handle_selected_action(&mut context, effect, action);
         self.resolve_actions(context)
     }
     fn play_card_choice(&mut self) -> Choice {
@@ -394,11 +397,9 @@ impl Game {
         //Remove the card before playing any actions so it can't upgrade itself.
         let card = fight.hand.remove(card_idx);
         fight.energy -= card.cost.expect("Card has a cost");
-        let actions = card.effect.actions();
+        self.action_queue.extend(card.effect.actions());
         let context = PlayCardContext {
             card,
-            actions,
-            actions_index: 0,
             target,
         };
         self.resolve_actions(context)
@@ -407,20 +408,18 @@ impl Game {
     fn resolve_actions(&mut self, mut context: PlayCardContext) -> Choice {
         //This uses a while loop so it can be interruped in the middle
         //to get player input for a card like Armaments.
-        while context.actions_index < context.actions.len() {
-            let next = self.handle_action(&mut context);
+        while let Some(action) = self.action_queue.pop_front() {
+            let next = self.handle_action(action, &mut context);
             //If the player needs to make a selection, break out of the loop. It will be
             //resumed by calling resolve_actions again once the player makes their choice
-            //and the in-progress action is handled. The code resuming
-            //is responsible for incrementing context.actions_index.
-            if let ActionControlFlow::SelectCards(select, t) = next {
-                return Choice::SelectCardState(context, select, t);
+            //and the in-progress action is handled.
+            if let ActionControlFlow::SelectCards(select, select_action, t) = next {
+                return Choice::SelectCardState(context, select_action, select, t);
             }
             if self.player_hp <= 0 {
                 self.player_hp = 0;
                 return Choice::Loss;
             }
-            context.actions_index += 1;
         }
         self.post_card_play();
         insert_sorted(context.card, &mut self.fight.discard_pile);
@@ -538,14 +537,7 @@ impl Game {
         }
     }
 
-    fn handle_selected_action(&mut self, context: &mut PlayCardContext, action: SelectCardAction) {
-        //This could be avoided by passing in the action in the SelectCardAction.
-        let effect = match context.actions[context.actions_index] {
-            PlayEffect::SelectCardEffect(select_card_effect) => select_card_effect,
-            _ => panic!(
-                "Handle selected action called for something other than a select card effect"
-            ),
-        };
+    fn handle_selected_action(&mut self, context: &mut PlayCardContext, effect: SelectCardEffect,action: SelectCardAction) {
         match effect {
             SelectCardEffect::UpgradeCardInHand => {
                 let card = match action {
@@ -554,9 +546,6 @@ impl Game {
                 upgrade(card);
             }
         }
-        //This completes the resolution of this effect so the action index is incremented.
-        //The cards will continues to resolve its other effects.
-        context.actions_index += 1;
     }
 
     fn attack_enemy(&mut self, amount: i32, target: usize) {
@@ -595,9 +584,8 @@ impl Game {
             self.fight.enemies[target] = None;
         }
     }
-    fn handle_action(&mut self, context: &mut PlayCardContext) -> ActionControlFlow {
+    fn handle_action(&mut self, action: PlayEffect, context: &mut PlayCardContext) -> ActionControlFlow {
         let card = &mut context.card;
-        let action = context.actions[context.actions_index];
         let target = context.target;
         match action {
             PlayEffect::Attack(attack) => {
@@ -636,7 +624,7 @@ impl Game {
             PlayEffect::AddCopyToDiscard => {
                 insert_sorted(card.clone(), &mut self.fight.discard_pile);
             }
-            PlayEffect::SelectCardEffect(select_hand_effect) => match select_hand_effect {
+            PlayEffect::SelectCardEffect(select_effect) => match select_effect {
                 SelectCardEffect::UpgradeCardInHand => {
                     let mut upgrade_targets: Vec<SelectCardAction> = Vec::new();
                     for i in 0..self.fight.hand.len() {
@@ -647,6 +635,7 @@ impl Game {
                     if upgrade_targets.len() > 0 {
                         return ActionControlFlow::SelectCards(
                             upgrade_targets,
+                            select_effect,
                             SelectionType::Hand,
                         );
                     }
@@ -656,6 +645,9 @@ impl Game {
                 for card in &mut self.fight.hand {
                     upgrade(card);
                 }
+            },
+            PlayEffect::PlayExhaustTop => {
+                todo!("Implement Havoc's effect");
             }
         }
         ActionControlFlow::Continue
@@ -722,6 +714,7 @@ impl Game {
                 fight: Fight::new(),
                 gold: 99,
                 floor: 0,
+                action_queue: VecDeque::new(),
                 base_deck: vec![
                     CardEffect::Strike.to_card(),
                     CardEffect::Strike.to_card(),
@@ -861,7 +854,7 @@ impl<'a> Display for ChoiceState<'a> {
             Choice::Win => "Win",
             Choice::Loss => "Loss",
             Choice::RewardState(_) => "Rewards",
-            Choice::SelectCardState(_ctx, _actions, _type) => "SelectCard",
+            Choice::SelectCardState(_ctx, __effect, actions, _type) => "SelectCard",
         };
         dash_line(f)?;
         write!(f, "| ")?;
