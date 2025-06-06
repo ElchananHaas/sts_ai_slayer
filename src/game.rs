@@ -1,7 +1,7 @@
-use std::{convert::identity, fmt::Display};
+use std::{fmt::Display};
 
 use crate::{
-    card::{self, Buff, Card, CardEffect, Debuff, PlayEffect, SelectCardEffect},
+    card::{Buff, Card, CardEffect, Debuff, PlayEffect, SelectCardEffect},
     deck::Deck,
     enemies::{
         cultist::generate_cultist, green_louse::generate_green_louse, jaw_worm::generate_jaw_worm,
@@ -198,24 +198,18 @@ impl<'a> ChoiceState<'a> {
 
     pub fn num_actions(&self) -> usize {
         match &self.choice {
-            crate::game::Choice::PlayCardState(play_card_actions) => {
-                play_card_actions.len()
-            }
+            crate::game::Choice::PlayCardState(play_card_actions) => play_card_actions.len(),
             crate::game::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
                 choose_enemy_actions.len()
             }
             crate::game::Choice::Win => 0,
             crate::game::Choice::Loss => 0,
-            crate::game::Choice::RewardState(reward_state_actions) => {
-                reward_state_actions.len()
-            }
+            crate::game::Choice::RewardState(reward_state_actions) => reward_state_actions.len(),
             crate::game::Choice::SelectCardState(
                 play_card_context,
                 select_card_actions,
                 selection_type,
-            ) => {
-                select_card_actions.len()
-            }
+            ) => select_card_actions.len(),
         }
     }
 }
@@ -377,9 +371,10 @@ impl Game {
     }
 
     fn discard_hand_end_of_turn(&mut self) {
-        //TODO handle retained cards.
-        //TODO handle statuses+curses with effects at the end of turn.
         self.fight.discard_pile.append(&mut self.fight.hand);
+        //TODO handle artifact.
+        self.fight.player_buffs.strength -= self.fight.player_debuffs.strength_down;
+        self.fight.player_debuffs.strength_down = 0;
         self.fight.player_debuffs.entangled = false;
         for idx in self.fight.enemies.indicies() {
             self.fight.enemies[idx].block = 0;
@@ -413,7 +408,7 @@ impl Game {
         //This uses a while loop so it can be interruped in the middle
         //to get player input for a card like Armaments.
         while context.actions_index < context.actions.len() {
-            let next = handle_action(self, &mut context);
+            let next = self.handle_action(&mut context);
             //If the player needs to make a selection, break out of the loop. It will be
             //resumed by calling resolve_actions again once the player makes their choice
             //and the in-progress action is handled. The code resuming
@@ -452,7 +447,21 @@ impl Game {
             }
             Debuff::Entangled => {
                 self.fight.player_debuffs.entangled = true;
-            }
+            },
+            Debuff::StrengthDown(x) => {
+                self.fight.player_debuffs.strength_down += x;
+            },
+        }
+    }
+
+    fn apply_buff_to_player(&mut self, buff: Buff) {
+        match buff {
+            //TODO handle if player has negative strength.
+            Buff::Strength(x) => {
+                self.fight.player_buffs.strength += x;
+            },
+            Buff::Ritual(_) => todo!(),
+            Buff::RitualSkipFirst(_) => unimplemented!("Player gets normal ritual"),
         }
     }
 
@@ -549,90 +558,108 @@ impl Game {
         //The cards will continues to resolve its other effects.
         context.actions_index += 1;
     }
-}
 
-fn handle_action<'a>(game: &'a mut Game, context: &mut PlayCardContext) -> ActionControlFlow {
-    let card = &mut context.card;
-    let action = context.actions[context.actions_index];
-    let target = context.target;
-    match action {
-        PlayEffect::Attack(attack) => {
-            //TODO handle player buffs and debuffs.
-            let mut damage: f32 = attack as f32;
-            let Some(enemy) = &mut game.fight.enemies[target] else {
-                return ActionControlFlow::Continue;
-            };
-            if enemy.debuffs.vulnerable > 0 {
-                damage *= 1.5;
-            }
-            if game.fight.player_debuffs.weak > 0 {
-                damage *= 0.75;
-            }
-            let mut damage = damage as i32;
-            if damage < enemy.block {
-                enemy.block -= damage;
-                damage = 0;
-            } else {
-                damage -= enemy.block;
-                enemy.block = 0;
-            }
-            damage = std::cmp::min(damage, enemy.hp);
-            if damage > 0 {
-                if enemy.buffs.curl_up > 0 {
-                    enemy.buffs.queued_block += enemy.buffs.curl_up;
-                    enemy.buffs.curl_up = 0;
-                }
-                enemy.buffs.strength += enemy.buffs.angry;
-            }
-            enemy.hp -= damage as i32;
-            if enemy.hp <= 0 {
-                if enemy.buffs.spore_cloud > 0 {
-                    game.fight.player_debuffs.vulnerable += 2;
-                }
-                game.fight.stolen_back_gold += enemy.buffs.stolen_gold;
-                game.fight.enemies[target] = None;
-                return ActionControlFlow::Continue;
-            }
+    fn attack_enemy(&mut self, amount: i32, target: usize) {
+        let mut damage: f32 = (amount + self.fight.player_buffs.strength) as f32;
+        let Some(enemy) = &mut self.fight.enemies[target] else {
+            return;
+        };
+        if enemy.debuffs.vulnerable > 0 {
+            damage *= 1.5;
         }
-        PlayEffect::DebuffEnemy(debuff) => {
-            //This handles the case where the enemy dies during the card effect.
-            let Some(enemy) = &mut game.fight.enemies[target] else {
-                return ActionControlFlow::Continue;
-            };
-            apply_debuff_to_enemy(enemy, debuff);
+        if self.fight.player_debuffs.weak > 0 {
+            damage *= 0.75;
         }
-        PlayEffect::Block(block) => {
-            //TODO handle player buffs and debuffs.
-            let mut block = block as f32;
-            if game.fight.player_debuffs.frail > 0 {
-                block *= 0.75;
-            }
-            let block = block as i32;
-            game.fight.player_block += block;
+        let mut damage = damage as i32;
+        if damage < enemy.block {
+            enemy.block -= damage;
+            damage = 0;
+        } else {
+            damage -= enemy.block;
+            enemy.block = 0;
         }
-        PlayEffect::AddCopyToDiscard => {
-            insert_sorted(card.clone(), &mut game.fight.discard_pile);
+        damage = std::cmp::min(damage, enemy.hp);
+        if damage > 0 {
+            if enemy.buffs.curl_up > 0 {
+                enemy.buffs.queued_block += enemy.buffs.curl_up;
+                enemy.buffs.curl_up = 0;
+            }
+            enemy.buffs.strength += enemy.buffs.angry;
         }
-        PlayEffect::SelectCardEffect(select_hand_effect) => match select_hand_effect {
-            SelectCardEffect::UpgradeCardInHand => {
-                let mut upgrade_targets: Vec<SelectCardAction> = Vec::new();
-                for i in 0..game.fight.hand.len() {
-                    if game.fight.hand[i].effect.upgraded().is_some() {
-                        upgrade_targets.push(SelectCardAction::ChooseCard(i));
-                    }
-                }
-                if upgrade_targets.len() > 0 {
-                    return ActionControlFlow::SelectCards(upgrade_targets, SelectionType::Hand);
-                }
+        enemy.hp -= damage as i32;
+        if enemy.hp <= 0 {
+            if enemy.buffs.spore_cloud > 0 {
+                self.fight.player_debuffs.vulnerable += 2;
             }
-        },
-        PlayEffect::UpgradeAllCardsInHand => {
-            for card in &mut game.fight.hand {
-                upgrade(card);
-            }
+            self.fight.stolen_back_gold += enemy.buffs.stolen_gold;
+            self.fight.enemies[target] = None;
         }
     }
-    ActionControlFlow::Continue
+    fn handle_action(&mut self, context: &mut PlayCardContext) -> ActionControlFlow {
+        let card = &mut context.card;
+        let action = context.actions[context.actions_index];
+        let target = context.target;
+        match action {
+            PlayEffect::Attack(attack) => {
+                self.attack_enemy(attack, target);
+            }
+            PlayEffect::AttackEqualBlock => {
+                self.attack_enemy(self.fight.player_block, target);
+            }
+            PlayEffect::AttackAll(amount) => {
+                for enemy in self.fight.enemies.indicies() {
+                    self.attack_enemy(amount, enemy.0 as usize);
+                }
+            }
+            PlayEffect::DebuffEnemy(debuff) => {
+                //This handles the case where the enemy dies during the card effect.
+                let Some(enemy) = &mut self.fight.enemies[target] else {
+                    return ActionControlFlow::Continue;
+                };
+                apply_debuff_to_enemy(enemy, debuff);
+            },
+            PlayEffect::DebuffSelf(debuff) => {
+                self.apply_debuff_to_player(debuff);
+            },
+            PlayEffect::Buff(buff) => {
+                self.apply_buff_to_player(buff);
+            }
+            PlayEffect::Block(block) => {
+                //TODO handle player buffs and debuffs.
+                let mut block = block as f32;
+                if self.fight.player_debuffs.frail > 0 {
+                    block *= 0.75;
+                }
+                let block = block as i32;
+                self.fight.player_block += block;
+            }
+            PlayEffect::AddCopyToDiscard => {
+                insert_sorted(card.clone(), &mut self.fight.discard_pile);
+            }
+            PlayEffect::SelectCardEffect(select_hand_effect) => match select_hand_effect {
+                SelectCardEffect::UpgradeCardInHand => {
+                    let mut upgrade_targets: Vec<SelectCardAction> = Vec::new();
+                    for i in 0..self.fight.hand.len() {
+                        if self.fight.hand[i].effect.upgraded().is_some() {
+                            upgrade_targets.push(SelectCardAction::ChooseCard(i));
+                        }
+                    }
+                    if upgrade_targets.len() > 0 {
+                        return ActionControlFlow::SelectCards(
+                            upgrade_targets,
+                            SelectionType::Hand,
+                        );
+                    }
+                }
+            },
+            PlayEffect::UpgradeAllCardsInHand => {
+                for card in &mut self.fight.hand {
+                    upgrade(card);
+                }
+            }
+        }
+        ActionControlFlow::Continue
+    }
 }
 
 fn upgrade(card: &mut Card) {
@@ -659,7 +686,10 @@ fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
         }
         Debuff::Entangled => {
             panic!("Entangled cannot be applied to enemies!");
-        }
+        },
+        Debuff::StrengthDown(_) => {
+            panic!("Strength down cannot be applied to enemies!");
+        },
     }
 }
 

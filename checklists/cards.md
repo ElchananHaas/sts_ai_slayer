@@ -6,11 +6,11 @@
 ### Common Ironclad Cards
 - [x] Anger
 - [x] Armaments
-- [ ] Body Slam
-- [ ] Clash
-- [ ] Cleave
-- [ ] Clothesline
-- [ ] Flex
+- [x] Body Slam
+- [x] Clash
+- [x] Cleave
+- [x] Clothesline
+- [x] Flex
 - [ ] Havoc
 - [ ] Headbutt 	
 - [ ] Heavy Blade

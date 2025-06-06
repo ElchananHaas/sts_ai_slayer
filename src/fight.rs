@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    card::{Buff, Card, CardType, Debuff},
+    card::{Buff, Card, CardEffect, CardType, Debuff},
     deck::Deck,
     rng::Rng,
     util::insert_sorted,
@@ -19,6 +19,7 @@ pub struct Fight {
     pub energy: i32,
     pub player_block: i32,
     pub player_debuffs: PlayerDebuffs,
+    pub player_buffs: PlayerBuffs,
     pub stolen_back_gold: i32,
 }
 
@@ -28,6 +29,12 @@ pub struct PlayerDebuffs {
     pub vulnerable: i32,
     pub frail: i32,
     pub entangled: bool,
+    pub strength_down: i32,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct PlayerBuffs {
+    pub strength: i32,
 }
 
 impl Fight {
@@ -42,6 +49,7 @@ impl Fight {
             energy: 0,
             player_block: 0,
             player_debuffs: PlayerDebuffs::default(),
+            player_buffs: PlayerBuffs::default(),
             discard_pile: vec![],
             stolen_back_gold: 0,
         }
@@ -157,6 +165,13 @@ impl Fight {
             let card = self.hand[idx].clone();
             if self.player_debuffs.entangled && card.effect.card_type() == CardType::Attack {
                 return false;
+            }
+            if card.effect == CardEffect::Clash || card.effect == CardEffect::ClashPlus {
+                for card in &self.hand {
+                    if card.effect.card_type() != CardType::Attack {
+                        return false;
+                    }
+                }
             }
             let Some(energy_cost) = card.cost else {
                 return false;

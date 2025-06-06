@@ -1,5 +1,7 @@
 use std::{
-    collections::HashMap, fmt::Write, hash::{DefaultHasher, Hash, Hasher}
+    collections::HashMap,
+    fmt::Write,
+    hash::{DefaultHasher, Hash, Hasher},
 };
 
 use crate::{
@@ -7,7 +9,7 @@ use crate::{
     rng::Rng,
 };
 
-use super::agent_helper::{Agent};
+use super::agent_helper::Agent;
 
 pub struct MctsAgent {}
 
@@ -92,7 +94,7 @@ impl MctsEntry {
         let mut s: String = String::new();
         write!(&mut s, "[ ").expect("Write OK");
         for entry in &self.q_vals {
-            write!(&mut s, " {},", entry.reward_sum/entry.taken).expect("Write OK");
+            write!(&mut s, " {},", entry.reward_sum / entry.taken).expect("Write OK");
         }
         write!(&mut s, "]").expect("Write OK");
         println!("{}", s);
@@ -129,7 +131,7 @@ fn mcts<'a>(state: &ChoiceState<'a>, rng: &mut Rng) -> usize {
         //Add to the total reward after the print statement to get accurate average rewards.
         total_reward += reward;
     }
-    
+
     value_map
         .get_mut(&state_hash)
         .expect("State found")
@@ -165,7 +167,7 @@ fn mcts_rollout(
                 _selection_type,
             ) => select_card_actions.len(),
         };
-        //Once the agent is in an unexplored state, play randomly from there on. There is no 
+        //Once the agent is in an unexplored state, play randomly from there on. There is no
         //point in recording it. This helps reduce bias and speed up the MCTS
         if !in_known {
             state.take_action(rng.sample(num_actions));
@@ -175,15 +177,16 @@ fn mcts_rollout(
         let mcts_entry = value_map.entry(state_hash).or_insert_with(|| {
             in_known = false;
             MctsEntry {
-            visit_count: 0.0,
-            q_vals: vec![
-                QEntry {
-                    taken: 0.0,
-                    reward_sum: 0.0
-                };
-                num_actions
-            ],
-        }});
+                visit_count: 0.0,
+                q_vals: vec![
+                    QEntry {
+                        taken: 0.0,
+                        reward_sum: 0.0
+                    };
+                    num_actions
+                ],
+            }
+        });
         let action_idx = mcts_entry.ucb(rng);
         state_hashes.push(state_hash);
         taken_actions.push(action_idx);

@@ -5,10 +5,13 @@ pub trait Agent {
 }
 
 pub struct SkipSingleChoiceAgent<T> {
-    pub agent: T
+    pub agent: T,
 }
 
-impl <T> Agent for SkipSingleChoiceAgent<T> where T: Agent {
+impl<T> Agent for SkipSingleChoiceAgent<T>
+where
+    T: Agent,
+{
     fn take_action<'a>(&mut self, state: &mut ChoiceState<'a>, rng: &mut Rng) {
         if state.num_actions() == 1 {
             state.take_action(0);

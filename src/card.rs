@@ -17,6 +17,16 @@ pub enum CardEffect {
     AngerPlus,
     Armaments,
     ArmamentsPlus,
+    BodySlam,
+    BodySlamPlus,
+    Clash,
+    ClashPlus,
+    Cleave,
+    CleavePlus,
+    Clothesline,
+    ClotheslinePlus,
+    Flex,
+    FlexPlus
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -27,6 +37,10 @@ pub enum PlayEffect {
     AddCopyToDiscard,
     SelectCardEffect(SelectCardEffect),
     UpgradeAllCardsInHand,
+    AttackEqualBlock, //Used for Body Slam
+    AttackAll(i32),
+    Buff(Buff),
+    DebuffSelf(Debuff)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -39,6 +53,7 @@ pub enum Debuff {
     Vulnerable(i32),
     Weak(i32),
     Frail(i32),
+    StrengthDown(i32),
     Entangled,
 }
 
@@ -152,6 +167,76 @@ impl CardEffect {
             CardEffect::ArmamentsPlus => &CardProps {
                 actions: &[PlayEffect::Block(5), PlayEffect::UpgradeAllCardsInHand],
                 cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+                upgrade_to: None,
+            },
+            CardEffect::BodySlam => &CardProps {
+                actions: &[PlayEffect::AttackEqualBlock],
+                cost: Some(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+                upgrade_to: Some(CardEffect::BodySlamPlus),
+            },
+            CardEffect::BodySlamPlus => &CardProps {
+                actions: &[PlayEffect::AttackEqualBlock],
+                cost: Some(0),
+                requires_target: true,
+                card_type: CardType::Attack,
+                upgrade_to: None,
+            },
+            CardEffect::Clash => &CardProps {
+                actions: &[PlayEffect::Attack(14)],
+                cost: Some(0),
+                requires_target: true,
+                card_type: CardType::Attack,
+                upgrade_to: Some(CardEffect::ClashPlus),
+            },
+            CardEffect::ClashPlus => &CardProps {
+                actions: &[PlayEffect::Attack(18)],
+                cost: Some(0),
+                requires_target: true,
+                card_type: CardType::Attack,
+                upgrade_to: None,
+            },
+            CardEffect::Cleave => &CardProps {
+                actions: &[PlayEffect::AttackAll(8)],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Attack,
+                upgrade_to: Some(CardEffect::CleavePlus),
+            },
+            CardEffect::CleavePlus => &CardProps {
+                actions: &[PlayEffect::AttackAll(11)],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Attack,
+                upgrade_to: None,
+            },
+            CardEffect::Clothesline => &CardProps {
+                actions: &[PlayEffect::Attack(12), PlayEffect::DebuffEnemy(Debuff::Weak(2))],
+                cost: Some(2),
+                requires_target: true,
+                card_type: CardType::Attack,
+                upgrade_to: Some(CardEffect::ClotheslinePlus),
+            },
+            CardEffect::ClotheslinePlus => &CardProps {
+                actions: &[PlayEffect::Attack(14), PlayEffect::DebuffEnemy(Debuff::Weak(3))],
+                cost: Some(2),
+                requires_target: true,
+                card_type: CardType::Attack,
+                upgrade_to: None,
+            },
+            CardEffect::Flex => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::Strength(2)), PlayEffect::DebuffSelf(Debuff::StrengthDown(2))],
+                cost: Some(0),
+                requires_target: false,
+                card_type: CardType::Skill,
+                upgrade_to: Some(CardEffect::FlexPlus),
+            },
+            CardEffect::FlexPlus => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::Strength(4)), PlayEffect::DebuffSelf(Debuff::StrengthDown(4))],
+                cost: Some(0),
                 requires_target: false,
                 card_type: CardType::Skill,
                 upgrade_to: None,
