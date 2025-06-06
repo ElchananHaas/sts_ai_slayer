@@ -32,8 +32,8 @@ struct MctsEntry {
 }
 
 const EXPLORE_FACTOR: f32 = 10.0;
-const MCTS_ITERATIONS: usize = 20000;
-const REWARD_PRINT_INTERVAL: usize = 3000;
+const MCTS_ITERATIONS: usize = 40000;
+const REWARD_PRINT_INTERVAL: usize = 5000;
 impl MctsEntry {
     fn ucb(&self, rng: &mut Rng) -> usize {
         let mut zero_taken = 0;
@@ -115,7 +115,7 @@ fn mcts<'a>(state: &ChoiceState<'a>, rng: &mut Rng) -> usize {
     for i in 0..MCTS_ITERATIONS {
         let mut choice_copy = state.clone_to(&mut temp_game);
         let reward = mcts_rollout(&mut choice_copy, &mut value_map, rng);
-        if i > 0 && i % REWARD_PRINT_INTERVAL == 0 {
+        if false && i > 0 && i % REWARD_PRINT_INTERVAL == 0 {
             println!(
                 "Average rewards are {}",
                 total_reward / (REWARD_PRINT_INTERVAL as f32)
@@ -144,6 +144,7 @@ fn mcts_rollout(
 ) -> f32 {
     let mut state_hashes = Vec::new();
     let mut taken_actions = Vec::new();
+    let mut in_known = true;
     let reward: i32 = loop {
         //Check if the game is over before computing any hashes
         let num_actions = match &state.get_choice() {
@@ -164,8 +165,16 @@ fn mcts_rollout(
                 _selection_type,
             ) => select_card_actions.len(),
         };
+        //Once the agent is in an unexplored state, play randomly from there on. There is no 
+        //point in recording it. This helps reduce bias and speed up the MCTS
+        if !in_known {
+            state.take_action(rng.sample(num_actions));
+            continue;
+        }
         let state_hash = hash_choice_state(&state);
-        let mcts_entry = value_map.entry(state_hash).or_insert_with(|| MctsEntry {
+        let mcts_entry = value_map.entry(state_hash).or_insert_with(|| {
+            in_known = false;
+            MctsEntry {
             visit_count: 0.0,
             q_vals: vec![
                 QEntry {
@@ -174,7 +183,7 @@ fn mcts_rollout(
                 };
                 num_actions
             ],
-        });
+        }});
         let action_idx = mcts_entry.ucb(rng);
         state_hashes.push(state_hash);
         taken_actions.push(action_idx);
