@@ -36,7 +36,7 @@ impl Deck {
                 debug_assert!(self.num_cards + 1 == cards.len());
                 let idx = rng.sample(cards.len());
                 //The order of cards is important, so remove is needed over swap remove.
-                //I could use a better data structure, but I'll bechmark first.
+                //I could use a better data structure, but I'll benchmark first.
                 cards.remove(idx)
             }
             DeckSegment::Known(cards) => {

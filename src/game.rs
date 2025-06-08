@@ -454,7 +454,7 @@ impl Game {
                 }
             }
             insert_sorted(context.card.clone(), &mut self.fight.discard_pile);
-            //Cards like Havoc, Omniscience can queue up other cards to be played. If 
+            //Cards like Havoc, Omniscience can queue up other cards to be played. If
             //this happens pop them off and play them until there are none left.
             if let Some(front) = self.card_play_queue.pop_front() {
                 context = front;
@@ -683,9 +683,14 @@ impl Game {
                 }
             }
             PlayEffect::PlayExhaustTop => {
-                let card = self.fight.deck.draw(&mut self.rng);
-                let target = self.select_random_target(&card);
-                self.card_play_queue.push_back(PlayCardContext { card, target, exhausts: true });
+                if let Some(card) = self.fight.remove_top_of_deck(&mut self.rng) {
+                    let target = self.select_random_target(&card);
+                    self.card_play_queue.push_back(PlayCardContext {
+                        card,
+                        target,
+                        exhausts: true,
+                    });
+                }
             }
             PlayEffect::MarkExhaust => {
                 context.exhausts = true;
@@ -697,7 +702,15 @@ impl Game {
     fn select_random_target(&mut self, card: &Card) -> usize {
         if card.effect.requires_target() {
             let num_targets = self.fight.enemies.len();
-            self.rng.sample(num_targets)
+            let mut sample = self.rng.sample(num_targets);
+            for idx in self.fight.enemies.indicies() {
+                if sample == 0 {
+                    return idx.0 as usize;
+                } else {
+                    sample -= 1;
+                }
+            }
+            panic!("Something went wrong when selecting a target");
         } else {
             0
         }
@@ -776,6 +789,7 @@ impl Game {
                     CardEffect::Defend.to_card(),
                     CardEffect::Defend.to_card(),
                     CardEffect::Defend.to_card(),
+                    CardEffect::HavocPlus.to_card(),
                     CardEffect::Bash.to_card(),
                 ],
                 rng: Rng::new(),

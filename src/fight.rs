@@ -54,10 +54,9 @@ impl Fight {
             stolen_back_gold: 0,
         }
     }
-    pub fn draw(&mut self, rng: &mut Rng) {
-        if self.hand.len() >= 10 {
-            return;
-        }
+    //This removes the top of the deck, reshuffling if needed.
+    //It can fail if the deck and discard are both empty.
+    pub fn remove_top_of_deck(&mut self, rng: &mut Rng) -> Option<Card> {
         if self.deck.len() == 0 {
             let mut old_discard = vec![];
             mem::swap(&mut old_discard, &mut self.discard_pile);
@@ -69,9 +68,17 @@ impl Fight {
             //Be careful to always maintain the hand as sorted when doing other operations
             //on the hand, such as creating cards.
             //Maintaining the sorted order helps with MCTS and idenitfying identical states.
-            let card = self.deck.draw(rng);
-            insert_sorted(card, &mut self.hand);
+            return Some(self.deck.draw(rng));
         }
+        None
+    }
+    pub fn draw(&mut self, rng: &mut Rng) {
+        if self.hand.len() >= 10 {
+            return;
+        }
+        self.remove_top_of_deck(rng).map(|card| {
+            insert_sorted(card, &mut self.hand);
+        });
     }
 }
 

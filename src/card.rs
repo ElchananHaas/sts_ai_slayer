@@ -266,7 +266,7 @@ impl CardEffect {
             },
             CardEffect::HavocPlus => &CardProps {
                 actions: &[PlayEffect::PlayExhaustTop],
-                cost: Some(1),
+                cost: Some(0),
                 requires_target: false,
                 card_type: CardType::Skill,
                 upgrade_to: None,
