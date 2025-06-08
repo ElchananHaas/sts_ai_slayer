@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    card::{Buff, Card, CardEffect, CardType, Debuff},
+    card::{Buff, Card, CardBody, CardType, Debuff},
     deck::Deck,
     rng::Rng,
     util::insert_sorted,
@@ -15,6 +15,7 @@ pub struct Fight {
     pub enemies: Enemies,
     pub hand: Vec<Card>,
     pub discard_pile: Vec<Card>,
+    pub exhaust: Vec<Card>,
     pub deck: Deck,
     pub energy: i32,
     pub player_block: i32,
@@ -51,6 +52,7 @@ impl Fight {
             player_debuffs: PlayerDebuffs::default(),
             player_buffs: PlayerBuffs::default(),
             discard_pile: vec![],
+            exhaust: vec![],
             stolen_back_gold: 0,
         }
     }
@@ -173,7 +175,7 @@ impl Fight {
             if self.player_debuffs.entangled && card.effect.card_type() == CardType::Attack {
                 return false;
             }
-            if card.effect == CardEffect::Clash || card.effect == CardEffect::ClashPlus {
+            if card.effect == CardBody::Clash || card.effect == CardBody::ClashPlus {
                 for card in &self.hand {
                     if card.effect.card_type() != CardType::Attack {
                         return false;

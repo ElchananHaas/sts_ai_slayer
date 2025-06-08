@@ -11,7 +11,7 @@
 - [x] Cleave
 - [x] Clothesline
 - [x] Flex
-- [ ] Havoc
+- [x] Havoc
 - [ ] Headbutt 	
 - [ ] Heavy Blade
 - [ ] Iron Wave

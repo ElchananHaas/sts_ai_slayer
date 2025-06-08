@@ -1,7 +1,7 @@
 use std::{collections::VecDeque, fmt::Display};
 
 use crate::{
-    card::{Buff, Card, CardEffect, Debuff, PlayEffect, SelectCardEffect},
+    card::{Buff, Card, CardBody, Debuff, PlayEffect, SelectCardEffect},
     deck::Deck,
     enemies::{
         cultist::generate_cultist, green_louse::generate_green_louse, jaw_worm::generate_jaw_worm,
@@ -79,8 +79,8 @@ pub struct PlayCardContext {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SelectionType {
-    //Proceed to choosing the next node.
     Hand,
+    Discard,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -208,6 +208,11 @@ impl<'a> ChoiceState<'a> {
                         SelectCardAction::ChooseCard(choice) => {
                             format!("{:?}", self.game.fight.hand[choice as usize].effect)
                         } //SelectCardAction::None => "No Selection".to_owned(),
+                    },
+                    SelectionType::Discard => match action {
+                        SelectCardAction::ChooseCard(choice) => {
+                            format!("{:?}", self.game.fight.discard_pile[choice as usize].effect)
+                        }
                     },
                 }
             }
@@ -453,7 +458,11 @@ impl Game {
                     enemy.buffs.queued_block = 0;
                 }
             }
-            insert_sorted(context.card.clone(), &mut self.fight.discard_pile);
+            if context.exhausts {
+                insert_sorted(context.card, &mut self.fight.exhaust);
+            } else {
+                insert_sorted(context.card, &mut self.fight.discard_pile);
+            }
             //Cards like Havoc, Omniscience can queue up other cards to be played. If
             //this happens pop them off and play them until there are none left.
             if let Some(front) = self.card_play_queue.pop_front() {
@@ -577,7 +586,17 @@ impl Game {
                 };
                 upgrade(card);
             }
+            SelectCardEffect::DiscardToTop => {
+                let card = match action {
+                    SelectCardAction::ChooseCard(idx) => self.fight.discard_pile.remove(idx),
+                };
+                self.put_on_top(card);
+            }
         }
+    }
+
+    fn put_on_top(&mut self, card: Card) {
+        self.fight.deck.put_on_top(vec![card]);
     }
 
     fn attack_enemy(&mut self, amount: i32, target: usize) {
@@ -673,6 +692,22 @@ impl Game {
                             upgrade_targets,
                             select_effect,
                             SelectionType::Hand,
+                        );
+                    }
+                }
+                SelectCardEffect::DiscardToTop => {
+                    let targets: Vec<_> = self
+                        .fight
+                        .discard_pile
+                        .iter()
+                        .enumerate()
+                        .map(|(i, _)| SelectCardAction::ChooseCard(i))
+                        .collect();
+                    if targets.len() > 0 {
+                        return ActionControlFlow::SelectCards(
+                            targets,
+                            select_effect,
+                            SelectionType::Discard,
                         );
                     }
                 }
@@ -780,17 +815,16 @@ impl Game {
                 action_queue: VecDeque::new(),
                 card_play_queue: VecDeque::new(),
                 base_deck: vec![
-                    CardEffect::Strike.to_card(),
-                    CardEffect::Strike.to_card(),
-                    CardEffect::Strike.to_card(),
-                    CardEffect::Strike.to_card(),
-                    CardEffect::Strike.to_card(),
-                    CardEffect::Defend.to_card(),
-                    CardEffect::Defend.to_card(),
-                    CardEffect::Defend.to_card(),
-                    CardEffect::Defend.to_card(),
-                    CardEffect::HavocPlus.to_card(),
-                    CardEffect::Bash.to_card(),
+                    CardBody::Strike.to_card(),
+                    CardBody::Strike.to_card(),
+                    CardBody::Strike.to_card(),
+                    CardBody::Strike.to_card(),
+                    CardBody::Strike.to_card(),
+                    CardBody::Defend.to_card(),
+                    CardBody::Defend.to_card(),
+                    CardBody::Defend.to_card(),
+                    CardBody::Defend.to_card(),
+                    CardBody::Bash.to_card(),
                 ],
                 rng: Rng::new(),
             },

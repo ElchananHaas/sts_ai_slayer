@@ -1,4 +1,4 @@
-use std::hash::Hash;
+use std::{hash::Hash, mem};
 
 //This file simulates a deck. It allows for lazy sampling.
 use crate::{card::Card, rng::Rng};
@@ -76,6 +76,22 @@ impl Deck {
             num_cards: cards.len(),
             segment: DeckSegment::Shuffled(cards),
         }
+    }
+
+    //This puts some cards on top of the deck.
+    pub fn put_on_top(&mut self, cards: Vec<Card>) {
+        let known_bit = Deck {
+            num_cards: cards.len(),
+            segment: DeckSegment::Known(cards),
+        };
+        let mut temp_segment = DeckSegment::Known(vec![]);
+        mem::swap(&mut temp_segment, &mut self.segment);
+        let prior_bit = Deck {
+            num_cards: self.num_cards,
+            segment: temp_segment,
+        };
+        self.num_cards = known_bit.len() + prior_bit.len();
+        self.segment = DeckSegment::Composite(vec![prior_bit, known_bit]);
     }
 
     pub fn len(&self) -> usize {
