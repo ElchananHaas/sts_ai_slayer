@@ -26,5 +26,5 @@ fn main() {
         println!("{}", &choice);
         agent.take_action(&mut choice, &mut rng);
     }
-    println!("{}", &choice);
+    print!("{}", &choice);
 }

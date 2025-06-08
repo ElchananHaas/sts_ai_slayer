@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::Display};
+use std::{collections::VecDeque, fmt::Display, vec};
 
 use crate::{
     card::{Buff, Card, CardBody, Debuff, PlayEffect, SelectCardEffect},
@@ -206,12 +206,12 @@ impl<'a> ChoiceState<'a> {
                 match selection_type {
                     SelectionType::Hand => match action {
                         SelectCardAction::ChooseCard(choice) => {
-                            format!("{:?}", self.game.fight.hand[choice as usize].effect)
+                            format!("Select {:?}", self.game.fight.hand[choice as usize].effect)
                         } //SelectCardAction::None => "No Selection".to_owned(),
                     },
                     SelectionType::Discard => match action {
                         SelectCardAction::ChooseCard(choice) => {
-                            format!("{:?}", self.game.fight.discard_pile[choice as usize].effect)
+                            format!("Select {:?}", self.game.fight.discard_pile[choice as usize].effect)
                         }
                     },
                 }
@@ -476,6 +476,11 @@ impl Game {
 
     fn win_battle(&mut self) -> Choice {
         self.floor += 1;
+        self.action_queue.clear();
+        self.card_play_queue.clear();
+        self.fight.deck = Deck::shuffled(vec![]);
+        self.fight.discard_pile.clear();
+        self.fight.hand.clear();
         Choice::RewardState(vec![RewardStateAction::Proceed])
     }
 
@@ -820,6 +825,7 @@ impl Game {
                     CardBody::Strike.to_card(),
                     CardBody::Strike.to_card(),
                     CardBody::Strike.to_card(),
+                    CardBody::Headbutt.to_card(),
                     CardBody::Defend.to_card(),
                     CardBody::Defend.to_card(),
                     CardBody::Defend.to_card(),

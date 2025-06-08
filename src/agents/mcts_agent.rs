@@ -17,6 +17,7 @@ impl Agent for MctsAgent {
     fn take_action<'a>(&mut self, state: &mut ChoiceState<'a>, rng: &mut Rng) {
         let choice = mcts(&state, rng);
         println!("{}", state.action_str(choice));
+        println!("");
         state.take_action(choice);
     }
 }
