@@ -28,7 +28,7 @@ pub enum CardEffect {
     Flex,
     FlexPlus,
     Havoc,
-    HavocPlus
+    HavocPlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -43,7 +43,8 @@ pub enum PlayEffect {
     AttackAll(i32),
     Buff(Buff),
     DebuffSelf(Debuff),
-    PlayExhaustTop
+    PlayExhaustTop, //Used for Havoc.
+    MarkExhaust,    //This is used for marking that a card exhausts itself.
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -217,28 +218,40 @@ impl CardEffect {
                 upgrade_to: None,
             },
             CardEffect::Clothesline => &CardProps {
-                actions: &[PlayEffect::Attack(12), PlayEffect::DebuffEnemy(Debuff::Weak(2))],
+                actions: &[
+                    PlayEffect::Attack(12),
+                    PlayEffect::DebuffEnemy(Debuff::Weak(2)),
+                ],
                 cost: Some(2),
                 requires_target: true,
                 card_type: CardType::Attack,
                 upgrade_to: Some(CardEffect::ClotheslinePlus),
             },
             CardEffect::ClotheslinePlus => &CardProps {
-                actions: &[PlayEffect::Attack(14), PlayEffect::DebuffEnemy(Debuff::Weak(3))],
+                actions: &[
+                    PlayEffect::Attack(14),
+                    PlayEffect::DebuffEnemy(Debuff::Weak(3)),
+                ],
                 cost: Some(2),
                 requires_target: true,
                 card_type: CardType::Attack,
                 upgrade_to: None,
             },
             CardEffect::Flex => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::Strength(2)), PlayEffect::DebuffSelf(Debuff::StrengthDown(2))],
+                actions: &[
+                    PlayEffect::Buff(Buff::Strength(2)),
+                    PlayEffect::DebuffSelf(Debuff::StrengthDown(2)),
+                ],
                 cost: Some(0),
                 requires_target: false,
                 card_type: CardType::Skill,
                 upgrade_to: Some(CardEffect::FlexPlus),
             },
             CardEffect::FlexPlus => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::Strength(4)), PlayEffect::DebuffSelf(Debuff::StrengthDown(4))],
+                actions: &[
+                    PlayEffect::Buff(Buff::Strength(4)),
+                    PlayEffect::DebuffSelf(Debuff::StrengthDown(4)),
+                ],
                 cost: Some(0),
                 requires_target: false,
                 card_type: CardType::Skill,

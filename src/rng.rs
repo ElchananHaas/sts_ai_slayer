@@ -10,6 +10,7 @@ use rand_chacha::rand_core::SeedableRng;
 pub struct Rng {
     //This RNG is not seedable. So it is fine to clone it. Clones should share an
     //RNG state to ensure that in MCTS distinct numbers are generated.
+    //This shoudl be changed to thread local if the program goes multithreaded.
     source: Rc<RefCell<ChaCha8Rng>>,
 }
 
@@ -39,6 +40,10 @@ impl Rng {
     pub fn sample(&mut self, max: usize) -> usize {
         if max == 0 {
             panic!("Invalid range: Max cannot be 0");
+        }
+        //The RNG is sometimes called with a max of 1, have a fast path for that.
+        if max == 1 {
+            return 0;
         }
         let next_pow_2 = max.next_power_of_two();
         let mask = next_pow_2 - 1;

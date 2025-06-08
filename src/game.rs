@@ -23,9 +23,10 @@ pub struct Game {
     base_deck: Vec<Card>,
     gold: i32,
     rng: Rng,
-    //This queue is ordered with standard VecDequeue ordering. 
-    //By default PlayEffects are pushed onto the back and popped from the front.
+    //This queue is ordered with standard VecDequeue ordering.
     action_queue: VecDeque<PlayEffect>,
+    //This is used for cards which play other cards, such as Havoc.
+    card_play_queue: VecDeque<PlayCardContext>,
     pub floor: i32,
 }
 
@@ -62,12 +63,18 @@ pub enum Choice {
     Win,
     Loss,
     RewardState(Vec<RewardStateAction>),
-    SelectCardState(PlayCardContext, SelectCardEffect, Vec<SelectCardAction>, SelectionType),
+    SelectCardState(
+        PlayCardContext,
+        SelectCardEffect,
+        Vec<SelectCardAction>,
+        SelectionType,
+    ),
 }
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct PlayCardContext {
     card: Card,
     target: usize,
+    exhausts: bool,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -139,7 +146,12 @@ impl<'a> ChoiceState<'a> {
                 let action = reward_state_actions[action_idx];
                 game.take_reward_state_action(action)
             }
-            Choice::SelectCardState(play_card_context, effect, select_card_actions, _selection_type) => {
+            Choice::SelectCardState(
+                play_card_context,
+                effect,
+                select_card_actions,
+                _selection_type,
+            ) => {
                 let action = select_card_actions[action_idx];
                 game.handle_select_card_action(play_card_context, effect, action)
             }
@@ -184,7 +196,12 @@ impl<'a> ChoiceState<'a> {
             Choice::RewardState(reward_state_actions) => match reward_state_actions[action_idx] {
                 RewardStateAction::Proceed => "Proceed".to_owned(),
             },
-            Choice::SelectCardState(_play_card_context, _effect, select_card_actions, selection_type) => {
+            Choice::SelectCardState(
+                _play_card_context,
+                _effect,
+                select_card_actions,
+                selection_type,
+            ) => {
                 let action = select_card_actions[action_idx];
                 match selection_type {
                     SelectionType::Hand => match action {
@@ -401,33 +418,53 @@ impl Game {
         let context = PlayCardContext {
             card,
             target,
+            exhausts: false,
         };
         self.resolve_actions(context)
     }
 
     fn resolve_actions(&mut self, mut context: PlayCardContext) -> Choice {
-        //This uses a while loop so it can be interruped in the middle
-        //to get player input for a card like Armaments.
-        while let Some(action) = self.action_queue.pop_front() {
-            let next = self.handle_action(action, &mut context);
-            //If the player needs to make a selection, break out of the loop. It will be
-            //resumed by calling resolve_actions again once the player makes their choice
-            //and the in-progress action is handled.
-            if let ActionControlFlow::SelectCards(select, select_action, t) = next {
-                return Choice::SelectCardState(context, select_action, select, t);
+        loop {
+            //This uses a while loop so it can be interruped in the middle
+            //to get player input for a card like Armaments.
+            while let Some(action) = self.action_queue.pop_front() {
+                let next = self.handle_action(action, &mut context);
+                //If there are no more enemies alive it is safe to end the battle.
+                //This can lead to the card in play vanishing but that is OK becuase
+                //the battle is over and it is still in the main deck.
+                if self.fight.enemies.len() == 0 {
+                    return self.win_battle();
+                }
+                //If the player needs to make a selection, break out of the loop. It will be
+                //resumed by calling resolve_actions again once the player makes their choice
+                //and the in-progress action is handled.
+                if let ActionControlFlow::SelectCards(select, select_action, t) = next {
+                    return Choice::SelectCardState(context, select_action, select, t);
+                }
+                if self.player_hp <= 0 {
+                    self.player_hp = 0;
+                    return Choice::Loss;
+                }
             }
-            if self.player_hp <= 0 {
-                self.player_hp = 0;
-                return Choice::Loss;
+            for enemy_idx in self.fight.enemies.indicies() {
+                let enemy = &mut self.fight.enemies[enemy_idx];
+                if enemy.buffs.queued_block > 0 {
+                    enemy.block += enemy.buffs.queued_block;
+                    enemy.buffs.queued_block = 0;
+                }
+            }
+            insert_sorted(context.card.clone(), &mut self.fight.discard_pile);
+            //Cards like Havoc, Omniscience can queue up other cards to be played. If 
+            //this happens pop them off and play them until there are none left.
+            if let Some(front) = self.card_play_queue.pop_front() {
+                context = front;
+                self.action_queue.extend(context.card.effect.actions());
+            } else {
+                return self.play_card_choice();
             }
         }
-        self.post_card_play();
-        insert_sorted(context.card, &mut self.fight.discard_pile);
-        if self.fight.enemies.len() == 0 {
-            return self.win_battle();
-        }
-        return self.play_card_choice();
     }
+
     fn win_battle(&mut self) -> Choice {
         self.floor += 1;
         Choice::RewardState(vec![RewardStateAction::Proceed])
@@ -446,10 +483,10 @@ impl Game {
             }
             Debuff::Entangled => {
                 self.fight.player_debuffs.entangled = true;
-            },
+            }
             Debuff::StrengthDown(x) => {
                 self.fight.player_debuffs.strength_down += x;
-            },
+            }
         }
     }
 
@@ -458,7 +495,7 @@ impl Game {
             //TODO handle if player has negative strength.
             Buff::Strength(x) => {
                 self.fight.player_buffs.strength += x;
-            },
+            }
             Buff::Ritual(_) => todo!(),
             Buff::RitualSkipFirst(_) => unimplemented!("Player gets normal ritual"),
         }
@@ -527,17 +564,12 @@ impl Game {
         panic!("Splitting not implemented for {}", name);
     }
 
-    fn post_card_play<'a>(&mut self) {
-        for enemy_idx in self.fight.enemies.indicies() {
-            let enemy = &mut self.fight.enemies[enemy_idx];
-            if enemy.buffs.queued_block > 0 {
-                enemy.block += enemy.buffs.queued_block;
-                enemy.buffs.queued_block = 0;
-            }
-        }
-    }
-
-    fn handle_selected_action(&mut self, context: &mut PlayCardContext, effect: SelectCardEffect,action: SelectCardAction) {
+    fn handle_selected_action(
+        &mut self,
+        context: &mut PlayCardContext,
+        effect: SelectCardEffect,
+        action: SelectCardAction,
+    ) {
         match effect {
             SelectCardEffect::UpgradeCardInHand => {
                 let card = match action {
@@ -584,7 +616,11 @@ impl Game {
             self.fight.enemies[target] = None;
         }
     }
-    fn handle_action(&mut self, action: PlayEffect, context: &mut PlayCardContext) -> ActionControlFlow {
+    fn handle_action(
+        &mut self,
+        action: PlayEffect,
+        context: &mut PlayCardContext,
+    ) -> ActionControlFlow {
         let card = &mut context.card;
         let target = context.target;
         match action {
@@ -605,10 +641,10 @@ impl Game {
                     return ActionControlFlow::Continue;
                 };
                 apply_debuff_to_enemy(enemy, debuff);
-            },
+            }
             PlayEffect::DebuffSelf(debuff) => {
                 self.apply_debuff_to_player(debuff);
-            },
+            }
             PlayEffect::Buff(buff) => {
                 self.apply_buff_to_player(buff);
             }
@@ -645,12 +681,26 @@ impl Game {
                 for card in &mut self.fight.hand {
                     upgrade(card);
                 }
-            },
+            }
             PlayEffect::PlayExhaustTop => {
-                todo!("Implement Havoc's effect");
+                let card = self.fight.deck.draw(&mut self.rng);
+                let target = self.select_random_target(&card);
+                self.card_play_queue.push_back(PlayCardContext { card, target, exhausts: true });
+            }
+            PlayEffect::MarkExhaust => {
+                context.exhausts = true;
             }
         }
         ActionControlFlow::Continue
+    }
+
+    fn select_random_target(&mut self, card: &Card) -> usize {
+        if card.effect.requires_target() {
+            let num_targets = self.fight.enemies.len();
+            self.rng.sample(num_targets)
+        } else {
+            0
+        }
     }
 }
 
@@ -678,10 +728,10 @@ fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
         }
         Debuff::Entangled => {
             panic!("Entangled cannot be applied to enemies!");
-        },
+        }
         Debuff::StrengthDown(_) => {
             panic!("Strength down cannot be applied to enemies!");
-        },
+        }
     }
 }
 
@@ -715,6 +765,7 @@ impl Game {
                 gold: 99,
                 floor: 0,
                 action_queue: VecDeque::new(),
+                card_play_queue: VecDeque::new(),
                 base_deck: vec![
                     CardEffect::Strike.to_card(),
                     CardEffect::Strike.to_card(),

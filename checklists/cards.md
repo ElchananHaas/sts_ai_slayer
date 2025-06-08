@@ -28,7 +28,7 @@
 ### Uncommon Ironclad Cards
 - [ ] Battle Trance
 - [ ] Blood For Blood
-
+TODO
 
 ### Rare Ironclad Cards
 TODO
