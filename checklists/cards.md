@@ -12,9 +12,9 @@
 - [x] Clothesline
 - [x] Flex
 - [x] Havoc
-- [ ] Headbutt 	
-- [ ] Heavy Blade
-- [ ] Iron Wave
+- [x] Headbutt
+- [x] Heavy Blade
+- [x] Iron Wave
 - [ ] Perfected Strike
 - [ ] Pommel Strike
 - [ ] Shrug It Off

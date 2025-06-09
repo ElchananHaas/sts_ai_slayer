@@ -31,6 +31,11 @@ pub enum CardBody {
     HavocPlus,
     Headbutt,
     HeadbuttPlus,
+    HeavyBlade,
+    HeavyBladePlus,
+    IronWave,
+    IronWavePlus,
+    SearingBlow(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -85,7 +90,6 @@ pub struct CardProps {
     pub cost: Option<i32>,
     pub requires_target: bool,
     pub card_type: CardType,
-    pub upgrade_to: Option<CardBody>,
 }
 
 impl CardBody {
@@ -96,15 +100,12 @@ impl CardBody {
                 cost: Some(1),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardBody::StrikePlus),
             },
-
             CardBody::StrikePlus => &CardProps {
                 actions: &[PlayEffect::Attack(9)],
                 cost: Some(1),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None,
             },
             CardBody::Bash => &CardProps {
                 actions: &[
@@ -114,7 +115,6 @@ impl CardBody {
                 cost: Some(2),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardBody::BashPlus),
             },
             CardBody::BashPlus => &CardProps {
                 actions: &[
@@ -124,42 +124,36 @@ impl CardBody {
                 cost: Some(2),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None,
             },
             CardBody::Defend => &CardProps {
                 actions: &[PlayEffect::Block(5)],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: Some(CardBody::DefendPlus),
             },
             CardBody::DefendPlus => &CardProps {
                 actions: &[PlayEffect::Block(8)],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: None,
             },
             CardBody::Slimed => &CardProps {
                 actions: &[],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Status,
-                upgrade_to: None,
             },
             CardBody::Anger => &CardProps {
                 actions: &[PlayEffect::Attack(6), PlayEffect::AddCopyToDiscard],
                 cost: Some(0),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardBody::AngerPlus),
             },
             CardBody::AngerPlus => &CardProps {
                 actions: &[PlayEffect::Attack(8), PlayEffect::AddCopyToDiscard],
                 cost: Some(0),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None,
             },
             CardBody::Armaments => &CardProps {
                 actions: &[
@@ -169,56 +163,48 @@ impl CardBody {
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: Some(CardBody::ArmamentsPlus),
             },
             CardBody::ArmamentsPlus => &CardProps {
                 actions: &[PlayEffect::Block(5), PlayEffect::UpgradeAllCardsInHand],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: None,
             },
             CardBody::BodySlam => &CardProps {
                 actions: &[PlayEffect::AttackEqualBlock],
                 cost: Some(1),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardBody::BodySlamPlus),
             },
             CardBody::BodySlamPlus => &CardProps {
                 actions: &[PlayEffect::AttackEqualBlock],
                 cost: Some(0),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None,
             },
             CardBody::Clash => &CardProps {
                 actions: &[PlayEffect::Attack(14)],
                 cost: Some(0),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardBody::ClashPlus),
             },
             CardBody::ClashPlus => &CardProps {
                 actions: &[PlayEffect::Attack(18)],
                 cost: Some(0),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None,
             },
             CardBody::Cleave => &CardProps {
                 actions: &[PlayEffect::AttackAll(8)],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardBody::CleavePlus),
             },
             CardBody::CleavePlus => &CardProps {
                 actions: &[PlayEffect::AttackAll(11)],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Attack,
-                upgrade_to: None,
             },
             CardBody::Clothesline => &CardProps {
                 actions: &[
@@ -228,7 +214,6 @@ impl CardBody {
                 cost: Some(2),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardBody::ClotheslinePlus),
             },
             CardBody::ClotheslinePlus => &CardProps {
                 actions: &[
@@ -238,7 +223,6 @@ impl CardBody {
                 cost: Some(2),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None,
             },
             CardBody::Flex => &CardProps {
                 actions: &[
@@ -248,7 +232,6 @@ impl CardBody {
                 cost: Some(0),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: Some(CardBody::FlexPlus),
             },
             CardBody::FlexPlus => &CardProps {
                 actions: &[
@@ -258,21 +241,18 @@ impl CardBody {
                 cost: Some(0),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: None,
             },
             CardBody::Havoc => &CardProps {
                 actions: &[PlayEffect::PlayExhaustTop],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: Some(CardBody::HavocPlus),
             },
             CardBody::HavocPlus => &CardProps {
                 actions: &[PlayEffect::PlayExhaustTop],
                 cost: Some(0),
                 requires_target: false,
                 card_type: CardType::Skill,
-                upgrade_to: None,
             },
             CardBody::Headbutt => &CardProps {
                 actions: &[
@@ -282,7 +262,6 @@ impl CardBody {
                 cost: Some(1),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: Some(CardBody::HeadbuttPlus),
             },
             CardBody::HeadbuttPlus => &CardProps {
                 actions: &[
@@ -292,7 +271,40 @@ impl CardBody {
                 cost: Some(1),
                 requires_target: true,
                 card_type: CardType::Attack,
-                upgrade_to: None,
+            },
+            CardBody::HeavyBlade => &CardProps {
+                actions: &[
+                    PlayEffect::Attack(14), //There is special code for handling this card.
+                ],
+                cost: Some(2),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::HeavyBladePlus => &CardProps {
+                actions: &[
+                    PlayEffect::Attack(14), //There is special code for handling this card.
+                ],
+                cost: Some(2),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::IronWave => &CardProps {
+                actions: &[PlayEffect::Block(5), PlayEffect::Attack(5)],
+                cost: Some(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::IronWavePlus => &CardProps {
+                actions: &[PlayEffect::Block(7), PlayEffect::Attack(7)],
+                cost: Some(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::SearingBlow(_) => &CardProps {
+                actions: &[PlayEffect::Attack(12)],
+                cost: Some(2),
+                requires_target: true,
+                card_type: CardType::Attack,
             },
         }
     }
@@ -315,6 +327,37 @@ impl CardBody {
         self.props().card_type
     }
     pub fn upgraded(&self) -> Option<CardBody> {
-        self.props().upgrade_to
+        match self {
+            CardBody::Strike => Some(Self::StrikePlus),
+            CardBody::StrikePlus => None,
+            CardBody::Bash => Some(Self::BashPlus),
+            CardBody::BashPlus => None,
+            CardBody::Defend => Some(Self::DefendPlus),
+            CardBody::DefendPlus => None,
+            CardBody::Slimed => None,
+            CardBody::Anger => Some(Self::AngerPlus),
+            CardBody::AngerPlus => None,
+            CardBody::Armaments => Some(Self::ArmamentsPlus),
+            CardBody::ArmamentsPlus => None,
+            CardBody::BodySlam => Some(Self::BodySlamPlus),
+            CardBody::BodySlamPlus => None,
+            CardBody::Clash => Some(Self::ClashPlus),
+            CardBody::ClashPlus => None,
+            CardBody::Cleave => Some(Self::CleavePlus),
+            CardBody::CleavePlus => None,
+            CardBody::Clothesline => Some(Self::ClotheslinePlus),
+            CardBody::ClotheslinePlus => None,
+            CardBody::Flex => Some(Self::FlexPlus),
+            CardBody::FlexPlus => None,
+            CardBody::Havoc => Some(Self::HavocPlus),
+            CardBody::HavocPlus => None,
+            CardBody::Headbutt => Some(Self::HeadbuttPlus),
+            CardBody::HeadbuttPlus => None,
+            CardBody::HeavyBlade => Some(Self::HeavyBladePlus),
+            CardBody::HeavyBladePlus => None,
+            CardBody::IronWave => Some(Self::IronWavePlus),
+            CardBody::IronWavePlus => None,
+            CardBody::SearingBlow(level) => Some(Self::SearingBlow(*level + 1)),
+        }
     }
 }

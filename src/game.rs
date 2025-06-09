@@ -211,7 +211,10 @@ impl<'a> ChoiceState<'a> {
                     },
                     SelectionType::Discard => match action {
                         SelectCardAction::ChooseCard(choice) => {
-                            format!("Select {:?}", self.game.fight.discard_pile[choice as usize].effect)
+                            format!(
+                                "Select {:?}",
+                                self.game.fight.discard_pile[choice as usize].effect
+                            )
                         }
                     },
                 }
@@ -604,8 +607,13 @@ impl Game {
         self.fight.deck.put_on_top(vec![card]);
     }
 
-    fn attack_enemy(&mut self, amount: i32, target: usize) {
-        let mut damage: f32 = (amount + self.fight.player_buffs.strength) as f32;
+    fn attack_enemy(&mut self, card: &Card, amount: i32, target: usize) {
+        let strength = match card.effect {
+            CardBody::HeavyBlade => self.fight.player_buffs.strength * 3,
+            CardBody::HeavyBladePlus => self.fight.player_buffs.strength * 5,
+            _ => 1,
+        };
+        let mut damage: f32 = (amount + strength) as f32;
         let Some(enemy) = &mut self.fight.enemies[target] else {
             return;
         };
@@ -640,6 +648,13 @@ impl Game {
             self.fight.enemies[target] = None;
         }
     }
+
+    fn bonus_attack(&self, card: &Card) -> i32 {
+        match card.effect {
+            CardBody::SearingBlow(upgrades) => ((upgrades) * (upgrades + 7)) / 2,
+            _ => 0,
+        }
+    }
     fn handle_action(
         &mut self,
         action: PlayEffect,
@@ -649,14 +664,18 @@ impl Game {
         let target = context.target;
         match action {
             PlayEffect::Attack(attack) => {
-                self.attack_enemy(attack, target);
+                self.attack_enemy(
+                    &context.card,
+                    attack + self.bonus_attack(&context.card),
+                    target,
+                );
             }
             PlayEffect::AttackEqualBlock => {
-                self.attack_enemy(self.fight.player_block, target);
+                self.attack_enemy(&context.card, self.fight.player_block, target);
             }
             PlayEffect::AttackAll(amount) => {
                 for enemy in self.fight.enemies.indicies() {
-                    self.attack_enemy(amount, enemy.0 as usize);
+                    self.attack_enemy(&context.card, amount, enemy.0 as usize);
                 }
             }
             PlayEffect::DebuffEnemy(debuff) => {
