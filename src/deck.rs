@@ -98,7 +98,7 @@ impl Deck {
         self.num_cards
     }
 
-    //This could probably be replaced by an IntoIter implementation but that 
+    //This could probably be replaced by an IntoIter implementation but that
     //would be complicated due to this being a recursive data structure.
     pub fn count(&self, f: fn(&&Card) -> bool) -> usize {
         match &self.segment {

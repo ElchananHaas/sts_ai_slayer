@@ -67,7 +67,7 @@ pub enum Choice {
         PlayCardContext,
         SelectCardEffect,
         Vec<SelectCardAction>,
-        SelectionType,
+        SelectionPile,
     ),
 }
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -78,7 +78,7 @@ pub struct PlayCardContext {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum SelectionType {
+pub enum SelectionPile {
     Hand,
     Discard,
 }
@@ -97,7 +97,7 @@ pub enum SelectCardAction {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ActionControlFlow {
     Continue,
-    SelectCards(Vec<SelectCardAction>, SelectCardEffect, SelectionType),
+    SelectCards(Vec<SelectCardAction>, SelectCardEffect, SelectionPile),
 }
 impl<'a> ChoiceState<'a> {
     pub fn is_over(&self) -> bool {
@@ -204,12 +204,12 @@ impl<'a> ChoiceState<'a> {
             ) => {
                 let action = select_card_actions[action_idx];
                 match selection_type {
-                    SelectionType::Hand => match action {
+                    SelectionPile::Hand => match action {
                         SelectCardAction::ChooseCard(choice) => {
                             format!("Select {:?}", self.game.fight.hand[choice as usize].effect)
                         } //SelectCardAction::None => "No Selection".to_owned(),
                     },
-                    SelectionType::Discard => match action {
+                    SelectionPile::Discard => match action {
                         SelectCardAction::ChooseCard(choice) => {
                             format!(
                                 "Select {:?}",
@@ -600,6 +600,12 @@ impl Game {
                 };
                 self.put_on_top(card);
             }
+            SelectCardEffect::ExhaustChosen => {
+                let card = match action {
+                    SelectCardAction::ChooseCard(idx) => self.fight.hand.remove(idx),
+                };
+                insert_sorted(card, &mut self.fight.exhaust);
+            }
         }
     }
 
@@ -651,11 +657,21 @@ impl Game {
 
     fn num_strikes(&self) -> i32 {
         let mut count = self.fight.deck.count(|card| card.effect.is_strike());
-        count += self.fight.hand.iter().filter(|card| card.effect.is_strike()).count();
-        count += self.fight.discard_pile.iter().filter(|card| card.effect.is_strike()).count();
+        count += self
+            .fight
+            .hand
+            .iter()
+            .filter(|card| card.effect.is_strike())
+            .count();
+        count += self
+            .fight
+            .discard_pile
+            .iter()
+            .filter(|card| card.effect.is_strike())
+            .count();
         count as i32
     }
-    
+
     fn bonus_attack(&self, card: &Card) -> i32 {
         match card.effect {
             CardBody::SearingBlow(upgrades) => ((upgrades) * (upgrades + 7)) / 2,
@@ -673,6 +689,11 @@ impl Game {
         let card = &mut context.card;
         let target = context.target;
         match action {
+            PlayEffect::Draw(amount) => {
+                for _ in 0..amount {
+                    self.fight.draw(&mut self.rng);
+                }
+            }
             PlayEffect::Attack(attack) => {
                 self.attack_enemy(
                     &context.card,
@@ -687,6 +708,10 @@ impl Game {
                 for enemy in self.fight.enemies.indicies() {
                     self.attack_enemy(&context.card, amount, enemy.0 as usize);
                 }
+            }
+            PlayEffect::AttackRandomEnemy(amount) => {
+                let target = self.choose_random_enemy();
+                self.attack_enemy(&context.card, amount, target);
             }
             PlayEffect::DebuffEnemy(debuff) => {
                 //This handles the case where the enemy dies during the card effect.
@@ -713,6 +738,11 @@ impl Game {
             PlayEffect::AddCopyToDiscard => {
                 insert_sorted(card.clone(), &mut self.fight.discard_pile);
             }
+            PlayEffect::ExhaustRandomInHand => {
+                let idx = self.rng.sample(self.fight.hand.len());
+                let card = self.fight.hand.remove(idx);
+                insert_sorted(card, &mut self.fight.exhaust);
+            }
             PlayEffect::SelectCardEffect(select_effect) => match select_effect {
                 SelectCardEffect::UpgradeCardInHand => {
                     let mut upgrade_targets: Vec<SelectCardAction> = Vec::new();
@@ -725,7 +755,7 @@ impl Game {
                         return ActionControlFlow::SelectCards(
                             upgrade_targets,
                             select_effect,
-                            SelectionType::Hand,
+                            SelectionPile::Hand,
                         );
                     }
                 }
@@ -741,7 +771,23 @@ impl Game {
                         return ActionControlFlow::SelectCards(
                             targets,
                             select_effect,
-                            SelectionType::Discard,
+                            SelectionPile::Discard,
+                        );
+                    }
+                }
+                SelectCardEffect::ExhaustChosen => {
+                    let targets: Vec<_> = self
+                        .fight
+                        .hand
+                        .iter()
+                        .enumerate()
+                        .map(|(i, _)| SelectCardAction::ChooseCard(i))
+                        .collect();
+                    if targets.len() > 0 {
+                        return ActionControlFlow::SelectCards(
+                            targets,
+                            select_effect,
+                            SelectionPile::Hand,
                         );
                     }
                 }
@@ -768,18 +814,22 @@ impl Game {
         ActionControlFlow::Continue
     }
 
+    fn choose_random_enemy(&mut self) -> usize {
+        let num_targets = self.fight.enemies.len();
+        let mut sample = self.rng.sample(num_targets);
+        for idx in self.fight.enemies.indicies() {
+            if sample == 0 {
+                return idx.0 as usize;
+            } else {
+                sample -= 1;
+            }
+        }
+        panic!("Something went wrong when selecting a target");
+    }
+
     fn select_random_target(&mut self, card: &Card) -> usize {
         if card.effect.requires_target() {
-            let num_targets = self.fight.enemies.len();
-            let mut sample = self.rng.sample(num_targets);
-            for idx in self.fight.enemies.indicies() {
-                if sample == 0 {
-                    return idx.0 as usize;
-                } else {
-                    sample -= 1;
-                }
-            }
-            panic!("Something went wrong when selecting a target");
+            self.choose_random_enemy()
         } else {
             0
         }

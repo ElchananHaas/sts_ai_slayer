@@ -16,11 +16,11 @@
 - [x] Heavy Blade
 - [x] Iron Wave
 - [x] Perfected Strike
-- [ ] Pommel Strike
-- [ ] Shrug It Off
-- [ ] Sword Boomerang
-- [ ] True Grit
-- [ ] Twin Strike
+- [x] Pommel Strike
+- [x] Shrug It Off
+- [x] Sword Boomerang
+- [x] True Grit
+- [x] Twin Strike
 - [ ] Warcry
 - [ ] Wild Strike
 

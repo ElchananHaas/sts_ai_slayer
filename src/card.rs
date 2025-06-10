@@ -38,6 +38,16 @@ pub enum CardBody {
     SearingBlow(i32),
     PerfectedStrike,
     PerfectedStrikePlus,
+    PommelStrike,
+    PommelStrikePlus,
+    ShrugItOff,
+    ShrugItOffPlus,
+    SwordBoomerang,
+    SwordBoomerangPlus,
+    TrueGrit,
+    TrueGritPlus,
+    TwinStrike,
+    TwinStrikePlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -54,12 +64,16 @@ pub enum PlayEffect {
     DebuffSelf(Debuff),
     PlayExhaustTop, //Used for Havoc.
     MarkExhaust,    //This is used for marking that a card exhausts itself.
+    Draw(i32),
+    AttackRandomEnemy(i32),
+    ExhaustRandomInHand,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum SelectCardEffect {
     UpgradeCardInHand,
     DiscardToTop,
+    ExhaustChosen,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -320,6 +334,78 @@ impl CardBody {
                 requires_target: true,
                 card_type: CardType::Attack,
             },
+            CardBody::PommelStrike => &CardProps {
+                actions: &[PlayEffect::Attack(9), PlayEffect::Draw(1)],
+                cost: Some(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::PommelStrikePlus => &CardProps {
+                actions: &[PlayEffect::Attack(10), PlayEffect::Draw(2)],
+                cost: Some(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::ShrugItOff => &CardProps {
+                actions: &[PlayEffect::Block(8), PlayEffect::Draw(1)],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::ShrugItOffPlus => &CardProps {
+                actions: &[PlayEffect::Block(11), PlayEffect::Draw(1)],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::SwordBoomerang => &CardProps {
+                actions: &[
+                    PlayEffect::AttackRandomEnemy(3),
+                    PlayEffect::AttackRandomEnemy(3),
+                    PlayEffect::AttackRandomEnemy(3),
+                ],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Attack,
+            },
+            CardBody::SwordBoomerangPlus => &CardProps {
+                actions: &[
+                    PlayEffect::AttackRandomEnemy(3),
+                    PlayEffect::AttackRandomEnemy(3),
+                    PlayEffect::AttackRandomEnemy(3),
+                    PlayEffect::AttackRandomEnemy(3),
+                ],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Attack,
+            },
+            CardBody::TrueGrit => &CardProps {
+                actions: &[PlayEffect::Block(7), PlayEffect::ExhaustRandomInHand],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::TrueGritPlus => &CardProps {
+                actions: &[
+                    PlayEffect::Block(7),
+                    PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen),
+                ],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::TwinStrike => &CardProps {
+                actions: &[PlayEffect::Attack(5), PlayEffect::Attack(5)],
+                cost: Some(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::TwinStrikePlus => &CardProps {
+                actions: &[PlayEffect::Attack(7), PlayEffect::Attack(7)],
+                cost: Some(1),
+                requires_target: false,
+                card_type: CardType::Attack,
+            },
         }
     }
     pub const fn to_card(&self) -> Card {
@@ -374,6 +460,16 @@ impl CardBody {
             CardBody::SearingBlow(level) => Some(Self::SearingBlow(*level + 1)),
             CardBody::PerfectedStrike => Some(Self::PerfectedStrikePlus),
             CardBody::PerfectedStrikePlus => None,
+            CardBody::PommelStrike => Some(Self::PommelStrikePlus),
+            CardBody::PommelStrikePlus => None,
+            CardBody::ShrugItOff => Some(Self::ShrugItOffPlus),
+            CardBody::ShrugItOffPlus => None,
+            CardBody::SwordBoomerang => Some(Self::SwordBoomerangPlus),
+            CardBody::SwordBoomerangPlus => None,
+            CardBody::TrueGrit => Some(Self::TrueGritPlus),
+            CardBody::TrueGritPlus => None,
+            CardBody::TwinStrike => Some(Self::TwinStrikePlus),
+            CardBody::TwinStrikePlus => None,
         }
     }
     pub fn is_strike(&self) -> bool {
