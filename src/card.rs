@@ -36,6 +36,8 @@ pub enum CardBody {
     IronWave,
     IronWavePlus,
     SearingBlow(i32),
+    PerfectedStrike,
+    PerfectedStrikePlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -306,6 +308,18 @@ impl CardBody {
                 requires_target: true,
                 card_type: CardType::Attack,
             },
+            CardBody::PerfectedStrike => &CardProps {
+                actions: &[PlayEffect::Attack(6)],
+                cost: Some(2),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::PerfectedStrikePlus => &CardProps {
+                actions: &[PlayEffect::Attack(6)],
+                cost: Some(2),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
         }
     }
     pub const fn to_card(&self) -> Card {
@@ -358,6 +372,17 @@ impl CardBody {
             CardBody::IronWave => Some(Self::IronWavePlus),
             CardBody::IronWavePlus => None,
             CardBody::SearingBlow(level) => Some(Self::SearingBlow(*level + 1)),
+            CardBody::PerfectedStrike => Some(Self::PerfectedStrikePlus),
+            CardBody::PerfectedStrikePlus => None,
+        }
+    }
+    pub fn is_strike(&self) -> bool {
+        match self {
+            CardBody::Strike
+            | CardBody::StrikePlus
+            | CardBody::PerfectedStrike
+            | CardBody::PerfectedStrikePlus => true,
+            _ => false,
         }
     }
 }

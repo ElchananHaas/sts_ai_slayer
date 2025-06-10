@@ -97,4 +97,15 @@ impl Deck {
     pub fn len(&self) -> usize {
         self.num_cards
     }
+
+    //This could probably be replaced by an IntoIter implementation but that 
+    //would be complicated due to this being a recursive data structure.
+    pub fn count(&self, f: fn(&&Card) -> bool) -> usize {
+        match &self.segment {
+            DeckSegment::Shuffled(cards) => cards.into_iter().filter(f).count(),
+            DeckSegment::Known(cards) => cards.into_iter().filter(f).count(),
+            DeckSegment::Composite(decks) => decks.into_iter().map(|deck| deck.count(f)).sum(),
+            DeckSegment::ShuffleInto { primary, shuffled } => primary.count(f) + shuffled.count(f),
+        }
+    }
 }

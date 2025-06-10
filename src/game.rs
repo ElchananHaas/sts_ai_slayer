@@ -649,12 +649,22 @@ impl Game {
         }
     }
 
+    fn num_strikes(&self) -> i32 {
+        let mut count = self.fight.deck.count(|card| card.effect.is_strike());
+        count += self.fight.hand.iter().filter(|card| card.effect.is_strike()).count();
+        count += self.fight.discard_pile.iter().filter(|card| card.effect.is_strike()).count();
+        count as i32
+    }
+    
     fn bonus_attack(&self, card: &Card) -> i32 {
         match card.effect {
             CardBody::SearingBlow(upgrades) => ((upgrades) * (upgrades + 7)) / 2,
+            CardBody::PerfectedStrike => self.num_strikes() * 2,
+            CardBody::PerfectedStrikePlus => self.num_strikes() * 3,
             _ => 0,
         }
     }
+
     fn handle_action(
         &mut self,
         action: PlayEffect,

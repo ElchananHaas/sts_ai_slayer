@@ -15,7 +15,7 @@
 - [x] Headbutt
 - [x] Heavy Blade
 - [x] Iron Wave
-- [ ] Perfected Strike
+- [x] Perfected Strike
 - [ ] Pommel Strike
 - [ ] Shrug It Off
 - [ ] Sword Boomerang
@@ -28,6 +28,7 @@
 ### Uncommon Ironclad Cards
 - [ ] Battle Trance
 - [ ] Blood For Blood
+- [x] Searing Blow
 TODO
 
 ### Rare Ironclad Cards
