@@ -48,6 +48,11 @@ pub enum CardBody {
     TrueGritPlus,
     TwinStrike,
     TwinStrikePlus,
+    Warcry,
+    WarcryPlus,
+    WildStrike,
+    WildStrikePlus,
+    Wound,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -67,6 +72,7 @@ pub enum PlayEffect {
     Draw(i32),
     AttackRandomEnemy(i32),
     ExhaustRandomInHand,
+    ShuffleInStatus(CardBody),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -74,6 +80,7 @@ pub enum SelectCardEffect {
     UpgradeCardInHand,
     DiscardToTop,
     ExhaustChosen,
+    HandToTop,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -154,7 +161,7 @@ impl CardBody {
                 card_type: CardType::Skill,
             },
             CardBody::Slimed => &CardProps {
-                actions: &[],
+                actions: &[PlayEffect::MarkExhaust],
                 cost: Some(1),
                 requires_target: false,
                 card_type: CardType::Status,
@@ -406,6 +413,50 @@ impl CardBody {
                 requires_target: false,
                 card_type: CardType::Attack,
             },
+            CardBody::Warcry => &CardProps {
+                actions: &[
+                    PlayEffect::Draw(1),
+                    PlayEffect::SelectCardEffect(SelectCardEffect::HandToTop),
+                    PlayEffect::MarkExhaust,
+                ],
+                cost: Some(0),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::WarcryPlus => &CardProps {
+                actions: &[
+                    PlayEffect::Draw(2),
+                    PlayEffect::SelectCardEffect(SelectCardEffect::HandToTop),
+                    PlayEffect::MarkExhaust,
+                ],
+                cost: Some(0),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::WildStrike => &CardProps {
+                actions: &[
+                    PlayEffect::Attack(12),
+                    PlayEffect::ShuffleInStatus(CardBody::Wound),
+                ],
+                cost: Some(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::WildStrikePlus => &CardProps {
+                actions: &[
+                    PlayEffect::Attack(17),
+                    PlayEffect::ShuffleInStatus(CardBody::Wound),
+                ],
+                cost: Some(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::Wound => &CardProps {
+                actions: &[PlayEffect::MarkExhaust],
+                cost: None,
+                requires_target: false,
+                card_type: CardType::Status,
+            },
         }
     }
     pub const fn to_card(&self) -> Card {
@@ -470,6 +521,11 @@ impl CardBody {
             CardBody::TrueGritPlus => None,
             CardBody::TwinStrike => Some(Self::TwinStrikePlus),
             CardBody::TwinStrikePlus => None,
+            CardBody::Warcry => Some(Self::WarcryPlus),
+            CardBody::WarcryPlus => None,
+            CardBody::WildStrike => Some(CardBody::WildStrikePlus),
+            CardBody::WildStrikePlus => None,
+            CardBody::Wound => None,
         }
     }
     pub fn is_strike(&self) -> bool {
@@ -477,7 +533,11 @@ impl CardBody {
             CardBody::Strike
             | CardBody::StrikePlus
             | CardBody::PerfectedStrike
-            | CardBody::PerfectedStrikePlus => true,
+            | CardBody::PerfectedStrikePlus
+            | CardBody::TwinStrike
+            | CardBody::TwinStrikePlus
+            | CardBody::WildStrike
+            | CardBody::WildStrikePlus => true,
             _ => false,
         }
     }

@@ -1,7 +1,7 @@
 use std::{hash::Hash, mem};
 
 //This file simulates a deck. It allows for lazy sampling.
-use crate::{card::Card, rng::Rng};
+use crate::{card::Card, rng::Rng, util::insert_sorted};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 enum DeckSegment {
@@ -92,6 +92,29 @@ impl Deck {
         };
         self.num_cards = known_bit.len() + prior_bit.len();
         self.segment = DeckSegment::Composite(vec![prior_bit, known_bit]);
+    }
+
+    pub fn shuffle_in(&mut self, mut cards: Vec<Card>) {
+        if let DeckSegment::Shuffled(existing) = &mut self.segment {
+            //TODO - make this not quadratic.
+            for card in cards {
+                insert_sorted(card, existing);
+            }
+        } else {
+            cards.sort();
+            let new_segment = Deck {
+                num_cards: cards.len(),
+                segment: DeckSegment::Shuffled(cards),
+            };
+            let mut temp_segment = DeckSegment::Known(vec![]);
+            mem::swap(&mut temp_segment, &mut self.segment);
+            let prior_bit = Deck {
+                num_cards: self.num_cards,
+                segment: temp_segment,
+            };
+            self.num_cards = prior_bit.len() + new_segment.len();
+            self.segment = DeckSegment::Composite(vec![prior_bit, new_segment]);
+        }
     }
 
     pub fn len(&self) -> usize {

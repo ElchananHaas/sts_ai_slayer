@@ -21,8 +21,8 @@
 - [x] Sword Boomerang
 - [x] True Grit
 - [x] Twin Strike
-- [ ] Warcry
-- [ ] Wild Strike
+- [x] Warcry
+- [x] Wild Strike
 
 
 ### Uncommon Ironclad Cards

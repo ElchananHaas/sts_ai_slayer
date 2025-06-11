@@ -329,6 +329,7 @@ impl Game {
                         let damage = damage as i32;
                         if damage > self.fight.player_block {
                             let dealt = damage - self.fight.player_block;
+                            self.fight.player_block = 0;
                             self.player_lose_life(dealt);
                         } else {
                             self.fight.player_block -= damage;
@@ -606,6 +607,12 @@ impl Game {
                 };
                 insert_sorted(card, &mut self.fight.exhaust);
             }
+            SelectCardEffect::HandToTop => {
+                let card = match action {
+                    SelectCardAction::ChooseCard(idx) => self.fight.hand.remove(idx),
+                };
+                self.put_on_top(card);
+            }
         }
     }
 
@@ -791,6 +798,22 @@ impl Game {
                         );
                     }
                 }
+                SelectCardEffect::HandToTop => {
+                    let targets: Vec<_> = self
+                        .fight
+                        .hand
+                        .iter()
+                        .enumerate()
+                        .map(|(i, _)| SelectCardAction::ChooseCard(i))
+                        .collect();
+                    if targets.len() > 0 {
+                        return ActionControlFlow::SelectCards(
+                            targets,
+                            select_effect,
+                            SelectionPile::Hand,
+                        );
+                    }
+                }
             },
             PlayEffect::UpgradeAllCardsInHand => {
                 for card in &mut self.fight.hand {
@@ -809,6 +832,9 @@ impl Game {
             }
             PlayEffect::MarkExhaust => {
                 context.exhausts = true;
+            }
+            PlayEffect::ShuffleInStatus(body) => {
+                self.fight.deck.shuffle_in(vec![body.to_card()]);
             }
         }
         ActionControlFlow::Continue
