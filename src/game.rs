@@ -391,6 +391,7 @@ impl Game {
             decrement(&mut enemy.debuffs.weak);
             decrement(&mut self.fight.player_debuffs.vulnerable);
             decrement(&mut self.fight.player_debuffs.weak);
+            decrement(&mut self.fight.player_debuffs.frail);
         }
         for _ in 0..5 {
             self.fight.draw(&mut self.rng);
@@ -405,6 +406,7 @@ impl Game {
         self.fight.player_buffs.strength -= self.fight.player_debuffs.strength_down;
         self.fight.player_debuffs.strength_down = 0;
         self.fight.player_debuffs.entangled = false;
+        self.fight.player_debuffs.no_draw = false;
         for idx in self.fight.enemies.indicies() {
             self.fight.enemies[idx].block = 0;
         }
@@ -422,7 +424,9 @@ impl Game {
         //Cards are small and cheap to clone. They aren't copy because they are mutable.
         //Remove the card before playing any actions so it can't upgrade itself.
         let card = fight.hand.remove(card_idx);
-        fight.energy -= card.cost.expect("Card has a cost");
+        let cost = fight.evaluate_cost(&card).expect("Card is playable");
+        assert!(fight.energy >= cost);
+        fight.energy -= cost;
         self.action_queue.extend(card.effect.actions());
         let context = PlayCardContext {
             card,
@@ -504,6 +508,9 @@ impl Game {
             }
             Debuff::StrengthDown(x) => {
                 self.fight.player_debuffs.strength_down += x;
+            }
+            Debuff::NoDraw => {
+                self.fight.player_debuffs.no_draw = true;
             }
         }
     }
@@ -896,6 +903,9 @@ fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
         Debuff::StrengthDown(_) => {
             panic!("Strength down cannot be applied to enemies!");
         }
+        Debuff::NoDraw => {
+            panic!("No draw cannot be applied to enemies!");
+        }
     }
 }
 
@@ -1084,7 +1094,7 @@ impl<'a> Display for ChoiceState<'a> {
         write!(f, "{:.<80}\n", "")?;
         write!(f, "| ")?;
         for card in &game.fight.hand {
-            if let Some(cost) = card.cost {
+            if let Some(cost) = game.fight.evaluate_cost(card) {
                 write!(f, "{:?} [{}] | ", card.effect, cost)?;
             } else {
                 write!(f, "{:?} [x] | ", card.effect)?;

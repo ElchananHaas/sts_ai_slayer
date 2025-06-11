@@ -27,10 +27,44 @@
 
 
 ### Uncommon Ironclad Cards
-- [ ] Battle Trance
+- [x] Battle Trance
 - [ ] Blood For Blood
+- [ ] Bloodletting
+- [ ] Burning Pact
+- [ ] Burning Pact
+- [ ] Burning Pact
+- [ ] Carnage
+- [ ] Combust
+- [ ] Dark Embrace
+- [ ] Disarm
+- [ ] Dropkick
+- [ ] Dual Wield
+- [ ] Entrench
+- [ ] Evolve
+- [ ] Feel No Pain
+- [ ] Fire Breathing
+- [ ] Flame Barrier
+- [ ] Ghostly Armor
+- [ ] Hemokinesis
+- [ ] Infernal Blade
+- [ ] Inflame
+- [ ] Intimidate
+- [ ] Metallicize
+- [ ] Power Through
+- [ ] Pummel
+- [ ] Rage
+- [ ] Rampage
+- [ ] Reckless Charge
+- [ ] Rupture
 - [x] Searing Blow
-TODO
+- [ ] Second Wind
+- [ ] Seeing Red
+- [ ] Sentinel
+- [ ] Sever Soul
+- [ ] Shockwave
+- [ ] Spot Weakness
+- [ ] Uppercut
+- [ ] Whirlwind
 
 ### Rare Ironclad Cards
 TODO

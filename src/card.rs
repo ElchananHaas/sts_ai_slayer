@@ -1,9 +1,16 @@
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Card {
     pub effect: CardBody,
-    pub cost: Option<i32>,
+    pub cost: Cost,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum Cost {
+    Unplayable,
+    Fixed(i32),
+    X,
+    NumMinusHpLoss(i32), //This is for Blood for Blood
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum CardBody {
     Strike,
@@ -35,7 +42,6 @@ pub enum CardBody {
     HeavyBladePlus,
     IronWave,
     IronWavePlus,
-    SearingBlow(i32),
     PerfectedStrike,
     PerfectedStrikePlus,
     PommelStrike,
@@ -55,6 +61,9 @@ pub enum CardBody {
     WildStrike,
     WildStrikePlus,
     Wound,
+    BattleTrance,
+    BattleTrancePlus,
+    SearingBlow(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -93,6 +102,7 @@ pub enum Debuff {
     Frail(i32),
     StrengthDown(i32),
     Entangled,
+    NoDraw,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -113,7 +123,7 @@ pub enum CardType {
 
 pub struct CardProps {
     pub actions: &'static [PlayEffect],
-    pub cost: Option<i32>,
+    pub cost: Cost,
     pub requires_target: bool,
     pub card_type: CardType,
 }
@@ -123,13 +133,13 @@ impl CardBody {
         match self {
             CardBody::Strike => &CardProps {
                 actions: &[PlayEffect::Attack(6)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::StrikePlus => &CardProps {
                 actions: &[PlayEffect::Attack(9)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
@@ -138,7 +148,7 @@ impl CardBody {
                     PlayEffect::Attack(8),
                     PlayEffect::DebuffEnemy(Debuff::Vulnerable(2)),
                 ],
-                cost: Some(2),
+                cost: Cost::Fixed(2),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
@@ -147,37 +157,37 @@ impl CardBody {
                     PlayEffect::Attack(10),
                     PlayEffect::DebuffEnemy(Debuff::Vulnerable(3)),
                 ],
-                cost: Some(2),
+                cost: Cost::Fixed(2),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::Defend => &CardProps {
                 actions: &[PlayEffect::Block(5)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
             CardBody::DefendPlus => &CardProps {
                 actions: &[PlayEffect::Block(8)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
             CardBody::Slimed => &CardProps {
                 actions: &[PlayEffect::MarkExhaust],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Status,
             },
             CardBody::Anger => &CardProps {
                 actions: &[PlayEffect::Attack(6), PlayEffect::AddCopyToDiscard],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::AngerPlus => &CardProps {
                 actions: &[PlayEffect::Attack(8), PlayEffect::AddCopyToDiscard],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
@@ -186,49 +196,49 @@ impl CardBody {
                     PlayEffect::Block(5),
                     PlayEffect::SelectCardEffect(SelectCardEffect::UpgradeCardInHand),
                 ],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
             CardBody::ArmamentsPlus => &CardProps {
                 actions: &[PlayEffect::Block(5), PlayEffect::UpgradeAllCardsInHand],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
             CardBody::BodySlam => &CardProps {
                 actions: &[PlayEffect::AttackEqualBlock],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::BodySlamPlus => &CardProps {
                 actions: &[PlayEffect::AttackEqualBlock],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::Clash => &CardProps {
                 actions: &[PlayEffect::Attack(14)],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::ClashPlus => &CardProps {
                 actions: &[PlayEffect::Attack(18)],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::Cleave => &CardProps {
                 actions: &[PlayEffect::AttackAll(8)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Attack,
             },
             CardBody::CleavePlus => &CardProps {
                 actions: &[PlayEffect::AttackAll(11)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Attack,
             },
@@ -237,7 +247,7 @@ impl CardBody {
                     PlayEffect::Attack(12),
                     PlayEffect::DebuffEnemy(Debuff::Weak(2)),
                 ],
-                cost: Some(2),
+                cost: Cost::Fixed(2),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
@@ -246,7 +256,7 @@ impl CardBody {
                     PlayEffect::Attack(14),
                     PlayEffect::DebuffEnemy(Debuff::Weak(3)),
                 ],
-                cost: Some(2),
+                cost: Cost::Fixed(2),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
@@ -255,7 +265,7 @@ impl CardBody {
                     PlayEffect::Buff(Buff::Strength(2)),
                     PlayEffect::DebuffSelf(Debuff::StrengthDown(2)),
                 ],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
@@ -264,19 +274,19 @@ impl CardBody {
                     PlayEffect::Buff(Buff::Strength(4)),
                     PlayEffect::DebuffSelf(Debuff::StrengthDown(4)),
                 ],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
             CardBody::Havoc => &CardProps {
                 actions: &[PlayEffect::PlayExhaustTop],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
             CardBody::HavocPlus => &CardProps {
                 actions: &[PlayEffect::PlayExhaustTop],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
@@ -285,7 +295,7 @@ impl CardBody {
                     PlayEffect::Attack(9),
                     PlayEffect::SelectCardEffect(SelectCardEffect::DiscardToTop),
                 ],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
@@ -294,7 +304,7 @@ impl CardBody {
                     PlayEffect::Attack(12),
                     PlayEffect::SelectCardEffect(SelectCardEffect::DiscardToTop),
                 ],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
@@ -302,7 +312,7 @@ impl CardBody {
                 actions: &[
                     PlayEffect::Attack(14), //There is special code for handling this card.
                 ],
-                cost: Some(2),
+                cost: Cost::Fixed(2),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
@@ -310,61 +320,61 @@ impl CardBody {
                 actions: &[
                     PlayEffect::Attack(14), //There is special code for handling this card.
                 ],
-                cost: Some(2),
+                cost: Cost::Fixed(2),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::IronWave => &CardProps {
                 actions: &[PlayEffect::Block(5), PlayEffect::Attack(5)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::IronWavePlus => &CardProps {
                 actions: &[PlayEffect::Block(7), PlayEffect::Attack(7)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::SearingBlow(_) => &CardProps {
                 actions: &[PlayEffect::Attack(12)],
-                cost: Some(2),
+                cost: Cost::Fixed(2),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::PerfectedStrike => &CardProps {
                 actions: &[PlayEffect::Attack(6)],
-                cost: Some(2),
+                cost: Cost::Fixed(2),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::PerfectedStrikePlus => &CardProps {
                 actions: &[PlayEffect::Attack(6)],
-                cost: Some(2),
+                cost: Cost::Fixed(2),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::PommelStrike => &CardProps {
                 actions: &[PlayEffect::Attack(9), PlayEffect::Draw(1)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::PommelStrikePlus => &CardProps {
                 actions: &[PlayEffect::Attack(10), PlayEffect::Draw(2)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::ShrugItOff => &CardProps {
                 actions: &[PlayEffect::Block(8), PlayEffect::Draw(1)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
             CardBody::ShrugItOffPlus => &CardProps {
                 actions: &[PlayEffect::Block(11), PlayEffect::Draw(1)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
@@ -374,7 +384,7 @@ impl CardBody {
                     PlayEffect::AttackRandomEnemy(3),
                     PlayEffect::AttackRandomEnemy(3),
                 ],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Attack,
             },
@@ -385,25 +395,31 @@ impl CardBody {
                     PlayEffect::AttackRandomEnemy(3),
                     PlayEffect::AttackRandomEnemy(3),
                 ],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Attack,
             },
             CardBody::Thunderclap => &CardProps {
-                actions: &[PlayEffect::AttackAll(4), PlayEffect::DebuffAll(Debuff::Vulnerable(1))],
-                cost: Some(1),
+                actions: &[
+                    PlayEffect::AttackAll(4),
+                    PlayEffect::DebuffAll(Debuff::Vulnerable(1)),
+                ],
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Attack,
             },
             CardBody::ThunderclapPlus => &CardProps {
-                actions: &[PlayEffect::AttackAll(7), PlayEffect::DebuffAll(Debuff::Vulnerable(1))],
-                cost: Some(1),
+                actions: &[
+                    PlayEffect::AttackAll(7),
+                    PlayEffect::DebuffAll(Debuff::Vulnerable(1)),
+                ],
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Attack,
             },
             CardBody::TrueGrit => &CardProps {
                 actions: &[PlayEffect::Block(7), PlayEffect::ExhaustRandomInHand],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
@@ -412,19 +428,19 @@ impl CardBody {
                     PlayEffect::Block(7),
                     PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen),
                 ],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
             CardBody::TwinStrike => &CardProps {
                 actions: &[PlayEffect::Attack(5), PlayEffect::Attack(5)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::TwinStrikePlus => &CardProps {
                 actions: &[PlayEffect::Attack(7), PlayEffect::Attack(7)],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Attack,
             },
@@ -434,7 +450,7 @@ impl CardBody {
                     PlayEffect::SelectCardEffect(SelectCardEffect::HandToTop),
                     PlayEffect::MarkExhaust,
                 ],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
@@ -444,7 +460,7 @@ impl CardBody {
                     PlayEffect::SelectCardEffect(SelectCardEffect::HandToTop),
                     PlayEffect::MarkExhaust,
                 ],
-                cost: Some(0),
+                cost: Cost::Fixed(0),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
@@ -453,7 +469,7 @@ impl CardBody {
                     PlayEffect::Attack(12),
                     PlayEffect::ShuffleInStatus(CardBody::Wound),
                 ],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
@@ -462,15 +478,27 @@ impl CardBody {
                     PlayEffect::Attack(17),
                     PlayEffect::ShuffleInStatus(CardBody::Wound),
                 ],
-                cost: Some(1),
+                cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::Wound => &CardProps {
                 actions: &[PlayEffect::MarkExhaust],
-                cost: None,
+                cost: Cost::Unplayable,
                 requires_target: false,
                 card_type: CardType::Status,
+            },
+            CardBody::BattleTrance => &CardProps {
+                actions: &[PlayEffect::Draw(3), PlayEffect::DebuffSelf(Debuff::NoDraw)],
+                cost: Cost::Fixed(0),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::BattleTrancePlus => &CardProps {
+                actions: &[PlayEffect::Draw(4), PlayEffect::DebuffSelf(Debuff::NoDraw)],
+                cost: Cost::Fixed(0),
+                requires_target: false,
+                card_type: CardType::Skill,
             },
         }
     }
@@ -483,7 +511,7 @@ impl CardBody {
     pub fn actions(&self) -> &'static [PlayEffect] {
         self.props().actions
     }
-    pub const fn default_cost(&self) -> Option<i32> {
+    pub const fn default_cost(&self) -> Cost {
         self.props().cost
     }
     pub fn requires_target(&self) -> bool {
@@ -543,6 +571,8 @@ impl CardBody {
             CardBody::WildStrike => Some(CardBody::WildStrikePlus),
             CardBody::WildStrikePlus => None,
             CardBody::Wound => None,
+            CardBody::BattleTrance => Some(Self::BattleTrancePlus),
+            CardBody::BattleTrancePlus => None,
         }
     }
     pub fn is_strike(&self) -> bool {

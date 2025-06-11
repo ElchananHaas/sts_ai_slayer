@@ -1,10 +1,11 @@
 use std::{
+    cmp::max,
     mem,
     ops::{Index, IndexMut},
 };
 
 use crate::{
-    card::{Buff, Card, CardBody, CardType, Debuff},
+    card::{Buff, Card, CardBody, CardType, Cost, Debuff},
     deck::Deck,
     rng::Rng,
     util::insert_sorted,
@@ -31,11 +32,13 @@ pub struct PlayerDebuffs {
     pub frail: i32,
     pub entangled: bool,
     pub strength_down: i32,
+    pub no_draw: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct PlayerBuffs {
     pub strength: i32,
+    pub num_times_lost_hp: i32,
 }
 
 impl Fight {
@@ -182,10 +185,19 @@ impl Fight {
                     }
                 }
             }
-            let Some(energy_cost) = card.cost else {
+            let Some(energy_cost) = self.evaluate_cost(&card) else {
                 return false;
             };
             energy_cost <= self.energy
+        }
+    }
+
+    pub fn evaluate_cost(&self, card: &Card) -> Option<i32> {
+        match card.cost {
+            Cost::Unplayable => None,
+            Cost::Fixed(x) => Some(x),
+            Cost::X => Some(self.energy),
+            Cost::NumMinusHpLoss(x) => Some(max(0, x - self.player_buffs.num_times_lost_hp)),
         }
     }
 }
