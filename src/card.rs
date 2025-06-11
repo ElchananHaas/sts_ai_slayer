@@ -551,6 +551,8 @@ impl CardBody {
             | CardBody::StrikePlus
             | CardBody::PerfectedStrike
             | CardBody::PerfectedStrikePlus
+            | CardBody::PommelStrike
+            | CardBody::PommelStrikePlus
             | CardBody::TwinStrike
             | CardBody::TwinStrikePlus
             | CardBody::WildStrike
