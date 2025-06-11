@@ -727,6 +727,12 @@ impl Game {
                 };
                 apply_debuff_to_enemy(enemy, debuff);
             }
+            PlayEffect::DebuffAll(debuff) => {
+                for idx in self.fight.enemies.indicies() {
+                    let enemy = &mut self.fight.enemies[idx];
+                    apply_debuff_to_enemy(enemy, debuff);
+                }
+            }
             PlayEffect::DebuffSelf(debuff) => {
                 self.apply_debuff_to_player(debuff);
             }

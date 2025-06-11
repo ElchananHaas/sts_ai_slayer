@@ -19,6 +19,7 @@
 - [x] Pommel Strike
 - [x] Shrug It Off
 - [x] Sword Boomerang
+- [x] Thunderclap
 - [x] True Grit
 - [x] Twin Strike
 - [x] Warcry
