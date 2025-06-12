@@ -28,13 +28,11 @@
 
 ### Uncommon Ironclad Cards
 - [x] Battle Trance
-- [ ] Blood For Blood
-- [ ] Bloodletting
-- [ ] Burning Pact
-- [ ] Burning Pact
-- [ ] Burning Pact
-- [ ] Carnage
-- [ ] Combust
+- [x] Blood For Blood
+- [x] Bloodletting
+- [x] Burning Pact
+- [x] Carnage
+- [x] Combust
 - [ ] Dark Embrace
 - [ ] Disarm
 - [ ] Dropkick

@@ -19,7 +19,13 @@ enum DeckSegment {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+impl Default for DeckSegment {
+    fn default() -> Self {
+        DeckSegment::Shuffled(vec![])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct Deck {
     num_cards: usize,
     segment: DeckSegment,

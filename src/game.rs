@@ -8,7 +8,7 @@ use crate::{
         med_black_slime::generate_med_black_slime, med_green_slime::generate_med_green_slime,
         red_louse::generate_red_louse,
     },
-    fight::{Enemies, Enemy, EnemyAction, EnemyIdx, Fight},
+    fight::{self, Enemies, Enemy, EnemyAction, EnemyIdx, Fight, PlayerBuffs, PlayerDebuffs},
     rng::Rng,
     util::insert_sorted,
 };
@@ -330,7 +330,7 @@ impl Game {
                         if damage > self.fight.player_block {
                             let dealt = damage - self.fight.player_block;
                             self.fight.player_block = 0;
-                            self.player_lose_life(dealt);
+                            self.player_lose_hp(dealt);
                         } else {
                             self.fight.player_block -= damage;
                         }
@@ -401,7 +401,13 @@ impl Game {
     }
 
     fn discard_hand_end_of_turn(&mut self) {
-        self.fight.discard_pile.append(&mut self.fight.hand);
+        for card in self.fight.hand.drain(..) {
+            if card.effect.ethereal() {
+                insert_sorted(card, &mut self.fight.exhaust);
+            } else {
+                insert_sorted(card, &mut self.fight.discard_pile);
+            }
+        }
         //TODO handle artifact.
         self.fight.player_buffs.strength -= self.fight.player_debuffs.strength_down;
         self.fight.player_debuffs.strength_down = 0;
@@ -410,9 +416,18 @@ impl Game {
         for idx in self.fight.enemies.indicies() {
             self.fight.enemies[idx].block = 0;
         }
+        self.player_lose_hp(self.fight.player_buffs.end_turn_lose_hp);
+        let damage_all_enemies = self.fight.player_buffs.end_turn_damage_all_enemies;
+        if damage_all_enemies > 0 {
+            for idx in self.fight.enemies.indicies() {
+                let enemy = &mut self.fight.enemies[idx];
+                Self::damage_enemy(enemy, damage_all_enemies);
+            }
+        }
     }
     //TODO handle various effects of HP loss.
-    fn player_lose_life(&mut self, amount: i32) {
+    fn player_lose_hp(&mut self, amount: i32) {
+        self.fight.player_buffs.num_times_lost_hp += 1;
         self.player_hp -= amount;
     }
 
@@ -523,10 +538,15 @@ impl Game {
             }
             Buff::Ritual(_) => todo!(),
             Buff::RitualSkipFirst(_) => unimplemented!("Player gets normal ritual"),
+            Buff::EndTurnLoseHP(x) => self.fight.player_buffs.end_turn_lose_hp += x,
+            Buff::EndTurnDamageAllEnemies(x) => self.fight.player_buffs.end_turn_damage_all_enemies += x,
         }
     }
 
     fn enemy_buff(enemy: &mut Enemy, buff: Buff) {
+        fn panic_not_apply_enemies(buff: Buff) -> ! {
+            panic!("Buff {:?} doesn't apply to enemies", buff);
+        }
         match buff {
             Buff::Strength(x) => {
                 enemy.buffs.strength += x;
@@ -536,6 +556,12 @@ impl Game {
             }
             Buff::RitualSkipFirst(x) => {
                 enemy.buffs.ritual_skip_first += x;
+            },
+            Buff::EndTurnDamageAllEnemies(_) => {
+                panic_not_apply_enemies(buff);
+            },
+            Buff::EndTurnLoseHP(_) => {
+                panic_not_apply_enemies(buff);
             }
         }
     }
@@ -626,6 +652,20 @@ impl Game {
     fn put_on_top(&mut self, card: Card) {
         self.fight.deck.put_on_top(vec![card]);
     }
+    
+    //This function handles the effect of damage on enemy block. Returns the damage dealt.
+    fn damage_enemy(enemy: &mut Enemy, mut damage: i32) -> i32 {
+        if damage < enemy.block {
+            enemy.block -= damage;
+            damage = 0;
+        } else {
+            damage -= enemy.block;
+            enemy.block = 0;
+        }
+        damage = std::cmp::min(damage, enemy.hp);
+        enemy.hp -= damage as i32;
+        damage
+    }
 
     fn attack_enemy(&mut self, card: &Card, amount: i32, target: usize) {
         let strength = match card.effect {
@@ -644,14 +684,7 @@ impl Game {
             damage *= 0.75;
         }
         let mut damage = damage as i32;
-        if damage < enemy.block {
-            enemy.block -= damage;
-            damage = 0;
-        } else {
-            damage -= enemy.block;
-            enemy.block = 0;
-        }
-        damage = std::cmp::min(damage, enemy.hp);
+        damage = Self::damage_enemy(enemy, damage);
         if damage > 0 {
             if enemy.buffs.curl_up > 0 {
                 enemy.buffs.queued_block += enemy.buffs.curl_up;
@@ -659,7 +692,6 @@ impl Game {
             }
             enemy.buffs.strength += enemy.buffs.angry;
         }
-        enemy.hp -= damage as i32;
         if enemy.hp <= 0 {
             if enemy.buffs.spore_cloud > 0 {
                 self.fight.player_debuffs.vulnerable += 2;
@@ -849,6 +881,12 @@ impl Game {
             PlayEffect::ShuffleInStatus(body) => {
                 self.fight.deck.shuffle_in(vec![body.to_card()]);
             }
+            PlayEffect::LoseHP(x) => {
+                self.player_lose_hp(x);
+            }
+            PlayEffect::GainEnergy(x) => {
+                self.fight.energy += x;
+            }
         }
         ActionControlFlow::Continue
     }
@@ -968,13 +1006,9 @@ impl Game {
             self.fight.draw(&mut self.rng);
         }
     }
+
     fn setup_fight(&mut self) {
-        self.fight.enemies = Enemies {
-            enemies: [const { None }; 5],
-        };
-        self.fight.hand.clear();
-        self.fight.energy = 0;
-        self.fight.player_block = 0;
+        self.fight = Default::default();
         self.fight.deck = Deck::shuffled(self.base_deck.clone());
         self.fight.energy = 3;
     }

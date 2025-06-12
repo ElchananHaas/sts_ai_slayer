@@ -11,7 +11,7 @@ use crate::{
     util::insert_sorted,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct Fight {
     pub enemies: Enemies,
     pub hand: Vec<Card>,
@@ -39,6 +39,8 @@ pub struct PlayerDebuffs {
 pub struct PlayerBuffs {
     pub strength: i32,
     pub num_times_lost_hp: i32,
+    pub end_turn_lose_hp: i32,
+    pub end_turn_damage_all_enemies: i32,
 }
 
 impl Fight {
@@ -78,7 +80,7 @@ impl Fight {
         None
     }
     pub fn draw(&mut self, rng: &mut Rng) {
-        if self.hand.len() >= 10 {
+        if self.hand.len() >= 10 || self.player_debuffs.no_draw {
             return;
         }
         self.remove_top_of_deck(rng).map(|card| {
@@ -87,7 +89,7 @@ impl Fight {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct Enemies {
     //Fights have at most 5 enemies (Reptomancer + 4 Daggers).
     pub enemies: [Option<Enemy>; 5],

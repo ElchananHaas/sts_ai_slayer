@@ -63,7 +63,17 @@ pub enum CardBody {
     Wound,
     BattleTrance,
     BattleTrancePlus,
+    BloodForBlood,
+    BloodForBloodPlus,
+    Bloodletting,
+    BloodlettingPlus,
+    BurningPact,
+    BurningPactPlus,
     SearingBlow(i32),
+    Carnage,
+    CarnagePlus,
+    Combust,
+    CombustPlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -85,6 +95,8 @@ pub enum PlayEffect {
     AttackRandomEnemy(i32),
     ExhaustRandomInHand,
     ShuffleInStatus(CardBody),
+    LoseHP(i32),
+    GainEnergy(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -110,6 +122,8 @@ pub enum Buff {
     Strength(i32),
     Ritual(i32),
     RitualSkipFirst(i32),
+    EndTurnLoseHP(i32),
+    EndTurnDamageAllEnemies(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -500,6 +514,66 @@ impl CardBody {
                 requires_target: false,
                 card_type: CardType::Skill,
             },
+            CardBody::BloodForBlood => &CardProps {
+                actions: &[PlayEffect::Attack(18)],
+                cost: Cost::NumMinusHpLoss(4),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::BloodForBloodPlus => &CardProps {
+                actions: &[PlayEffect::Attack(22)],
+                cost: Cost::NumMinusHpLoss(3),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::Bloodletting => &CardProps {
+                actions: &[PlayEffect::LoseHP(3), PlayEffect::GainEnergy(2)],
+                cost: Cost::Fixed(0),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::BloodlettingPlus => &CardProps {
+                actions: &[PlayEffect::LoseHP(3), PlayEffect::GainEnergy(3)],
+                cost: Cost::Fixed(0),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::BurningPact => &CardProps {
+                actions: &[PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen), PlayEffect::Draw(2)],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::BurningPactPlus => &CardProps {
+                actions: &[PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen), PlayEffect::Draw(3)],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::Carnage => &CardProps {
+                actions: &[PlayEffect::Attack(20)],
+                cost: Cost::Fixed(2),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::CarnagePlus => &CardProps {
+                actions: &[PlayEffect::Attack(28)],
+                cost: Cost::Fixed(2),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::Combust => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::EndTurnLoseHP(1)), PlayEffect::Buff(Buff::EndTurnDamageAllEnemies(5))],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
+            CardBody::CombustPlus => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::EndTurnLoseHP(1)), PlayEffect::Buff(Buff::EndTurnDamageAllEnemies(7))],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
         }
     }
     pub const fn to_card(&self) -> Card {
@@ -520,73 +594,89 @@ impl CardBody {
     pub fn card_type(&self) -> CardType {
         self.props().card_type
     }
-    pub fn upgraded(&self) -> Option<CardBody> {
+    pub fn ethereal(&self) -> bool {
+        match  self {
+            Self::Carnage | Self::CarnagePlus => true,
+            _ => false
+        }
+    }
+    pub fn upgraded(&self) -> Option<Self> {
         match self {
-            CardBody::Strike => Some(Self::StrikePlus),
-            CardBody::StrikePlus => None,
-            CardBody::Bash => Some(Self::BashPlus),
-            CardBody::BashPlus => None,
-            CardBody::Defend => Some(Self::DefendPlus),
-            CardBody::DefendPlus => None,
-            CardBody::Slimed => None,
-            CardBody::Anger => Some(Self::AngerPlus),
-            CardBody::AngerPlus => None,
-            CardBody::Armaments => Some(Self::ArmamentsPlus),
-            CardBody::ArmamentsPlus => None,
-            CardBody::BodySlam => Some(Self::BodySlamPlus),
-            CardBody::BodySlamPlus => None,
-            CardBody::Clash => Some(Self::ClashPlus),
-            CardBody::ClashPlus => None,
-            CardBody::Cleave => Some(Self::CleavePlus),
-            CardBody::CleavePlus => None,
-            CardBody::Clothesline => Some(Self::ClotheslinePlus),
-            CardBody::ClotheslinePlus => None,
-            CardBody::Flex => Some(Self::FlexPlus),
-            CardBody::FlexPlus => None,
-            CardBody::Havoc => Some(Self::HavocPlus),
-            CardBody::HavocPlus => None,
-            CardBody::Headbutt => Some(Self::HeadbuttPlus),
-            CardBody::HeadbuttPlus => None,
-            CardBody::HeavyBlade => Some(Self::HeavyBladePlus),
-            CardBody::HeavyBladePlus => None,
-            CardBody::IronWave => Some(Self::IronWavePlus),
-            CardBody::IronWavePlus => None,
-            CardBody::SearingBlow(level) => Some(Self::SearingBlow(*level + 1)),
-            CardBody::PerfectedStrike => Some(Self::PerfectedStrikePlus),
-            CardBody::PerfectedStrikePlus => None,
-            CardBody::PommelStrike => Some(Self::PommelStrikePlus),
-            CardBody::PommelStrikePlus => None,
-            CardBody::ShrugItOff => Some(Self::ShrugItOffPlus),
-            CardBody::ShrugItOffPlus => None,
-            CardBody::SwordBoomerang => Some(Self::SwordBoomerangPlus),
-            CardBody::SwordBoomerangPlus => None,
-            CardBody::Thunderclap => Some(Self::ThunderclapPlus),
-            CardBody::ThunderclapPlus => None,
-            CardBody::TrueGrit => Some(Self::TrueGritPlus),
-            CardBody::TrueGritPlus => None,
-            CardBody::TwinStrike => Some(Self::TwinStrikePlus),
-            CardBody::TwinStrikePlus => None,
-            CardBody::Warcry => Some(Self::WarcryPlus),
-            CardBody::WarcryPlus => None,
-            CardBody::WildStrike => Some(CardBody::WildStrikePlus),
-            CardBody::WildStrikePlus => None,
-            CardBody::Wound => None,
-            CardBody::BattleTrance => Some(Self::BattleTrancePlus),
-            CardBody::BattleTrancePlus => None,
+            Self::Strike => Some(Self::StrikePlus),
+            Self::StrikePlus => None,
+            Self::Bash => Some(Self::BashPlus),
+            Self::BashPlus => None,
+            Self::Defend => Some(Self::DefendPlus),
+            Self::DefendPlus => None,
+            Self::Slimed => None,
+            Self::Anger => Some(Self::AngerPlus),
+            Self::AngerPlus => None,
+            Self::Armaments => Some(Self::ArmamentsPlus),
+            Self::ArmamentsPlus => None,
+            Self::BodySlam => Some(Self::BodySlamPlus),
+            Self::BodySlamPlus => None,
+            Self::Clash => Some(Self::ClashPlus),
+            Self::ClashPlus => None,
+            Self::Cleave => Some(Self::CleavePlus),
+            Self::CleavePlus => None,
+            Self::Clothesline => Some(Self::ClotheslinePlus),
+            Self::ClotheslinePlus => None,
+            Self::Flex => Some(Self::FlexPlus),
+            Self::FlexPlus => None,
+            Self::Havoc => Some(Self::HavocPlus),
+            Self::HavocPlus => None,
+            Self::Headbutt => Some(Self::HeadbuttPlus),
+            Self::HeadbuttPlus => None,
+            Self::HeavyBlade => Some(Self::HeavyBladePlus),
+            Self::HeavyBladePlus => None,
+            Self::IronWave => Some(Self::IronWavePlus),
+            Self::IronWavePlus => None,
+            Self::SearingBlow(level) => Some(Self::SearingBlow(*level + 1)),
+            Self::PerfectedStrike => Some(Self::PerfectedStrikePlus),
+            Self::PerfectedStrikePlus => None,
+            Self::PommelStrike => Some(Self::PommelStrikePlus),
+            Self::PommelStrikePlus => None,
+            Self::ShrugItOff => Some(Self::ShrugItOffPlus),
+            Self::ShrugItOffPlus => None,
+            Self::SwordBoomerang => Some(Self::SwordBoomerangPlus),
+            Self::SwordBoomerangPlus => None,
+            Self::Thunderclap => Some(Self::ThunderclapPlus),
+            Self::ThunderclapPlus => None,
+            Self::TrueGrit => Some(Self::TrueGritPlus),
+            Self::TrueGritPlus => None,
+            Self::TwinStrike => Some(Self::TwinStrikePlus),
+            Self::TwinStrikePlus => None,
+            Self::Warcry => Some(Self::WarcryPlus),
+            Self::WarcryPlus => None,
+            Self::WildStrike => Some(Self::WildStrikePlus),
+            Self::WildStrikePlus => None,
+            Self::Wound => None,
+            Self::BattleTrance => Some(Self::BattleTrancePlus),
+            Self::BattleTrancePlus => None,
+            Self::BloodForBlood => Some(Self::BloodForBloodPlus),
+            Self::BloodForBloodPlus => None,
+            Self::Bloodletting => Some(Self::BloodlettingPlus),
+            Self::BloodlettingPlus => None,
+            Self::BurningPact => Some(Self::BurningPactPlus),
+            Self::BurningPactPlus => None,
+            Self::Carnage => Some(Self::CarnagePlus),
+            Self::CarnagePlus => None,
+            Self::Combust => Some(Self::CombustPlus),
+            Self::CombustPlus => None
         }
     }
     pub fn is_strike(&self) -> bool {
         match self {
-            CardBody::Strike
-            | CardBody::StrikePlus
-            | CardBody::PerfectedStrike
-            | CardBody::PerfectedStrikePlus
-            | CardBody::PommelStrike
-            | CardBody::PommelStrikePlus
-            | CardBody::TwinStrike
-            | CardBody::TwinStrikePlus
-            | CardBody::WildStrike
-            | CardBody::WildStrikePlus => true,
+            Self::Strike
+            | Self::StrikePlus
+            | Self::PerfectedStrike
+            | Self::PerfectedStrikePlus
+            | Self::PommelStrike
+            | Self::PommelStrikePlus
+            | Self::TwinStrike
+            | Self::TwinStrikePlus
+            | Self::WildStrike
+            | Self::WildStrikePlus => true,
             _ => false,
         }
     }
