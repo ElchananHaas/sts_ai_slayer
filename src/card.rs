@@ -74,6 +74,10 @@ pub enum CardBody {
     CarnagePlus,
     Combust,
     CombustPlus,
+    DarkEmbrace,
+    DarkEmbracePlus,
+    Disarm,
+    DisarmPlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -124,6 +128,7 @@ pub enum Buff {
     RitualSkipFirst(i32),
     EndTurnLoseHP(i32),
     EndTurnDamageAllEnemies(i32),
+    DarkEmbraceBuff,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -539,13 +544,19 @@ impl CardBody {
                 card_type: CardType::Skill,
             },
             CardBody::BurningPact => &CardProps {
-                actions: &[PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen), PlayEffect::Draw(2)],
+                actions: &[
+                    PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen),
+                    PlayEffect::Draw(2),
+                ],
                 cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
             },
             CardBody::BurningPactPlus => &CardProps {
-                actions: &[PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen), PlayEffect::Draw(3)],
+                actions: &[
+                    PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen),
+                    PlayEffect::Draw(3),
+                ],
                 cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Skill,
@@ -563,16 +574,52 @@ impl CardBody {
                 card_type: CardType::Attack,
             },
             CardBody::Combust => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::EndTurnLoseHP(1)), PlayEffect::Buff(Buff::EndTurnDamageAllEnemies(5))],
+                actions: &[
+                    PlayEffect::Buff(Buff::EndTurnLoseHP(1)),
+                    PlayEffect::Buff(Buff::EndTurnDamageAllEnemies(5)),
+                ],
                 cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Power,
             },
             CardBody::CombustPlus => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::EndTurnLoseHP(1)), PlayEffect::Buff(Buff::EndTurnDamageAllEnemies(7))],
+                actions: &[
+                    PlayEffect::Buff(Buff::EndTurnLoseHP(1)),
+                    PlayEffect::Buff(Buff::EndTurnDamageAllEnemies(7)),
+                ],
                 cost: Cost::Fixed(1),
                 requires_target: false,
                 card_type: CardType::Power,
+            },
+            CardBody::DarkEmbrace => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::DarkEmbraceBuff)],
+                cost: Cost::Fixed(2),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
+            CardBody::DarkEmbracePlus => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::DarkEmbraceBuff)],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
+            CardBody::Disarm => &CardProps {
+                actions: &[
+                    PlayEffect::DebuffEnemy(Debuff::StrengthDown(2)),
+                    PlayEffect::MarkExhaust,
+                ],
+                cost: Cost::Fixed(1),
+                requires_target: true,
+                card_type: CardType::Skill,
+            },
+            CardBody::DisarmPlus => &CardProps {
+                actions: &[
+                    PlayEffect::DebuffEnemy(Debuff::StrengthDown(3)),
+                    PlayEffect::MarkExhaust,
+                ],
+                cost: Cost::Fixed(1),
+                requires_target: true,
+                card_type: CardType::Skill,
             },
         }
     }
@@ -595,9 +642,9 @@ impl CardBody {
         self.props().card_type
     }
     pub fn ethereal(&self) -> bool {
-        match  self {
+        match self {
             Self::Carnage | Self::CarnagePlus => true,
-            _ => false
+            _ => false,
         }
     }
     pub fn upgraded(&self) -> Option<Self> {
@@ -662,7 +709,11 @@ impl CardBody {
             Self::Carnage => Some(Self::CarnagePlus),
             Self::CarnagePlus => None,
             Self::Combust => Some(Self::CombustPlus),
-            Self::CombustPlus => None
+            Self::CombustPlus => None,
+            Self::DarkEmbrace => Some(Self::DarkEmbracePlus),
+            Self::DarkEmbracePlus => None,
+            Self::Disarm => Some(Self::DisarmPlus),
+            Self::DisarmPlus => None,
         }
     }
     pub fn is_strike(&self) -> bool {

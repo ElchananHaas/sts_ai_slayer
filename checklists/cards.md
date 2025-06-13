@@ -33,8 +33,8 @@
 - [x] Burning Pact
 - [x] Carnage
 - [x] Combust
-- [ ] Dark Embrace
-- [ ] Disarm
+- [x] Dark Embrace
+- [x] Disarm
 - [ ] Dropkick
 - [ ] Dual Wield
 - [ ] Entrench

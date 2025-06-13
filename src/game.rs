@@ -1,7 +1,7 @@
-use std::{collections::VecDeque, fmt::Display, vec};
+use std::{collections::VecDeque, fmt::Display, mem, vec};
 
 use crate::{
-    card::{Buff, Card, CardBody, Debuff, PlayEffect, SelectCardEffect},
+    card::{Buff, Card, CardBody, CardType, Debuff, PlayEffect, SelectCardEffect},
     deck::Deck,
     enemies::{
         cultist::generate_cultist, green_louse::generate_green_louse, jaw_worm::generate_jaw_worm,
@@ -23,11 +23,18 @@ pub struct Game {
     base_deck: Vec<Card>,
     gold: i32,
     rng: Rng,
-    //This queue is ordered with standard VecDequeue ordering.
-    action_queue: VecDeque<PlayEffect>,
+    //It might be good to move these queues to the fight because they aren't retained between fights.
     //This is used for cards which play other cards, such as Havoc.
-    card_play_queue: VecDeque<PlayCardContext>,
+    post_card_queue: VecDeque<PostCardItem>,
     pub floor: i32,
+}
+
+//This holds effects that happen after a card finishes resolving.
+//This includes some powers, relics, and cards that play other cards.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum PostCardItem {
+    PlayCard(PlayCardContext),
+    Draw(i32),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -75,6 +82,7 @@ pub struct PlayCardContext {
     card: Card,
     target: usize,
     exhausts: bool,
+    effect_index: usize,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -255,7 +263,10 @@ impl Game {
         action: SelectCardAction,
     ) -> Choice {
         self.handle_selected_action(&mut context, effect, action);
-        self.resolve_actions(context)
+        if let Some(choice) = self.resolve_actions(Some(context)) {
+            return choice;
+        }
+        self.play_card_choice()
     }
     fn play_card_choice(&mut self) -> Choice {
         let fight = &self.fight;
@@ -401,9 +412,11 @@ impl Game {
     }
 
     fn discard_hand_end_of_turn(&mut self) {
-        for card in self.fight.hand.drain(..) {
+        let mut old_hand = Vec::new();
+        mem::swap(&mut old_hand, &mut self.fight.hand);
+        for card in old_hand {
             if card.effect.ethereal() {
-                insert_sorted(card, &mut self.fight.exhaust);
+                self.exhaust(card);
             } else {
                 insert_sorted(card, &mut self.fight.discard_pile);
             }
@@ -442,65 +455,103 @@ impl Game {
         let cost = fight.evaluate_cost(&card).expect("Card is playable");
         assert!(fight.energy >= cost);
         fight.energy -= cost;
-        self.action_queue.extend(card.effect.actions());
         let context = PlayCardContext {
             card,
             target,
             exhausts: false,
+            effect_index: 0,
         };
-        self.resolve_actions(context)
+        if let Some(choice) = self.resolve_actions(Some(context)) {
+            return choice;
+        }
+        self.play_card_choice()
     }
-
-    fn resolve_actions(&mut self, mut context: PlayCardContext) -> Choice {
+    //There are 3 cases for this function:
+    //1) A card play is in process and the card has more actions. In this case the function
+    //will continue to resolve actions.
+    //2) A card play is in process and the card has no more actions. The card will go
+    // to discard or exhaust as appropriate.
+    //3) There isn't a card play in progress. In this case actions that were queued for after
+    // the card was played will resolve until that queue is empty.
+    //This function returns a choice if a battle was won, lost, interrupted, or over
+    fn resolve_actions(&mut self, mut context: Option<PlayCardContext>) -> Option<Choice> {
+        //This uses a loop so it can be interruped in the middle
+        //to get player input for a card like Armaments.
         loop {
-            //This uses a while loop so it can be interruped in the middle
-            //to get player input for a card like Armaments.
-            while let Some(action) = self.action_queue.pop_front() {
-                let next = self.handle_action(action, &mut context);
-                //If there are no more enemies alive it is safe to end the battle.
-                //This can lead to the card in play vanishing but that is OK becuase
-                //the battle is over and it is still in the main deck.
-                if self.fight.enemies.len() == 0 {
-                    return self.win_battle();
-                }
-                //If the player needs to make a selection, break out of the loop. It will be
-                //resumed by calling resolve_actions again once the player makes their choice
-                //and the in-progress action is handled.
-                if let ActionControlFlow::SelectCards(select, select_action, t) = next {
-                    return Choice::SelectCardState(context, select_action, select, t);
-                }
-                if self.player_hp <= 0 {
-                    self.player_hp = 0;
-                    return Choice::Loss;
-                }
+            if self.player_hp <= 0 {
+                self.player_hp = 0;
+                return Some(Choice::Loss);
             }
-            for enemy_idx in self.fight.enemies.indicies() {
-                let enemy = &mut self.fight.enemies[enemy_idx];
-                if enemy.buffs.queued_block > 0 {
-                    enemy.block += enemy.buffs.queued_block;
-                    enemy.buffs.queued_block = 0;
-                }
+            //If there are no more enemies alive end the battle.
+            if self.fight.enemies.len() == 0 {
+                return Some(self.win_battle());
             }
-            if context.exhausts {
-                insert_sorted(context.card, &mut self.fight.exhaust);
+            if let Some(mut card_context) = context {
+                if card_context.effect_index < card_context.card.effect.actions().len() {
+                    let action = card_context.card.effect.actions()[card_context.effect_index];
+                    card_context.effect_index += 1;
+                    let next = self.handle_action(action, &mut card_context);
+                    //If the player needs to make a selection, break out of the loop. It will be
+                    //resumed by calling resolve_actions again once the player makes their choice
+                    //and the in-progress action is handled.
+                    if let ActionControlFlow::SelectCards(select, select_action, t) = next {
+                        return Some(Choice::SelectCardState(
+                            card_context,
+                            select_action,
+                            select,
+                            t,
+                        ));
+                    }
+                    context = Some(card_context);
+                } else {
+                    //The card's actions are over.
+                    for enemy_idx in self.fight.enemies.indicies() {
+                        let enemy = &mut self.fight.enemies[enemy_idx];
+                        if enemy.buffs.queued_block > 0 {
+                            enemy.block += enemy.buffs.queued_block;
+                            enemy.buffs.queued_block = 0;
+                        }
+                    }
+                    if card_context.card.effect.card_type() == CardType::Power {
+                        //Do nothing for powers, they just go away after playing.
+                    } else if card_context.exhausts {
+                        self.exhaust(card_context.card);
+                    } else {
+                        insert_sorted(card_context.card, &mut self.fight.discard_pile);
+                    }
+                    context = None
+                }
             } else {
-                insert_sorted(context.card, &mut self.fight.discard_pile);
-            }
-            //Cards like Havoc, Omniscience can queue up other cards to be played. If
-            //this happens pop them off and play them until there are none left.
-            if let Some(front) = self.card_play_queue.pop_front() {
-                context = front;
-                self.action_queue.extend(context.card.effect.actions());
-            } else {
-                return self.play_card_choice();
+                //Cards like Havoc, Omniscience can queue up other cards to be played. If
+                //this happens pop them off and play them until there are none left.
+                if let Some(front) = self.post_card_queue.pop_front() {
+                    match front {
+                        PostCardItem::PlayCard(play_card_context) => {
+                            context = Some(play_card_context);
+                        }
+                        PostCardItem::Draw(amount) => {
+                            for _ in 0..amount {
+                                self.fight.draw(&mut self.rng);
+                            }
+                        }
+                    }
+                } else {
+                    return None;
+                }
             }
         }
     }
 
+    fn exhaust(&mut self, card: Card) {
+        insert_sorted(card, &mut self.fight.exhaust);
+        if self.fight.player_buffs.dark_embrace > 0 {
+            self.post_card_queue
+                .push_back(PostCardItem::Draw(self.fight.player_buffs.dark_embrace));
+        }
+    }
     fn win_battle(&mut self) -> Choice {
         self.floor += 1;
-        self.action_queue.clear();
-        self.card_play_queue.clear();
+        self.post_card_queue.clear();
         self.fight.deck = Deck::shuffled(vec![]);
         self.fight.discard_pile.clear();
         self.fight.hand.clear();
@@ -539,7 +590,10 @@ impl Game {
             Buff::Ritual(_) => todo!(),
             Buff::RitualSkipFirst(_) => unimplemented!("Player gets normal ritual"),
             Buff::EndTurnLoseHP(x) => self.fight.player_buffs.end_turn_lose_hp += x,
-            Buff::EndTurnDamageAllEnemies(x) => self.fight.player_buffs.end_turn_damage_all_enemies += x,
+            Buff::EndTurnDamageAllEnemies(x) => {
+                self.fight.player_buffs.end_turn_damage_all_enemies += x
+            }
+            Buff::DarkEmbraceBuff => self.fight.player_buffs.dark_embrace += 1,
         }
     }
 
@@ -556,11 +610,14 @@ impl Game {
             }
             Buff::RitualSkipFirst(x) => {
                 enemy.buffs.ritual_skip_first += x;
-            },
+            }
             Buff::EndTurnDamageAllEnemies(_) => {
                 panic_not_apply_enemies(buff);
-            },
+            }
             Buff::EndTurnLoseHP(_) => {
+                panic_not_apply_enemies(buff);
+            }
+            Buff::DarkEmbraceBuff => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -638,7 +695,7 @@ impl Game {
                 let card = match action {
                     SelectCardAction::ChooseCard(idx) => self.fight.hand.remove(idx),
                 };
-                insert_sorted(card, &mut self.fight.exhaust);
+                self.exhaust(card);
             }
             SelectCardEffect::HandToTop => {
                 let card = match action {
@@ -652,7 +709,7 @@ impl Game {
     fn put_on_top(&mut self, card: Card) {
         self.fight.deck.put_on_top(vec![card]);
     }
-    
+
     //This function handles the effect of damage on enemy block. Returns the damage dealt.
     fn damage_enemy(enemy: &mut Enemy, mut damage: i32) -> i32 {
         if damage < enemy.block {
@@ -793,7 +850,7 @@ impl Game {
             PlayEffect::ExhaustRandomInHand => {
                 let idx = self.rng.sample(self.fight.hand.len());
                 let card = self.fight.hand.remove(idx);
-                insert_sorted(card, &mut self.fight.exhaust);
+                self.exhaust(card);
             }
             PlayEffect::SelectCardEffect(select_effect) => match select_effect {
                 SelectCardEffect::UpgradeCardInHand => {
@@ -868,11 +925,13 @@ impl Game {
             PlayEffect::PlayExhaustTop => {
                 if let Some(card) = self.fight.remove_top_of_deck(&mut self.rng) {
                     let target = self.select_random_target(&card);
-                    self.card_play_queue.push_back(PlayCardContext {
-                        card,
-                        target,
-                        exhausts: true,
-                    });
+                    self.post_card_queue
+                        .push_back(PostCardItem::PlayCard(PlayCardContext {
+                            card,
+                            target,
+                            exhausts: true,
+                            effect_index: 0,
+                        }));
                 }
             }
             PlayEffect::MarkExhaust => {
@@ -976,8 +1035,7 @@ impl Game {
                 fight: Fight::new(),
                 gold: 99,
                 floor: 0,
-                action_queue: VecDeque::new(),
-                card_play_queue: VecDeque::new(),
+                post_card_queue: VecDeque::new(),
                 base_deck: vec![
                     CardBody::Strike.to_card(),
                     CardBody::Strike.to_card(),

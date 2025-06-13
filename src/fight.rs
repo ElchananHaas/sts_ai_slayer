@@ -41,6 +41,7 @@ pub struct PlayerBuffs {
     pub num_times_lost_hp: i32,
     pub end_turn_lose_hp: i32,
     pub end_turn_damage_all_enemies: i32,
+    pub dark_embrace: i32,
 }
 
 impl Fight {
