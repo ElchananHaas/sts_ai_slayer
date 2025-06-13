@@ -78,6 +78,8 @@ pub enum CardBody {
     DarkEmbracePlus,
     Disarm,
     DisarmPlus,
+    Dropkick,
+    DropkickPlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -101,6 +103,7 @@ pub enum PlayEffect {
     ShuffleInStatus(CardBody),
     LoseHP(i32),
     GainEnergy(i32),
+    DropkickDraw,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -621,6 +624,24 @@ impl CardBody {
                 requires_target: true,
                 card_type: CardType::Skill,
             },
+            CardBody::Dropkick => &CardProps {
+                actions: &[
+                    PlayEffect::Attack(5),
+                    PlayEffect::DropkickDraw,
+                ],
+                cost: Cost::Fixed(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::DropkickPlus => &CardProps {
+                actions: &[
+                    PlayEffect::Attack(5),
+                    PlayEffect::DropkickDraw,
+                ],
+                cost: Cost::Fixed(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
         }
     }
     pub const fn to_card(&self) -> Card {
@@ -714,6 +735,8 @@ impl CardBody {
             Self::DarkEmbracePlus => None,
             Self::Disarm => Some(Self::DisarmPlus),
             Self::DisarmPlus => None,
+            Self::Dropkick => Some(Self::DropkickPlus),
+            Self::DropkickPlus => None,
         }
     }
     pub fn is_strike(&self) -> bool {

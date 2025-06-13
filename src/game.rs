@@ -946,6 +946,14 @@ impl Game {
             PlayEffect::GainEnergy(x) => {
                 self.fight.energy += x;
             }
+            PlayEffect::DropkickDraw => {
+                if let Some(enemy) = &self.fight.enemies[target] {
+                    if enemy.debuffs.vulnerable > 0 {
+                        self.fight.energy += 1;
+                        self.fight.draw(&mut self.rng);
+                    }
+                }
+            }
         }
         ActionControlFlow::Continue
     }

@@ -35,7 +35,7 @@
 - [x] Combust
 - [x] Dark Embrace
 - [x] Disarm
-- [ ] Dropkick
+- [x] Dropkick
 - [ ] Dual Wield
 - [ ] Entrench
 - [ ] Evolve
