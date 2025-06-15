@@ -39,9 +39,9 @@
 - [x] Dual Wield
 - [x] Entrench
 - [x] Evolve
-- [ ] Feel No Pain
-- [ ] Fire Breathing
-- [ ] Flame Barrier
+- [x] Feel No Pain
+- [x] Fire Breathing
+- [x] Flame Barrier
 - [ ] Ghostly Armor
 - [ ] Hemokinesis
 - [ ] Infernal Blade

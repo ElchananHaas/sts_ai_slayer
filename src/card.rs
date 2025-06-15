@@ -86,6 +86,14 @@ pub enum CardBody {
     EntrenchPlus,
     Evolve,
     EvolvePlus,
+    FeelNoPain,
+    FeelNoPainPlus,
+    FireBreathing,
+    FireBreathingPlus,
+    FlameBarrier,
+    FlameBarrierPlus,
+    GhostlyArmor,
+    GhostlyArmorPlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -140,7 +148,10 @@ pub enum Buff {
     EndTurnLoseHP(i32),
     EndTurnDamageAllEnemies(i32),
     DarkEmbraceBuff,
-    EvolveBuff(i32)
+    EvolveBuff(i32),
+    FNPBuff(i32),
+    FireBreathingBuff(i32),
+    TempSpikes(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -685,6 +696,54 @@ impl CardBody {
                 requires_target: false,
                 card_type: CardType::Power,
             },
+            CardBody::FeelNoPain => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::FNPBuff(3))],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
+            CardBody::FeelNoPainPlus => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::FNPBuff(4))],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
+            CardBody::FireBreathing => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::FireBreathingBuff(6))],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
+            CardBody::FireBreathingPlus => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::FireBreathingBuff(10))],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
+            CardBody::FlameBarrier => &CardProps {
+                actions: &[PlayEffect::Block(12), PlayEffect::Buff(Buff::TempSpikes(4))],
+                cost: Cost::Fixed(2),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::FlameBarrierPlus => &CardProps {
+                actions: &[PlayEffect::Block(10), PlayEffect::Buff(Buff::TempSpikes(6))],
+                cost: Cost::Fixed(2),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::GhostlyArmor => &CardProps {
+                actions: &[PlayEffect::Block(10)],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::GhostlyArmorPlus => &CardProps {
+                actions: &[PlayEffect::Block(13)],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
         }
     }
     pub const fn to_card(&self) -> Card {
@@ -707,7 +766,7 @@ impl CardBody {
     }
     pub fn ethereal(&self) -> bool {
         match self {
-            Self::Carnage | Self::CarnagePlus => true,
+            Self::Carnage | Self::CarnagePlus | Self::GhostlyArmor | Self::GhostlyArmorPlus => true,
             _ => false,
         }
     }
@@ -782,10 +841,18 @@ impl CardBody {
             Self::DropkickPlus => None,
             Self::DualWield => Some(Self::DualWieldPlus),
             Self::DualWieldPlus => None,
-            Self::Entrench => Some(Self::Entrench),
+            Self::Entrench => Some(Self::EntrenchPlus),
             Self::EntrenchPlus => None,
             Self::Evolve => Some(Self::EvolvePlus),
             Self::EvolvePlus => None,
+            Self::FeelNoPain => Some(Self::FeelNoPainPlus),
+            Self::FeelNoPainPlus => None,
+            Self::FireBreathing => Some(Self::FireBreathingPlus),
+            Self::FireBreathingPlus => None,
+            Self::FlameBarrier => Some(Self::FlameBarrierPlus),
+            Self::FlameBarrierPlus => None,
+            Self::GhostlyArmor => Some(Self::GhostlyArmorPlus),
+            Self::GhostlyArmorPlus => None,
         }
     }
     pub fn is_strike(&self) -> bool {

@@ -8,7 +8,10 @@ use crate::{
         med_black_slime::generate_med_black_slime, med_green_slime::generate_med_green_slime,
         red_louse::generate_red_louse,
     },
-    fight::{self, Enemies, Enemy, EnemyAction, EnemyIdx, Fight, PlayCardContext, PlayerBuffs, PlayerDebuffs, PostCardItem},
+    fight::{
+        self, Enemies, Enemy, EnemyAction, EnemyIdx, Fight, PlayCardContext, PlayerBuffs,
+        PlayerDebuffs, PostCardItem,
+    },
     rng::Rng,
     util::insert_sorted,
 };
@@ -331,6 +334,15 @@ impl Game {
                             self.player_hp = 0;
                             return Choice::Loss;
                         }
+                        let player_spikiness = self.fight.player_buffs.temp_spikes;
+                        if player_spikiness > 0 {
+                            Self::damage_enemy(&mut self.fight.enemies[i], player_spikiness);
+                        }
+                        let enemy = &self.fight.enemies[i];
+                        //An enemy dying from spikes can interrupt a multi-attack.
+                        if enemy.hp <= 0 {
+                            break;
+                        };
                     }
                     EnemyAction::Block(block) => {
                         self.fight.enemies[i].block += block;
@@ -382,10 +394,11 @@ impl Game {
             enemy.buffs.ritual_skip_first = 0;
             decrement(&mut enemy.debuffs.vulnerable);
             decrement(&mut enemy.debuffs.weak);
-            decrement(&mut self.fight.player_debuffs.vulnerable);
-            decrement(&mut self.fight.player_debuffs.weak);
-            decrement(&mut self.fight.player_debuffs.frail);
         }
+        decrement(&mut self.fight.player_debuffs.vulnerable);
+        decrement(&mut self.fight.player_debuffs.weak);
+        decrement(&mut self.fight.player_debuffs.frail);
+        self.fight.player_buffs.temp_spikes = 0;
         for _ in 0..5 {
             self.fight.draw(&mut self.rng);
         }
@@ -516,6 +529,14 @@ impl Game {
                                 self.fight.draw(&mut self.rng);
                             }
                         }
+                        PostCardItem::GainBlock(amount) => {
+                            self.fight.player_block += amount;
+                        }
+                        PostCardItem::DamageAll(amount) => {
+                            for idx in self.fight.enemies.indicies() {
+                                Self::damage_enemy(&mut self.fight.enemies[idx], amount);
+                            }
+                        }
                     }
                 } else {
                     return None;
@@ -527,10 +548,17 @@ impl Game {
     fn exhaust(&mut self, card: Card) {
         insert_sorted(card, &mut self.fight.exhaust);
         if self.fight.player_buffs.dark_embrace > 0 {
-            self.fight.post_card_queue
+            self.fight
+                .post_card_queue
                 .push_back(PostCardItem::Draw(self.fight.player_buffs.dark_embrace));
         }
+        if self.fight.player_buffs.fnp > 0 {
+            self.fight
+                .post_card_queue
+                .push_back(PostCardItem::GainBlock(self.fight.player_buffs.fnp));
+        }
     }
+
     fn win_battle(&mut self) -> Choice {
         self.floor += 1;
         self.fight = Fight::default();
@@ -574,6 +602,9 @@ impl Game {
             }
             Buff::DarkEmbraceBuff => self.fight.player_buffs.dark_embrace += 1,
             Buff::EvolveBuff(x) => self.fight.player_buffs.evolve += x,
+            Buff::FNPBuff(x) => self.fight.player_buffs.fnp += x,
+            Buff::FireBreathingBuff(x) => self.fight.player_buffs.fire_breathing += x,
+            Buff::TempSpikes(x) => self.fight.player_buffs.temp_spikes += x,
         }
     }
 
@@ -599,8 +630,17 @@ impl Game {
             }
             Buff::DarkEmbraceBuff => {
                 panic_not_apply_enemies(buff);
-            },
+            }
             Buff::EvolveBuff(_) => {
+                panic_not_apply_enemies(buff);
+            }
+            Buff::FNPBuff(_) => {
+                panic_not_apply_enemies(buff);
+            }
+            Buff::FireBreathingBuff(_) => {
+                panic_not_apply_enemies(buff);
+            }
+            Buff::TempSpikes(_) => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -712,6 +752,9 @@ impl Game {
 
     //This function handles the effect of damage on enemy block. Returns the damage dealt.
     fn damage_enemy(enemy: &mut Enemy, mut damage: i32) -> i32 {
+        if damage <= 0 {
+            return 0;
+        }
         if damage < enemy.block {
             enemy.block -= damage;
             damage = 0;
@@ -916,7 +959,8 @@ impl Game {
             PlayEffect::PlayExhaustTop => {
                 if let Some(card) = self.fight.remove_top_of_deck(&mut self.rng) {
                     let target = self.select_random_target(&card);
-                    self.fight.post_card_queue
+                    self.fight
+                        .post_card_queue
                         .push_back(PostCardItem::PlayCard(PlayCardContext {
                             card,
                             target,
@@ -944,7 +988,7 @@ impl Game {
                         self.fight.draw(&mut self.rng);
                     }
                 }
-            },
+            }
             PlayEffect::DoubleBlock => {
                 self.fight.player_block *= 2;
             }

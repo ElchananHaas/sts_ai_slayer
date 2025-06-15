@@ -1,5 +1,8 @@
 use std::{
-    cmp::max, collections::VecDeque, mem, ops::{Index, IndexMut}
+    cmp::max,
+    collections::VecDeque,
+    mem,
+    ops::{Index, IndexMut},
 };
 
 use crate::{
@@ -43,6 +46,9 @@ pub struct PlayerBuffs {
     pub end_turn_damage_all_enemies: i32,
     pub dark_embrace: i32,
     pub evolve: i32,
+    pub fnp: i32,
+    pub fire_breathing: i32,
+    pub temp_spikes: i32,
 }
 
 //This holds effects that happen after a card finishes resolving.
@@ -51,6 +57,8 @@ pub struct PlayerBuffs {
 pub enum PostCardItem {
     PlayCard(PlayCardContext),
     Draw(i32),
+    GainBlock(i32),
+    DamageAll(i32),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -103,8 +111,16 @@ impl Fight {
             return;
         }
         self.remove_top_of_deck(rng).map(|card| {
-            if card.effect.card_type() == CardType::Status && self.player_buffs.evolve > 0{
-                self.post_card_queue.push_back(PostCardItem::Draw(self.player_buffs.evolve));
+            if card.effect.card_type() == CardType::Status && self.player_buffs.evolve > 0 {
+                self.post_card_queue
+                    .push_back(PostCardItem::Draw(self.player_buffs.evolve));
+            }
+            if (card.effect.card_type() == CardType::Status
+                || card.effect.card_type() == CardType::Curse)
+                && self.player_buffs.fire_breathing > 0
+            {
+                self.post_card_queue
+                    .push_back(PostCardItem::DamageAll(self.player_buffs.fire_breathing));
             }
             insert_sorted(card, &mut self.hand);
         });
