@@ -82,6 +82,10 @@ pub enum CardBody {
     DropkickPlus,
     DualWield,
     DualWieldPlus,
+    Entrench,
+    EntrenchPlus,
+    Evolve,
+    EvolvePlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -106,6 +110,7 @@ pub enum PlayEffect {
     LoseHP(i32),
     GainEnergy(i32),
     DropkickDraw,
+    DoubleBlock,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -135,6 +140,7 @@ pub enum Buff {
     EndTurnLoseHP(i32),
     EndTurnDamageAllEnemies(i32),
     DarkEmbraceBuff,
+    EvolveBuff(i32)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -655,6 +661,30 @@ impl CardBody {
                 requires_target: false,
                 card_type: CardType::Skill,
             },
+            CardBody::Entrench => &CardProps {
+                actions: &[PlayEffect::DoubleBlock],
+                cost: Cost::Fixed(2),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::EntrenchPlus => &CardProps {
+                actions: &[PlayEffect::DoubleBlock],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::Evolve => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::EvolveBuff(1))],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
+            CardBody::EvolvePlus => &CardProps {
+                actions: &[PlayEffect::Buff(Buff::EvolveBuff(2))],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Power,
+            },
         }
     }
     pub const fn to_card(&self) -> Card {
@@ -752,6 +782,10 @@ impl CardBody {
             Self::DropkickPlus => None,
             Self::DualWield => Some(Self::DualWieldPlus),
             Self::DualWieldPlus => None,
+            Self::Entrench => Some(Self::Entrench),
+            Self::EntrenchPlus => None,
+            Self::Evolve => Some(Self::EvolvePlus),
+            Self::EvolvePlus => None,
         }
     }
     pub fn is_strike(&self) -> bool {

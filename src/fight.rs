@@ -1,7 +1,5 @@
 use std::{
-    cmp::max,
-    mem,
-    ops::{Index, IndexMut},
+    cmp::max, collections::VecDeque, mem, ops::{Index, IndexMut}
 };
 
 use crate::{
@@ -23,6 +21,8 @@ pub struct Fight {
     pub player_debuffs: PlayerDebuffs,
     pub player_buffs: PlayerBuffs,
     pub stolen_back_gold: i32,
+    //This is used for cards which play other cards, such as Havoc and some powers.
+    pub post_card_queue: VecDeque<PostCardItem>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
@@ -42,6 +42,23 @@ pub struct PlayerBuffs {
     pub end_turn_lose_hp: i32,
     pub end_turn_damage_all_enemies: i32,
     pub dark_embrace: i32,
+    pub evolve: i32,
+}
+
+//This holds effects that happen after a card finishes resolving.
+//This includes some powers, relics, and cards that play other cards.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum PostCardItem {
+    PlayCard(PlayCardContext),
+    Draw(i32),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct PlayCardContext {
+    pub card: Card,
+    pub target: usize,
+    pub exhausts: bool,
+    pub effect_index: usize,
 }
 
 impl Fight {
@@ -60,6 +77,7 @@ impl Fight {
             discard_pile: vec![],
             exhaust: vec![],
             stolen_back_gold: 0,
+            post_card_queue: VecDeque::new(),
         }
     }
     //This removes the top of the deck, reshuffling if needed.
@@ -85,6 +103,9 @@ impl Fight {
             return;
         }
         self.remove_top_of_deck(rng).map(|card| {
+            if card.effect.card_type() == CardType::Status && self.player_buffs.evolve > 0{
+                self.post_card_queue.push_back(PostCardItem::Draw(self.player_buffs.evolve));
+            }
             insert_sorted(card, &mut self.hand);
         });
     }

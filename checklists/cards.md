@@ -36,9 +36,9 @@
 - [x] Dark Embrace
 - [x] Disarm
 - [x] Dropkick
-- [ ] Dual Wield
-- [ ] Entrench
-- [ ] Evolve
+- [x] Dual Wield
+- [x] Entrench
+- [x] Evolve
 - [ ] Feel No Pain
 - [ ] Fire Breathing
 - [ ] Flame Barrier

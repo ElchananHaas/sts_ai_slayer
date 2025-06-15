@@ -8,7 +8,7 @@ use crate::{
         med_black_slime::generate_med_black_slime, med_green_slime::generate_med_green_slime,
         red_louse::generate_red_louse,
     },
-    fight::{self, Enemies, Enemy, EnemyAction, EnemyIdx, Fight, PlayerBuffs, PlayerDebuffs},
+    fight::{self, Enemies, Enemy, EnemyAction, EnemyIdx, Fight, PlayCardContext, PlayerBuffs, PlayerDebuffs, PostCardItem},
     rng::Rng,
     util::insert_sorted,
 };
@@ -23,18 +23,7 @@ pub struct Game {
     base_deck: Vec<Card>,
     gold: i32,
     rng: Rng,
-    //It might be good to move these queues to the fight because they aren't retained between fights.
-    //This is used for cards which play other cards, such as Havoc.
-    post_card_queue: VecDeque<PostCardItem>,
     pub floor: i32,
-}
-
-//This holds effects that happen after a card finishes resolving.
-//This includes some powers, relics, and cards that play other cards.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum PostCardItem {
-    PlayCard(PlayCardContext),
-    Draw(i32),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -76,13 +65,6 @@ pub enum Choice {
         Vec<SelectCardAction>,
         SelectionPile,
     ),
-}
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct PlayCardContext {
-    card: Card,
-    target: usize,
-    exhausts: bool,
-    effect_index: usize,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -524,7 +506,7 @@ impl Game {
             } else {
                 //Cards like Havoc, Omniscience can queue up other cards to be played. If
                 //this happens pop them off and play them until there are none left.
-                if let Some(front) = self.post_card_queue.pop_front() {
+                if let Some(front) = self.fight.post_card_queue.pop_front() {
                     match front {
                         PostCardItem::PlayCard(play_card_context) => {
                             context = Some(play_card_context);
@@ -545,16 +527,13 @@ impl Game {
     fn exhaust(&mut self, card: Card) {
         insert_sorted(card, &mut self.fight.exhaust);
         if self.fight.player_buffs.dark_embrace > 0 {
-            self.post_card_queue
+            self.fight.post_card_queue
                 .push_back(PostCardItem::Draw(self.fight.player_buffs.dark_embrace));
         }
     }
     fn win_battle(&mut self) -> Choice {
         self.floor += 1;
-        self.post_card_queue.clear();
-        self.fight.deck = Deck::shuffled(vec![]);
-        self.fight.discard_pile.clear();
-        self.fight.hand.clear();
+        self.fight = Fight::default();
         Choice::RewardState(vec![RewardStateAction::Proceed])
     }
 
@@ -594,6 +573,7 @@ impl Game {
                 self.fight.player_buffs.end_turn_damage_all_enemies += x
             }
             Buff::DarkEmbraceBuff => self.fight.player_buffs.dark_embrace += 1,
+            Buff::EvolveBuff(x) => self.fight.player_buffs.evolve += x,
         }
     }
 
@@ -618,6 +598,9 @@ impl Game {
                 panic_not_apply_enemies(buff);
             }
             Buff::DarkEmbraceBuff => {
+                panic_not_apply_enemies(buff);
+            },
+            Buff::EvolveBuff(_) => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -933,7 +916,7 @@ impl Game {
             PlayEffect::PlayExhaustTop => {
                 if let Some(card) = self.fight.remove_top_of_deck(&mut self.rng) {
                     let target = self.select_random_target(&card);
-                    self.post_card_queue
+                    self.fight.post_card_queue
                         .push_back(PostCardItem::PlayCard(PlayCardContext {
                             card,
                             target,
@@ -961,6 +944,9 @@ impl Game {
                         self.fight.draw(&mut self.rng);
                     }
                 }
+            },
+            PlayEffect::DoubleBlock => {
+                self.fight.player_block *= 2;
             }
         }
         ActionControlFlow::Continue
@@ -1060,7 +1046,6 @@ impl Game {
                 fight: Fight::new(),
                 gold: 99,
                 floor: 0,
-                post_card_queue: VecDeque::new(),
                 base_deck: vec![
                     CardBody::Strike.to_card(),
                     CardBody::Strike.to_card(),
