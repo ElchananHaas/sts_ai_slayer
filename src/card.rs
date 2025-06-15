@@ -80,6 +80,8 @@ pub enum CardBody {
     DisarmPlus,
     Dropkick,
     DropkickPlus,
+    DualWield,
+    DualWieldPlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -112,6 +114,7 @@ pub enum SelectCardEffect {
     DiscardToTop,
     ExhaustChosen,
     HandToTop,
+    DuplicatePowerOrAttack(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -625,22 +628,32 @@ impl CardBody {
                 card_type: CardType::Skill,
             },
             CardBody::Dropkick => &CardProps {
-                actions: &[
-                    PlayEffect::Attack(5),
-                    PlayEffect::DropkickDraw,
-                ],
+                actions: &[PlayEffect::Attack(5), PlayEffect::DropkickDraw],
                 cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
             },
             CardBody::DropkickPlus => &CardProps {
-                actions: &[
-                    PlayEffect::Attack(5),
-                    PlayEffect::DropkickDraw,
-                ],
+                actions: &[PlayEffect::Attack(5), PlayEffect::DropkickDraw],
                 cost: Cost::Fixed(1),
                 requires_target: true,
                 card_type: CardType::Attack,
+            },
+            CardBody::DualWield => &CardProps {
+                actions: &[PlayEffect::SelectCardEffect(
+                    SelectCardEffect::DuplicatePowerOrAttack(1),
+                )],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Skill,
+            },
+            CardBody::DualWieldPlus => &CardProps {
+                actions: &[PlayEffect::SelectCardEffect(
+                    SelectCardEffect::DuplicatePowerOrAttack(2),
+                )],
+                cost: Cost::Fixed(1),
+                requires_target: false,
+                card_type: CardType::Skill,
             },
         }
     }
@@ -737,6 +750,8 @@ impl CardBody {
             Self::DisarmPlus => None,
             Self::Dropkick => Some(Self::DropkickPlus),
             Self::DropkickPlus => None,
+            Self::DualWield => Some(Self::DualWieldPlus),
+            Self::DualWieldPlus => None,
         }
     }
     pub fn is_strike(&self) -> bool {

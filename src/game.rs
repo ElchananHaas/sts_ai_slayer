@@ -703,6 +703,23 @@ impl Game {
                 };
                 self.put_on_top(card);
             }
+            SelectCardEffect::DuplicatePowerOrAttack(amount) => {
+                let card = match action {
+                    SelectCardAction::ChooseCard(idx) => &self.fight.hand[idx].clone(),
+                };
+                for _ in 0..amount {
+                    //TODO - consider interactions with Genetic Algorithm.
+                    self.add_card_to_hand(card.clone());
+                }
+            }
+        }
+    }
+
+    fn add_card_to_hand(&mut self, card: Card) {
+        if self.fight.hand.len() < 10 {
+            insert_sorted(card, &mut self.fight.hand);
+        } else {
+            insert_sorted(card, &mut self.fight.discard_pile);
         }
     }
 
@@ -783,7 +800,6 @@ impl Game {
             _ => 0,
         }
     }
-
     fn handle_action(
         &mut self,
         action: PlayEffect,
@@ -854,28 +870,19 @@ impl Game {
             }
             PlayEffect::SelectCardEffect(select_effect) => match select_effect {
                 SelectCardEffect::UpgradeCardInHand => {
-                    let mut upgrade_targets: Vec<SelectCardAction> = Vec::new();
-                    for i in 0..self.fight.hand.len() {
-                        if self.fight.hand[i].effect.upgraded().is_some() {
-                            upgrade_targets.push(SelectCardAction::ChooseCard(i));
-                        }
-                    }
-                    if upgrade_targets.len() > 0 {
+                    let targets = choose_card_filter(&self.fight.hand, |card| {
+                        card.effect.upgraded().is_some()
+                    });
+                    if targets.len() > 0 {
                         return ActionControlFlow::SelectCards(
-                            upgrade_targets,
+                            targets,
                             select_effect,
                             SelectionPile::Hand,
                         );
                     }
                 }
                 SelectCardEffect::DiscardToTop => {
-                    let targets: Vec<_> = self
-                        .fight
-                        .discard_pile
-                        .iter()
-                        .enumerate()
-                        .map(|(i, _)| SelectCardAction::ChooseCard(i))
-                        .collect();
+                    let targets = choose_card_filter(&self.fight.discard_pile, |_| true);
                     if targets.len() > 0 {
                         return ActionControlFlow::SelectCards(
                             targets,
@@ -885,13 +892,7 @@ impl Game {
                     }
                 }
                 SelectCardEffect::ExhaustChosen => {
-                    let targets: Vec<_> = self
-                        .fight
-                        .hand
-                        .iter()
-                        .enumerate()
-                        .map(|(i, _)| SelectCardAction::ChooseCard(i))
-                        .collect();
+                    let targets = choose_card_filter(&self.fight.hand, |_| true);
                     if targets.len() > 0 {
                         return ActionControlFlow::SelectCards(
                             targets,
@@ -901,13 +902,20 @@ impl Game {
                     }
                 }
                 SelectCardEffect::HandToTop => {
-                    let targets: Vec<_> = self
-                        .fight
-                        .hand
-                        .iter()
-                        .enumerate()
-                        .map(|(i, _)| SelectCardAction::ChooseCard(i))
-                        .collect();
+                    let targets = choose_card_filter(&self.fight.hand, |_| true);
+                    if targets.len() > 0 {
+                        return ActionControlFlow::SelectCards(
+                            targets,
+                            select_effect,
+                            SelectionPile::Hand,
+                        );
+                    }
+                }
+                SelectCardEffect::DuplicatePowerOrAttack(x) => {
+                    let targets = choose_card_filter(&self.fight.hand, |card| {
+                        let t = card.effect.card_type();
+                        t == CardType::Power || t == CardType::Attack
+                    });
                     if targets.len() > 0 {
                         return ActionControlFlow::SelectCards(
                             targets,
@@ -1012,6 +1020,15 @@ fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
             panic!("No draw cannot be applied to enemies!");
         }
     }
+}
+
+fn choose_card_filter(cards: &Vec<Card>, filter: impl Fn(&Card) -> bool) -> Vec<SelectCardAction> {
+    cards
+        .iter()
+        .enumerate()
+        .filter(|x| filter(x.1))
+        .map(|(i, _)| SelectCardAction::ChooseCard(i))
+        .collect()
 }
 
 fn decrement(x: &mut i32) {
