@@ -42,7 +42,7 @@
 - [x] Feel No Pain
 - [x] Fire Breathing
 - [x] Flame Barrier
-- [ ] Ghostly Armor
+- [x] Ghostly Armor
 - [ ] Hemokinesis
 - [ ] Infernal Blade
 - [ ] Inflame

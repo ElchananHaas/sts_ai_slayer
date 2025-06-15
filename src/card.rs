@@ -94,6 +94,8 @@ pub enum CardBody {
     FlameBarrierPlus,
     GhostlyArmor,
     GhostlyArmorPlus,
+    Hemokinesis,
+    HemokinesisPlus,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -744,6 +746,18 @@ impl CardBody {
                 requires_target: false,
                 card_type: CardType::Skill,
             },
+            CardBody::Hemokinesis => &CardProps {
+                actions: &[PlayEffect::LoseHP(2), PlayEffect::Attack(15)],
+                cost: Cost::Fixed(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
+            CardBody::HemokinesisPlus => &CardProps {
+                actions: &[PlayEffect::LoseHP(2), PlayEffect::Attack(20)],
+                cost: Cost::Fixed(1),
+                requires_target: true,
+                card_type: CardType::Attack,
+            },
         }
     }
     pub const fn to_card(&self) -> Card {
@@ -853,6 +867,8 @@ impl CardBody {
             Self::FlameBarrierPlus => None,
             Self::GhostlyArmor => Some(Self::GhostlyArmorPlus),
             Self::GhostlyArmorPlus => None,
+            Self::Hemokinesis => Some(Self::HemokinesisPlus),
+            Self::HemokinesisPlus => None,
         }
     }
     pub fn is_strike(&self) -> bool {
