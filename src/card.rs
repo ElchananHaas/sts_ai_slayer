@@ -676,14 +676,14 @@ impl CardBody {
     }
 }
 macro_rules! filtered_cards {
-    () => {{
+    ($expression:expr) => {{
         const fn get_num_variants() -> usize {
             let num_variants = CardBody::VARIANTS.len();
             let mut i = 0;
             let mut matching = 0;
             while i < num_variants {
                 let variant = CardBody::VARIANTS[i];
-                if let CardType::Attack = variant.props().card_type {
+                if ($expression)(variant.props()) {
                     matching += 1;
                 }
                 i += 1;
@@ -698,7 +698,7 @@ macro_rules! filtered_cards {
             let mut out_pos = 0;
             while i < num_variants {
                 let variant = CardBody::VARIANTS[i];
-                if let CardType::Attack = variant.props().card_type {
+                if ($expression)(variant.props()) {
                     output[out_pos] = variant;
                     out_pos += 1;
                 }
@@ -709,7 +709,10 @@ macro_rules! filtered_cards {
         &get_filtered_arr()
     }};
 }
-pub const ATTACK_CARDS: &'static [CardBody] = filtered_cards!();
+const fn attack_filter(props: &'static CardProps) -> bool {
+    matches!(props.card_type, CardType::Attack)
+}
+pub const ATTACK_CARDS: &'static [CardBody] = filtered_cards!(attack_filter);
 
 impl Card {
     fn props(&self) -> &'static CardProps {
