@@ -167,7 +167,7 @@ impl<'a> ChoiceState<'a> {
                 let action = play_card_actions[action_idx];
                 match action {
                     PlayCardAction::PlayCard(card_idx) => {
-                        format!("{:?}", self.game.fight.hand[card_idx as usize].effect)
+                        format!("{:?}", self.game.fight.hand[card_idx as usize].body)
                     }
                     PlayCardAction::EndTurn => "End Turn".to_owned(),
                 }
@@ -199,14 +199,14 @@ impl<'a> ChoiceState<'a> {
                 match selection_type {
                     SelectionPile::Hand => match action {
                         SelectCardAction::ChooseCard(choice) => {
-                            format!("Select {:?}", self.game.fight.hand[choice as usize].effect)
+                            format!("Select {:?}", self.game.fight.hand[choice as usize].body)
                         } //SelectCardAction::None => "No Selection".to_owned(),
                     },
                     SelectionPile::Discard => match action {
                         SelectCardAction::ChooseCard(choice) => {
                             format!(
                                 "Select {:?}",
-                                self.game.fight.discard_pile[choice as usize].effect
+                                self.game.fight.discard_pile[choice as usize].body
                             )
                         }
                     },
@@ -276,7 +276,7 @@ impl Game {
         match action {
             PlayCardAction::PlayCard(idx) => {
                 let card = &self.fight.hand[idx as usize];
-                if card.effect.requires_target() {
+                if card.body.requires_target() {
                     return self.choose_enemy_choice(idx as usize);
                 }
                 //If a card doesn't require targets supply 0 as a target since it won't matter.
@@ -410,7 +410,7 @@ impl Game {
         let mut old_hand = Vec::new();
         mem::swap(&mut old_hand, &mut self.fight.hand);
         for card in old_hand {
-            if card.effect.ethereal() {
+            if card.ethereal() {
                 self.exhaust(card);
             } else {
                 insert_sorted(card, &mut self.fight.discard_pile);
@@ -482,8 +482,8 @@ impl Game {
                 return Some(self.win_battle());
             }
             if let Some(mut card_context) = context {
-                if card_context.effect_index < card_context.card.effect.actions().len() {
-                    let action = card_context.card.effect.actions()[card_context.effect_index];
+                if card_context.effect_index < card_context.card.body.actions().len() {
+                    let action = card_context.card.body.actions()[card_context.effect_index];
                     card_context.effect_index += 1;
                     let next = self.handle_action(action, &mut card_context);
                     //If the player needs to make a selection, break out of the loop. It will be
@@ -507,7 +507,7 @@ impl Game {
                             enemy.buffs.queued_block = 0;
                         }
                     }
-                    if card_context.card.effect.card_type() == CardType::Power {
+                    if card_context.card.body.card_type() == CardType::Power {
                         //Do nothing for powers, they just go away after playing.
                     } else if card_context.exhausts {
                         self.exhaust(card_context.card);
@@ -706,7 +706,7 @@ impl Game {
                 let card = match action {
                     SelectCardAction::ChooseCard(idx) => &mut self.fight.hand[idx],
                 };
-                upgrade(card);
+                card.upgrade();
             }
             SelectCardEffect::DiscardToTop => {
                 let card = match action {
@@ -768,9 +768,10 @@ impl Game {
     }
 
     fn attack_enemy(&mut self, card: &Card, amount: i32, target: usize) {
-        let strength = match card.effect {
-            CardBody::HeavyBlade => self.fight.player_buffs.strength * 3,
-            CardBody::HeavyBladePlus => self.fight.player_buffs.strength * 5,
+        let strength = match card.body {
+            CardBody::HeavyBlade => {
+                self.fight.player_buffs.strength * (if card.is_upgraded() { 5 } else { 3 })
+            }
             _ => 1,
         };
         let mut damage: f32 = (amount + strength) as f32;
@@ -802,27 +803,31 @@ impl Game {
     }
 
     fn num_strikes(&self) -> i32 {
-        let mut count = self.fight.deck.count(|card| card.effect.is_strike());
+        let mut count = self.fight.deck.count(|card| card.body.is_strike());
         count += self
             .fight
             .hand
             .iter()
-            .filter(|card| card.effect.is_strike())
+            .filter(|card| card.body.is_strike())
             .count();
         count += self
             .fight
             .discard_pile
             .iter()
-            .filter(|card| card.effect.is_strike())
+            .filter(|card| card.body.is_strike())
             .count();
         count as i32
     }
 
     fn bonus_attack(&self, card: &Card) -> i32 {
-        match card.effect {
-            CardBody::SearingBlow(upgrades) => ((upgrades) * (upgrades + 7)) / 2,
-            CardBody::PerfectedStrike => self.num_strikes() * 2,
-            CardBody::PerfectedStrikePlus => self.num_strikes() * 3,
+        match card.body {
+            CardBody::SearingBlow => {
+                let upgrades = card.assoc_data.get_unlimited_upgrade();
+                (upgrades * (upgrades + 7)) / 2
+            }
+            CardBody::PerfectedStrike => {
+                self.num_strikes() * (if card.is_upgraded() { 3 } else { 2 })
+            }
             _ => 0,
         }
     }
@@ -896,9 +901,7 @@ impl Game {
             }
             PlayEffect::SelectCardEffect(select_effect) => match select_effect {
                 SelectCardEffect::UpgradeCardInHand => {
-                    let targets = choose_card_filter(&self.fight.hand, |card| {
-                        card.effect.upgraded().is_some()
-                    });
+                    let targets = choose_card_filter(&self.fight.hand, |card| card.can_upgrade());
                     if targets.len() > 0 {
                         return ActionControlFlow::SelectCards(
                             targets,
@@ -939,7 +942,7 @@ impl Game {
                 }
                 SelectCardEffect::DuplicatePowerOrAttack(x) => {
                     let targets = choose_card_filter(&self.fight.hand, |card| {
-                        let t = card.effect.card_type();
+                        let t = card.body.card_type();
                         t == CardType::Power || t == CardType::Attack
                     });
                     if targets.len() > 0 {
@@ -953,7 +956,7 @@ impl Game {
             },
             PlayEffect::UpgradeAllCardsInHand => {
                 for card in &mut self.fight.hand {
-                    upgrade(card);
+                    card.upgrade();
                 }
             }
             PlayEffect::PlayExhaustTop => {
@@ -992,6 +995,9 @@ impl Game {
             PlayEffect::DoubleBlock => {
                 self.fight.player_block *= 2;
             }
+            PlayEffect::GenerateAttackInfernal => {
+                todo!("Implement infernal blade!")
+            }
         }
         ActionControlFlow::Continue
     }
@@ -1010,21 +1016,10 @@ impl Game {
     }
 
     fn select_random_target(&mut self, card: &Card) -> usize {
-        if card.effect.requires_target() {
+        if card.body.requires_target() {
             self.choose_random_enemy()
         } else {
             0
-        }
-    }
-}
-
-fn upgrade(card: &mut Card) {
-    if let Some(upgraded) = card.effect.upgraded() {
-        let current_cost = card.cost;
-        let base_cost = card.effect.default_cost();
-        card.effect = upgraded;
-        if current_cost == base_cost {
-            card.cost = upgraded.default_cost();
         }
     }
 }
@@ -1241,9 +1236,9 @@ impl<'a> Display for ChoiceState<'a> {
         write!(f, "| ")?;
         for card in &game.fight.hand {
             if let Some(cost) = game.fight.evaluate_cost(card) {
-                write!(f, "{:?} [{}] | ", card.effect, cost)?;
+                write!(f, "{:?} [{}] | ", card.body, cost)?;
             } else {
-                write!(f, "{:?} [x] | ", card.effect)?;
+                write!(f, "{:?} [x] | ", card.body)?;
             }
         }
         write!(f, "\n")?;

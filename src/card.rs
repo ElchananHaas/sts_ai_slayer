@@ -1,9 +1,35 @@
+use std::cmp::max;
+
+use strum::VariantArray;
+
+use crate::game::Charachter;
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Card {
-    pub effect: CardBody,
+    pub body: CardBody,
     pub cost: Cost,
+    pub assoc_data: CardAssoc,
+    upgraded: bool,
 }
 
+//In order to have the CardBody enum be trivially constructable the
+//extra data associated with a card is stored in a different enum.
+//This stores effects like Searing Blow's unlimited upgrades
+//or Genetic Algorithm scaling.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum CardAssoc {
+    None,
+    UnlimitedUpgrade(i32), //Used for Searing Blow
+}
+
+impl CardAssoc {
+    pub fn get_unlimited_upgrade(&self) -> i32 {
+        let Self::UnlimitedUpgrade(amount) = self else {
+            panic!("Expected unlimited upgrade data");
+        };
+        *amount
+    }
+}
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Cost {
     Unplayable,
@@ -11,91 +37,52 @@ pub enum Cost {
     X,
     NumMinusHpLoss(i32), //This is for Blood for Blood
 }
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, VariantArray)]
 pub enum CardBody {
     Strike,
-    StrikePlus,
     Bash,
-    BashPlus,
     Defend,
-    DefendPlus,
     Slimed,
     Anger,
-    AngerPlus,
     Armaments,
-    ArmamentsPlus,
     BodySlam,
-    BodySlamPlus,
     Clash,
-    ClashPlus,
     Cleave,
-    CleavePlus,
     Clothesline,
-    ClotheslinePlus,
     Flex,
-    FlexPlus,
     Havoc,
-    HavocPlus,
     Headbutt,
-    HeadbuttPlus,
     HeavyBlade,
-    HeavyBladePlus,
     IronWave,
-    IronWavePlus,
     PerfectedStrike,
-    PerfectedStrikePlus,
     PommelStrike,
-    PommelStrikePlus,
     ShrugItOff,
-    ShrugItOffPlus,
     SwordBoomerang,
-    SwordBoomerangPlus,
     Thunderclap,
-    ThunderclapPlus,
     TrueGrit,
-    TrueGritPlus,
     TwinStrike,
-    TwinStrikePlus,
     Warcry,
-    WarcryPlus,
     WildStrike,
-    WildStrikePlus,
     Wound,
     BattleTrance,
-    BattleTrancePlus,
     BloodForBlood,
-    BloodForBloodPlus,
     Bloodletting,
-    BloodlettingPlus,
     BurningPact,
-    BurningPactPlus,
-    SearingBlow(i32),
+    SearingBlow,
     Carnage,
-    CarnagePlus,
     Combust,
-    CombustPlus,
     DarkEmbrace,
-    DarkEmbracePlus,
     Disarm,
-    DisarmPlus,
     Dropkick,
-    DropkickPlus,
     DualWield,
-    DualWieldPlus,
     Entrench,
-    EntrenchPlus,
     Evolve,
-    EvolvePlus,
     FeelNoPain,
-    FeelNoPainPlus,
     FireBreathing,
-    FireBreathingPlus,
     FlameBarrier,
-    FlameBarrierPlus,
     GhostlyArmor,
-    GhostlyArmorPlus,
     Hemokinesis,
-    HemokinesisPlus,
+    InfernalBlade,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -121,6 +108,7 @@ pub enum PlayEffect {
     GainEnergy(i32),
     DropkickDraw,
     DoubleBlock,
+    GenerateAttackInfernal,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -165,605 +153,503 @@ pub enum CardType {
     Curse,
 }
 
-pub struct CardProps {
-    pub actions: &'static [PlayEffect],
-    pub cost: Cost,
-    pub requires_target: bool,
-    pub card_type: CardType,
+struct CardProps {
+    actions: &'static [PlayEffect],
+    cost: Cost,
+    requires_target: bool,
+    card_type: CardType,
+    upgradable: bool,
+    upgraded_actions: &'static [PlayEffect],
+    upgraded_cost: Cost,
+    upgraded_requires_target: bool,
+    ethereal: Ethereal,
 }
 
+enum Ethereal {
+    No,
+    Yes,
+    NotUpgraded,
+}
+
+impl CardProps {
+    const fn new(
+        actions: &'static [PlayEffect],
+        upgraded_actions: &'static [PlayEffect],
+        cost: Cost,
+        requires_target: bool,
+        card_type: CardType,
+    ) -> Self {
+        Self {
+            actions,
+            cost,
+            requires_target,
+            card_type,
+            upgraded_actions,
+            upgraded_cost: cost,
+            upgraded_requires_target: requires_target,
+            upgradable: true,
+            ethereal: Ethereal::No,
+        }
+    }
+    const fn not_upgradable(self) -> Self {
+        Self {
+            upgradable: false,
+            ..self
+        }
+    }
+    const fn with_upgraded_cost(self, cost: Cost) -> Self {
+        Self {
+            upgraded_cost: cost,
+            ..self
+        }
+    }
+    const fn with_upgraded_requires_target(self, upgraded_requires_target: bool) -> Self {
+        Self {
+            upgraded_requires_target,
+            ..self
+        }
+    }
+    const fn with_ethereal(self, ethereal: Ethereal) -> Self {
+        Self { ethereal, ..self }
+    }
+}
+
+macro_rules! const_card {
+    ($expression:expr) => {{
+        const CARD_PROPS: &'static CardProps = $expression;
+        CARD_PROPS
+    }};
+}
 impl CardBody {
-    pub const fn props(&self) -> &'static CardProps {
-        match self {
-            CardBody::Strike => &CardProps {
-                actions: &[PlayEffect::Attack(6)],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::StrikePlus => &CardProps {
-                actions: &[PlayEffect::Attack(9)],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::Bash => &CardProps {
-                actions: &[
+    const fn props(&self) -> &'static CardProps {
+        return match self {
+            CardBody::Strike => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(6)],
+                &[PlayEffect::Attack(9)],
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::Bash => const_card!(&CardProps::new(
+                &[
                     PlayEffect::Attack(8),
                     PlayEffect::DebuffEnemy(Debuff::Vulnerable(2)),
                 ],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::BashPlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::Attack(10),
                     PlayEffect::DebuffEnemy(Debuff::Vulnerable(3)),
                 ],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::Defend => &CardProps {
-                actions: &[PlayEffect::Block(5)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::DefendPlus => &CardProps {
-                actions: &[PlayEffect::Block(8)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::Slimed => &CardProps {
-                actions: &[PlayEffect::MarkExhaust],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Status,
-            },
-            CardBody::Anger => &CardProps {
-                actions: &[PlayEffect::Attack(6), PlayEffect::AddCopyToDiscard],
-                cost: Cost::Fixed(0),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::AngerPlus => &CardProps {
-                actions: &[PlayEffect::Attack(8), PlayEffect::AddCopyToDiscard],
-                cost: Cost::Fixed(0),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::Armaments => &CardProps {
-                actions: &[
+                Cost::Fixed(2),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::Defend => const_card!(&CardProps::new(
+                &[PlayEffect::Block(5)],
+                &[PlayEffect::Block(8)],
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::Slimed => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::MarkExhaust],
+                    &[PlayEffect::MarkExhaust],
+                    Cost::Fixed(1),
+                    false,
+                    CardType::Status,
+                )
+                .not_upgradable()
+            ),
+            CardBody::Anger => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(6), PlayEffect::AddCopyToDiscard],
+                &[PlayEffect::Attack(8), PlayEffect::AddCopyToDiscard],
+                Cost::Fixed(0),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::Armaments => const_card!(&CardProps::new(
+                &[
                     PlayEffect::Block(5),
                     PlayEffect::SelectCardEffect(SelectCardEffect::UpgradeCardInHand),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::ArmamentsPlus => &CardProps {
-                actions: &[PlayEffect::Block(5), PlayEffect::UpgradeAllCardsInHand],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::BodySlam => &CardProps {
-                actions: &[PlayEffect::AttackEqualBlock],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::BodySlamPlus => &CardProps {
-                actions: &[PlayEffect::AttackEqualBlock],
-                cost: Cost::Fixed(0),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::Clash => &CardProps {
-                actions: &[PlayEffect::Attack(14)],
-                cost: Cost::Fixed(0),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::ClashPlus => &CardProps {
-                actions: &[PlayEffect::Attack(18)],
-                cost: Cost::Fixed(0),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::Cleave => &CardProps {
-                actions: &[PlayEffect::AttackAll(8)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Attack,
-            },
-            CardBody::CleavePlus => &CardProps {
-                actions: &[PlayEffect::AttackAll(11)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Attack,
-            },
-            CardBody::Clothesline => &CardProps {
-                actions: &[
+                &[PlayEffect::Block(5), PlayEffect::UpgradeAllCardsInHand],
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::BodySlam => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::AttackEqualBlock],
+                    &[PlayEffect::AttackEqualBlock],
+                    Cost::Fixed(1),
+                    true,
+                    CardType::Attack,
+                )
+                .with_upgraded_cost(Cost::Fixed(0))
+            ),
+            CardBody::Clash => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(14)],
+                &[PlayEffect::Attack(18)],
+                Cost::Fixed(0),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::Cleave => const_card!(&CardProps::new(
+                &[PlayEffect::AttackAll(8)],
+                &[PlayEffect::AttackAll(11)],
+                Cost::Fixed(1),
+                false,
+                CardType::Attack,
+            )),
+            CardBody::Clothesline => const_card!(&CardProps::new(
+                &[
                     PlayEffect::Attack(12),
                     PlayEffect::DebuffEnemy(Debuff::Weak(2)),
                 ],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::ClotheslinePlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::Attack(14),
                     PlayEffect::DebuffEnemy(Debuff::Weak(3)),
                 ],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::Flex => &CardProps {
-                actions: &[
+                Cost::Fixed(2),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::Flex => const_card!(&CardProps::new(
+                &[
                     PlayEffect::Buff(Buff::Strength(2)),
                     PlayEffect::DebuffSelf(Debuff::StrengthDown(2)),
                 ],
-                cost: Cost::Fixed(0),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::FlexPlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::Buff(Buff::Strength(4)),
                     PlayEffect::DebuffSelf(Debuff::StrengthDown(4)),
                 ],
-                cost: Cost::Fixed(0),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::Havoc => &CardProps {
-                actions: &[PlayEffect::PlayExhaustTop],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::HavocPlus => &CardProps {
-                actions: &[PlayEffect::PlayExhaustTop],
-                cost: Cost::Fixed(0),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::Headbutt => &CardProps {
-                actions: &[
+                Cost::Fixed(0),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::Havoc => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::PlayExhaustTop],
+                    &[PlayEffect::PlayExhaustTop],
+                    Cost::Fixed(1),
+                    false,
+                    CardType::Skill,
+                )
+                .with_upgraded_cost(Cost::Fixed(0))
+            ),
+            CardBody::Headbutt => const_card!(&CardProps::new(
+                &[
                     PlayEffect::Attack(9),
                     PlayEffect::SelectCardEffect(SelectCardEffect::DiscardToTop),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::HeadbuttPlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::Attack(12),
                     PlayEffect::SelectCardEffect(SelectCardEffect::DiscardToTop),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::HeavyBlade => &CardProps {
-                actions: &[
-                    PlayEffect::Attack(14), //There is special code for handling this card.
-                ],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::HeavyBladePlus => &CardProps {
-                actions: &[
-                    PlayEffect::Attack(14), //There is special code for handling this card.
-                ],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::IronWave => &CardProps {
-                actions: &[PlayEffect::Block(5), PlayEffect::Attack(5)],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::IronWavePlus => &CardProps {
-                actions: &[PlayEffect::Block(7), PlayEffect::Attack(7)],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::SearingBlow(_) => &CardProps {
-                actions: &[PlayEffect::Attack(12)],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::PerfectedStrike => &CardProps {
-                actions: &[PlayEffect::Attack(6)],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::PerfectedStrikePlus => &CardProps {
-                actions: &[PlayEffect::Attack(6)],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::PommelStrike => &CardProps {
-                actions: &[PlayEffect::Attack(9), PlayEffect::Draw(1)],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::PommelStrikePlus => &CardProps {
-                actions: &[PlayEffect::Attack(10), PlayEffect::Draw(2)],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::ShrugItOff => &CardProps {
-                actions: &[PlayEffect::Block(8), PlayEffect::Draw(1)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::ShrugItOffPlus => &CardProps {
-                actions: &[PlayEffect::Block(11), PlayEffect::Draw(1)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::SwordBoomerang => &CardProps {
-                actions: &[
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::HeavyBlade => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(14)],
+                &[PlayEffect::Attack(14)],
+                Cost::Fixed(2),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::IronWave => const_card!(&CardProps::new(
+                &[PlayEffect::Block(5), PlayEffect::Attack(5)],
+                &[PlayEffect::Block(7), PlayEffect::Attack(7)],
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::SearingBlow => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(12)],
+                &[PlayEffect::Attack(12)],
+                Cost::Fixed(2),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::PerfectedStrike => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(6)],
+                &[PlayEffect::Attack(6)],
+                Cost::Fixed(2),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::PommelStrike => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(9), PlayEffect::Draw(1)],
+                &[PlayEffect::Attack(10), PlayEffect::Draw(2)],
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::ShrugItOff => const_card!(&CardProps::new(
+                &[PlayEffect::Block(8), PlayEffect::Draw(1)],
+                &[PlayEffect::Block(11), PlayEffect::Draw(1)],
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::SwordBoomerang => const_card!(&CardProps::new(
+                &[
                     PlayEffect::AttackRandomEnemy(3),
                     PlayEffect::AttackRandomEnemy(3),
                     PlayEffect::AttackRandomEnemy(3),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Attack,
-            },
-            CardBody::SwordBoomerangPlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::AttackRandomEnemy(3),
                     PlayEffect::AttackRandomEnemy(3),
                     PlayEffect::AttackRandomEnemy(3),
                     PlayEffect::AttackRandomEnemy(3),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Attack,
-            },
-            CardBody::Thunderclap => &CardProps {
-                actions: &[
+                Cost::Fixed(1),
+                false,
+                CardType::Attack,
+            )),
+            CardBody::Thunderclap => const_card!(&CardProps::new(
+                &[
                     PlayEffect::AttackAll(4),
                     PlayEffect::DebuffAll(Debuff::Vulnerable(1)),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Attack,
-            },
-            CardBody::ThunderclapPlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::AttackAll(7),
                     PlayEffect::DebuffAll(Debuff::Vulnerable(1)),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Attack,
-            },
-            CardBody::TrueGrit => &CardProps {
-                actions: &[PlayEffect::Block(7), PlayEffect::ExhaustRandomInHand],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::TrueGritPlus => &CardProps {
-                actions: &[
+                Cost::Fixed(1),
+                false,
+                CardType::Attack,
+            )),
+            CardBody::TrueGrit => const_card!(&CardProps::new(
+                &[PlayEffect::Block(7), PlayEffect::ExhaustRandomInHand],
+                &[
                     PlayEffect::Block(7),
                     PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::TwinStrike => &CardProps {
-                actions: &[PlayEffect::Attack(5), PlayEffect::Attack(5)],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::TwinStrikePlus => &CardProps {
-                actions: &[PlayEffect::Attack(7), PlayEffect::Attack(7)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Attack,
-            },
-            CardBody::Warcry => &CardProps {
-                actions: &[
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::TwinStrike => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(5), PlayEffect::Attack(5)],
+                &[PlayEffect::Attack(7), PlayEffect::Attack(7)],
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::Warcry => const_card!(&CardProps::new(
+                &[
                     PlayEffect::Draw(1),
                     PlayEffect::SelectCardEffect(SelectCardEffect::HandToTop),
                     PlayEffect::MarkExhaust,
                 ],
-                cost: Cost::Fixed(0),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::WarcryPlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::Draw(2),
                     PlayEffect::SelectCardEffect(SelectCardEffect::HandToTop),
                     PlayEffect::MarkExhaust,
                 ],
-                cost: Cost::Fixed(0),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::WildStrike => &CardProps {
-                actions: &[
+                Cost::Fixed(0),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::WildStrike => const_card!(&CardProps::new(
+                &[
                     PlayEffect::Attack(12),
                     PlayEffect::ShuffleInStatus(CardBody::Wound),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::WildStrikePlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::Attack(17),
                     PlayEffect::ShuffleInStatus(CardBody::Wound),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::Wound => &CardProps {
-                actions: &[PlayEffect::MarkExhaust],
-                cost: Cost::Unplayable,
-                requires_target: false,
-                card_type: CardType::Status,
-            },
-            CardBody::BattleTrance => &CardProps {
-                actions: &[PlayEffect::Draw(3), PlayEffect::DebuffSelf(Debuff::NoDraw)],
-                cost: Cost::Fixed(0),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::BattleTrancePlus => &CardProps {
-                actions: &[PlayEffect::Draw(4), PlayEffect::DebuffSelf(Debuff::NoDraw)],
-                cost: Cost::Fixed(0),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::BloodForBlood => &CardProps {
-                actions: &[PlayEffect::Attack(18)],
-                cost: Cost::NumMinusHpLoss(4),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::BloodForBloodPlus => &CardProps {
-                actions: &[PlayEffect::Attack(22)],
-                cost: Cost::NumMinusHpLoss(3),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::Bloodletting => &CardProps {
-                actions: &[PlayEffect::LoseHP(3), PlayEffect::GainEnergy(2)],
-                cost: Cost::Fixed(0),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::BloodlettingPlus => &CardProps {
-                actions: &[PlayEffect::LoseHP(3), PlayEffect::GainEnergy(3)],
-                cost: Cost::Fixed(0),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::BurningPact => &CardProps {
-                actions: &[
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::Wound => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::MarkExhaust],
+                    &[PlayEffect::MarkExhaust],
+                    Cost::Unplayable,
+                    false,
+                    CardType::Status,
+                )
+                .not_upgradable()
+            ),
+            CardBody::BattleTrance => const_card!(&CardProps::new(
+                &[PlayEffect::Draw(3), PlayEffect::DebuffSelf(Debuff::NoDraw)],
+                &[PlayEffect::Draw(4), PlayEffect::DebuffSelf(Debuff::NoDraw)],
+                Cost::Fixed(0),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::BloodForBlood => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::Attack(18)],
+                    &[PlayEffect::Attack(22)],
+                    Cost::NumMinusHpLoss(4),
+                    true,
+                    CardType::Attack,
+                )
+                .with_upgraded_cost(Cost::NumMinusHpLoss(3))
+            ),
+            CardBody::Bloodletting => const_card!(&CardProps::new(
+                &[PlayEffect::LoseHP(3), PlayEffect::GainEnergy(2)],
+                &[PlayEffect::LoseHP(3), PlayEffect::GainEnergy(3)],
+                Cost::Fixed(0),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::BurningPact => const_card!(&CardProps::new(
+                &[
                     PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen),
                     PlayEffect::Draw(2),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::BurningPactPlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustChosen),
                     PlayEffect::Draw(3),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::Carnage => &CardProps {
-                actions: &[PlayEffect::Attack(20)],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::CarnagePlus => &CardProps {
-                actions: &[PlayEffect::Attack(28)],
-                cost: Cost::Fixed(2),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::Combust => &CardProps {
-                actions: &[
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::Carnage => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::Attack(20)],
+                    &[PlayEffect::Attack(28)],
+                    Cost::Fixed(2),
+                    true,
+                    CardType::Attack,
+                )
+                .with_ethereal(Ethereal::Yes)
+            ),
+            CardBody::Combust => const_card!(&CardProps::new(
+                &[
                     PlayEffect::Buff(Buff::EndTurnLoseHP(1)),
                     PlayEffect::Buff(Buff::EndTurnDamageAllEnemies(5)),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::CombustPlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::Buff(Buff::EndTurnLoseHP(1)),
                     PlayEffect::Buff(Buff::EndTurnDamageAllEnemies(7)),
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::DarkEmbrace => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::DarkEmbraceBuff)],
-                cost: Cost::Fixed(2),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::DarkEmbracePlus => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::DarkEmbraceBuff)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::Disarm => &CardProps {
-                actions: &[
+                Cost::Fixed(1),
+                false,
+                CardType::Power,
+            )),
+            CardBody::DarkEmbrace => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::Buff(Buff::DarkEmbraceBuff)],
+                    &[PlayEffect::Buff(Buff::DarkEmbraceBuff)],
+                    Cost::Fixed(2),
+                    false,
+                    CardType::Power,
+                )
+                .with_upgraded_cost(Cost::Fixed(1))
+            ),
+            CardBody::Disarm => const_card!(&CardProps::new(
+                &[
                     PlayEffect::DebuffEnemy(Debuff::StrengthDown(2)),
                     PlayEffect::MarkExhaust,
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Skill,
-            },
-            CardBody::DisarmPlus => &CardProps {
-                actions: &[
+                &[
                     PlayEffect::DebuffEnemy(Debuff::StrengthDown(3)),
                     PlayEffect::MarkExhaust,
                 ],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Skill,
-            },
-            CardBody::Dropkick => &CardProps {
-                actions: &[PlayEffect::Attack(5), PlayEffect::DropkickDraw],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::DropkickPlus => &CardProps {
-                actions: &[PlayEffect::Attack(5), PlayEffect::DropkickDraw],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::DualWield => &CardProps {
-                actions: &[PlayEffect::SelectCardEffect(
+                Cost::Fixed(1),
+                true,
+                CardType::Skill,
+            )),
+            CardBody::Dropkick => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(5), PlayEffect::DropkickDraw],
+                &[PlayEffect::Attack(8), PlayEffect::DropkickDraw],
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::DualWield => const_card!(&CardProps::new(
+                &[PlayEffect::SelectCardEffect(
                     SelectCardEffect::DuplicatePowerOrAttack(1),
                 )],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::DualWieldPlus => &CardProps {
-                actions: &[PlayEffect::SelectCardEffect(
+                &[PlayEffect::SelectCardEffect(
                     SelectCardEffect::DuplicatePowerOrAttack(2),
                 )],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::Entrench => &CardProps {
-                actions: &[PlayEffect::DoubleBlock],
-                cost: Cost::Fixed(2),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::EntrenchPlus => &CardProps {
-                actions: &[PlayEffect::DoubleBlock],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::Evolve => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::EvolveBuff(1))],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::EvolvePlus => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::EvolveBuff(2))],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::FeelNoPain => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::FNPBuff(3))],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::FeelNoPainPlus => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::FNPBuff(4))],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::FireBreathing => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::FireBreathingBuff(6))],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::FireBreathingPlus => &CardProps {
-                actions: &[PlayEffect::Buff(Buff::FireBreathingBuff(10))],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Power,
-            },
-            CardBody::FlameBarrier => &CardProps {
-                actions: &[PlayEffect::Block(12), PlayEffect::Buff(Buff::TempSpikes(4))],
-                cost: Cost::Fixed(2),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::FlameBarrierPlus => &CardProps {
-                actions: &[PlayEffect::Block(10), PlayEffect::Buff(Buff::TempSpikes(6))],
-                cost: Cost::Fixed(2),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::GhostlyArmor => &CardProps {
-                actions: &[PlayEffect::Block(10)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::GhostlyArmorPlus => &CardProps {
-                actions: &[PlayEffect::Block(13)],
-                cost: Cost::Fixed(1),
-                requires_target: false,
-                card_type: CardType::Skill,
-            },
-            CardBody::Hemokinesis => &CardProps {
-                actions: &[PlayEffect::LoseHP(2), PlayEffect::Attack(15)],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-            CardBody::HemokinesisPlus => &CardProps {
-                actions: &[PlayEffect::LoseHP(2), PlayEffect::Attack(20)],
-                cost: Cost::Fixed(1),
-                requires_target: true,
-                card_type: CardType::Attack,
-            },
-        }
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::Entrench => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::DoubleBlock],
+                    &[PlayEffect::DoubleBlock],
+                    Cost::Fixed(2),
+                    false,
+                    CardType::Skill,
+                )
+                .with_upgraded_cost(Cost::Fixed(1))
+            ),
+            CardBody::Evolve => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::EvolveBuff(1))],
+                &[PlayEffect::Buff(Buff::EvolveBuff(2))],
+                Cost::Fixed(1),
+                false,
+                CardType::Power,
+            )),
+            CardBody::FeelNoPain => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::FNPBuff(3))],
+                &[PlayEffect::Buff(Buff::FNPBuff(4))],
+                Cost::Fixed(1),
+                false,
+                CardType::Power,
+            )),
+            CardBody::FireBreathing => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::FireBreathingBuff(6))],
+                &[PlayEffect::Buff(Buff::FireBreathingBuff(10))],
+                Cost::Fixed(1),
+                false,
+                CardType::Power,
+            )),
+            CardBody::FlameBarrier => const_card!(&CardProps::new(
+                &[PlayEffect::Block(12), PlayEffect::Buff(Buff::TempSpikes(4))],
+                &[PlayEffect::Block(16), PlayEffect::Buff(Buff::TempSpikes(6))],
+                Cost::Fixed(2),
+                false,
+                CardType::Skill,
+            )),
+            CardBody::GhostlyArmor => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::Block(10)],
+                    &[PlayEffect::Block(13)],
+                    Cost::Fixed(1),
+                    false,
+                    CardType::Skill,
+                )
+                .with_ethereal(Ethereal::Yes)
+            ),
+            CardBody::Hemokinesis => const_card!(&CardProps::new(
+                &[PlayEffect::LoseHP(2), PlayEffect::Attack(15)],
+                &[PlayEffect::LoseHP(2), PlayEffect::Attack(20)],
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+            )),
+            CardBody::InfernalBlade => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::GenerateAttackInfernal],
+                    &[PlayEffect::GenerateAttackInfernal],
+                    Cost::Fixed(1),
+                    false,
+                    CardType::Skill,
+                )
+                .with_upgraded_cost(Cost::Fixed(0))
+            ),
+        };
     }
     pub const fn to_card(&self) -> Card {
         Card {
             cost: self.default_cost(),
-            effect: *self,
+            body: *self,
+            assoc_data: CardAssoc::None,
+            upgraded: false,
         }
     }
     pub fn actions(&self) -> &'static [PlayEffect] {
@@ -778,112 +664,55 @@ impl CardBody {
     pub fn card_type(&self) -> CardType {
         self.props().card_type
     }
-    pub fn ethereal(&self) -> bool {
-        match self {
-            Self::Carnage | Self::CarnagePlus | Self::GhostlyArmor | Self::GhostlyArmorPlus => true,
-            _ => false,
-        }
-    }
-    pub fn upgraded(&self) -> Option<Self> {
-        match self {
-            Self::Strike => Some(Self::StrikePlus),
-            Self::StrikePlus => None,
-            Self::Bash => Some(Self::BashPlus),
-            Self::BashPlus => None,
-            Self::Defend => Some(Self::DefendPlus),
-            Self::DefendPlus => None,
-            Self::Slimed => None,
-            Self::Anger => Some(Self::AngerPlus),
-            Self::AngerPlus => None,
-            Self::Armaments => Some(Self::ArmamentsPlus),
-            Self::ArmamentsPlus => None,
-            Self::BodySlam => Some(Self::BodySlamPlus),
-            Self::BodySlamPlus => None,
-            Self::Clash => Some(Self::ClashPlus),
-            Self::ClashPlus => None,
-            Self::Cleave => Some(Self::CleavePlus),
-            Self::CleavePlus => None,
-            Self::Clothesline => Some(Self::ClotheslinePlus),
-            Self::ClotheslinePlus => None,
-            Self::Flex => Some(Self::FlexPlus),
-            Self::FlexPlus => None,
-            Self::Havoc => Some(Self::HavocPlus),
-            Self::HavocPlus => None,
-            Self::Headbutt => Some(Self::HeadbuttPlus),
-            Self::HeadbuttPlus => None,
-            Self::HeavyBlade => Some(Self::HeavyBladePlus),
-            Self::HeavyBladePlus => None,
-            Self::IronWave => Some(Self::IronWavePlus),
-            Self::IronWavePlus => None,
-            Self::SearingBlow(level) => Some(Self::SearingBlow(*level + 1)),
-            Self::PerfectedStrike => Some(Self::PerfectedStrikePlus),
-            Self::PerfectedStrikePlus => None,
-            Self::PommelStrike => Some(Self::PommelStrikePlus),
-            Self::PommelStrikePlus => None,
-            Self::ShrugItOff => Some(Self::ShrugItOffPlus),
-            Self::ShrugItOffPlus => None,
-            Self::SwordBoomerang => Some(Self::SwordBoomerangPlus),
-            Self::SwordBoomerangPlus => None,
-            Self::Thunderclap => Some(Self::ThunderclapPlus),
-            Self::ThunderclapPlus => None,
-            Self::TrueGrit => Some(Self::TrueGritPlus),
-            Self::TrueGritPlus => None,
-            Self::TwinStrike => Some(Self::TwinStrikePlus),
-            Self::TwinStrikePlus => None,
-            Self::Warcry => Some(Self::WarcryPlus),
-            Self::WarcryPlus => None,
-            Self::WildStrike => Some(Self::WildStrikePlus),
-            Self::WildStrikePlus => None,
-            Self::Wound => None,
-            Self::BattleTrance => Some(Self::BattleTrancePlus),
-            Self::BattleTrancePlus => None,
-            Self::BloodForBlood => Some(Self::BloodForBloodPlus),
-            Self::BloodForBloodPlus => None,
-            Self::Bloodletting => Some(Self::BloodlettingPlus),
-            Self::BloodlettingPlus => None,
-            Self::BurningPact => Some(Self::BurningPactPlus),
-            Self::BurningPactPlus => None,
-            Self::Carnage => Some(Self::CarnagePlus),
-            Self::CarnagePlus => None,
-            Self::Combust => Some(Self::CombustPlus),
-            Self::CombustPlus => None,
-            Self::DarkEmbrace => Some(Self::DarkEmbracePlus),
-            Self::DarkEmbracePlus => None,
-            Self::Disarm => Some(Self::DisarmPlus),
-            Self::DisarmPlus => None,
-            Self::Dropkick => Some(Self::DropkickPlus),
-            Self::DropkickPlus => None,
-            Self::DualWield => Some(Self::DualWieldPlus),
-            Self::DualWieldPlus => None,
-            Self::Entrench => Some(Self::EntrenchPlus),
-            Self::EntrenchPlus => None,
-            Self::Evolve => Some(Self::EvolvePlus),
-            Self::EvolvePlus => None,
-            Self::FeelNoPain => Some(Self::FeelNoPainPlus),
-            Self::FeelNoPainPlus => None,
-            Self::FireBreathing => Some(Self::FireBreathingPlus),
-            Self::FireBreathingPlus => None,
-            Self::FlameBarrier => Some(Self::FlameBarrierPlus),
-            Self::FlameBarrierPlus => None,
-            Self::GhostlyArmor => Some(Self::GhostlyArmorPlus),
-            Self::GhostlyArmorPlus => None,
-            Self::Hemokinesis => Some(Self::HemokinesisPlus),
-            Self::HemokinesisPlus => None,
-        }
-    }
     pub fn is_strike(&self) -> bool {
         match self {
             Self::Strike
-            | Self::StrikePlus
             | Self::PerfectedStrike
-            | Self::PerfectedStrikePlus
             | Self::PommelStrike
-            | Self::PommelStrikePlus
             | Self::TwinStrike
-            | Self::TwinStrikePlus
-            | Self::WildStrike
-            | Self::WildStrikePlus => true,
+            | Self::WildStrike => true,
             _ => false,
         }
+    }
+}
+
+impl Card {
+    fn props(&self) -> &'static CardProps {
+        self.body.props()
+    }
+    pub fn ethereal(&self) -> bool {
+        match self.body.props().ethereal {
+            Ethereal::No => false,
+            Ethereal::Yes => true,
+            Ethereal::NotUpgraded => !self.upgraded,
+        }
+    }
+    pub fn is_upgraded(&self) -> bool {
+        self.upgraded
+    }
+
+    pub fn can_upgrade(&self) -> bool {
+        self.body.props().upgradable && !self.upgraded
+    }
+
+    pub fn upgrade(&mut self) {
+        assert!(self.can_upgrade());
+        if self.body == CardBody::SearingBlow {
+            let amount = self.assoc_data.get_unlimited_upgrade();
+            self.assoc_data = CardAssoc::UnlimitedUpgrade(amount + 1);
+        }
+        let props = self.props();
+        if let Cost::Fixed(old) = props.cost
+            && let Cost::Fixed(new) = props.upgraded_cost
+            && let Cost::Fixed(current) = self.cost
+        {
+            self.cost = Cost::Fixed(max(current + new - old, 0));
+        }
+        //TODO - handle Blood for Blood and temp upgrades
+        //TODO - Blood for Blood is incorrect when there is Snecko Eye.
+        if self.body == CardBody::BloodForBlood {
+            self.cost = props.upgraded_cost;
+        }
+        self.upgraded = true;
     }
 }

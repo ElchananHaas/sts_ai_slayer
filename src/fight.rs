@@ -111,12 +111,12 @@ impl Fight {
             return;
         }
         self.remove_top_of_deck(rng).map(|card| {
-            if card.effect.card_type() == CardType::Status && self.player_buffs.evolve > 0 {
+            if card.body.card_type() == CardType::Status && self.player_buffs.evolve > 0 {
                 self.post_card_queue
                     .push_back(PostCardItem::Draw(self.player_buffs.evolve));
             }
-            if (card.effect.card_type() == CardType::Status
-                || card.effect.card_type() == CardType::Curse)
+            if (card.body.card_type() == CardType::Status
+                || card.body.card_type() == CardType::Curse)
                 && self.player_buffs.fire_breathing > 0
             {
                 self.post_card_queue
@@ -215,12 +215,12 @@ impl Fight {
             //TODO handle Blue Candle and Medical kit.
             //TODO handle can't play attack effects (Entangled, Awakened One dead)
             let card = self.hand[idx].clone();
-            if self.player_debuffs.entangled && card.effect.card_type() == CardType::Attack {
+            if self.player_debuffs.entangled && card.body.card_type() == CardType::Attack {
                 return false;
             }
-            if card.effect == CardBody::Clash || card.effect == CardBody::ClashPlus {
+            if card.body == CardBody::Clash {
                 for card in &self.hand {
-                    if card.effect.card_type() != CardType::Attack {
+                    if card.body.card_type() != CardType::Attack {
                         return false;
                     }
                 }

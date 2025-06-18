@@ -43,7 +43,7 @@
 - [x] Fire Breathing
 - [x] Flame Barrier
 - [x] Ghostly Armor
-- [ ] Hemokinesis
+- [x] Hemokinesis
 - [ ] Infernal Blade
 - [ ] Inflame
 - [ ] Intimidate
