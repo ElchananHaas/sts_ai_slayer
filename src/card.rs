@@ -675,6 +675,41 @@ impl CardBody {
         }
     }
 }
+macro_rules! filtered_cards {
+    () => {{
+        const fn get_num_variants() -> usize {
+            let num_variants = CardBody::VARIANTS.len();
+            let mut i = 0;
+            let mut matching = 0;
+            while i < num_variants {
+                let variant = CardBody::VARIANTS[i];
+                if let CardType::Attack = variant.props().card_type {
+                    matching += 1;
+                }
+                i += 1;
+            }
+            matching
+        }
+        const NUM_MATCHING: usize = get_num_variants();
+        const fn get_filtered_arr() -> [CardBody; NUM_MATCHING] {
+            let num_variants = CardBody::VARIANTS.len();
+            let mut i = 0;
+            let mut output = [CardBody::Strike; NUM_MATCHING];
+            let mut out_pos = 0;
+            while i < num_variants {
+                let variant = CardBody::VARIANTS[i];
+                if let CardType::Attack = variant.props().card_type {
+                    output[out_pos] = variant;
+                    out_pos += 1;
+                }
+                i += 1;
+            }
+            output
+        }
+        &get_filtered_arr()
+    }};
+}
+pub const ATTACK_CARDS: &'static [CardBody] = filtered_cards!();
 
 impl Card {
     fn props(&self) -> &'static CardProps {
