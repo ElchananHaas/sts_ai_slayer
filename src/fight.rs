@@ -49,6 +49,7 @@ pub struct PlayerBuffs {
     pub fnp: i32,
     pub fire_breathing: i32,
     pub temp_spikes: i32,
+    pub metallicize: i32,
 }
 
 //This holds effects that happen after a card finishes resolving.

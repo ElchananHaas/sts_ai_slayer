@@ -82,6 +82,10 @@ pub enum CardBody {
     GhostlyArmor,
     Hemokinesis,
     InfernalBlade,
+    Inflame,
+    Intimidate,
+    Metallicize,
+    PowerThrough,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -102,12 +106,13 @@ pub enum PlayEffect {
     Draw(i32),
     AttackRandomEnemy(i32),
     ExhaustRandomInHand,
-    ShuffleInStatus(CardBody),
+    ShuffleInCard(CardBody),
     LoseHP(i32),
     GainEnergy(i32),
     DropkickDraw,
     DoubleBlock,
     GenerateAttackInfernal,
+    AddCardToHand(CardBody),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -141,6 +146,7 @@ pub enum Buff {
     FNPBuff(i32),
     FireBreathingBuff(i32),
     TempSpikes(i32),
+    Metallicize(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -499,11 +505,11 @@ impl CardBody {
             CardBody::WildStrike => const_card!(&CardProps::new(
                 &[
                     PlayEffect::Attack(12),
-                    PlayEffect::ShuffleInStatus(CardBody::Wound),
+                    PlayEffect::ShuffleInCard(CardBody::Wound),
                 ],
                 &[
                     PlayEffect::Attack(17),
-                    PlayEffect::ShuffleInStatus(CardBody::Wound),
+                    PlayEffect::ShuffleInCard(CardBody::Wound),
                 ],
                 Cost::Fixed(1),
                 true,
@@ -702,6 +708,52 @@ impl CardBody {
                 )
                 .with_upgraded_cost(Cost::Fixed(0))
             ),
+            CardBody::Inflame => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::Strength(2))],
+                &[PlayEffect::Buff(Buff::Strength(3))],
+                Cost::Fixed(1),
+                false,
+                CardType::Power,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Intimidate => const_card!(&CardProps::new(
+                &[
+                    PlayEffect::DebuffAll(Debuff::Weak(1)),
+                    PlayEffect::MarkExhaust
+                ],
+                &[
+                    PlayEffect::DebuffAll(Debuff::Weak(2)),
+                    PlayEffect::MarkExhaust
+                ],
+                Cost::Fixed(0),
+                false,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Metallicize => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::Metallicize(3))],
+                &[PlayEffect::Buff(Buff::Metallicize(4))],
+                Cost::Fixed(1),
+                false,
+                CardType::Power,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::PowerThrough => const_card!(&CardProps::new(
+                &[
+                    PlayEffect::Block(15),
+                    PlayEffect::AddCardToHand(CardBody::Wound),
+                    PlayEffect::AddCardToHand(CardBody::Wound)
+                ],
+                &[
+                    PlayEffect::Block(20),
+                    PlayEffect::AddCardToHand(CardBody::Wound),
+                    PlayEffect::AddCardToHand(CardBody::Wound)
+                ],
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
         };
     }
     pub const fn to_card(&self) -> Card {

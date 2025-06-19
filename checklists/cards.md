@@ -45,9 +45,9 @@
 - [x] Ghostly Armor
 - [x] Hemokinesis
 - [x] Infernal Blade
-- [ ] Inflame
-- [ ] Intimidate
-- [ ] Metallicize
+- [x] Inflame
+- [x] Intimidate
+- [x] Metallicize
 - [ ] Power Through
 - [ ] Pummel
 - [ ] Rage

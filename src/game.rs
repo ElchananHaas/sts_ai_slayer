@@ -424,6 +424,9 @@ impl Game {
         for idx in self.fight.enemies.indicies() {
             self.fight.enemies[idx].block = 0;
         }
+        if self.fight.player_buffs.metallicize > 0 {
+            self.fight.player_block += self.fight.player_buffs.metallicize;
+        }
         self.player_lose_hp(self.fight.player_buffs.end_turn_lose_hp);
         let damage_all_enemies = self.fight.player_buffs.end_turn_damage_all_enemies;
         if damage_all_enemies > 0 {
@@ -433,6 +436,7 @@ impl Game {
             }
         }
     }
+
     //TODO handle various effects of HP loss.
     fn player_lose_hp(&mut self, amount: i32) {
         self.fight.player_buffs.num_times_lost_hp += 1;
@@ -606,6 +610,7 @@ impl Game {
             Buff::FNPBuff(x) => self.fight.player_buffs.fnp += x,
             Buff::FireBreathingBuff(x) => self.fight.player_buffs.fire_breathing += x,
             Buff::TempSpikes(x) => self.fight.player_buffs.temp_spikes += x,
+            Buff::Metallicize(x) => self.fight.player_buffs.metallicize += x,
         }
     }
 
@@ -623,25 +628,14 @@ impl Game {
             Buff::RitualSkipFirst(x) => {
                 enemy.buffs.ritual_skip_first += x;
             }
-            Buff::EndTurnDamageAllEnemies(_) => {
-                panic_not_apply_enemies(buff);
-            }
-            Buff::EndTurnLoseHP(_) => {
-                panic_not_apply_enemies(buff);
-            }
-            Buff::DarkEmbraceBuff => {
-                panic_not_apply_enemies(buff);
-            }
-            Buff::EvolveBuff(_) => {
-                panic_not_apply_enemies(buff);
-            }
-            Buff::FNPBuff(_) => {
-                panic_not_apply_enemies(buff);
-            }
-            Buff::FireBreathingBuff(_) => {
-                panic_not_apply_enemies(buff);
-            }
-            Buff::TempSpikes(_) => {
+            Buff::EndTurnDamageAllEnemies(_)
+            | Buff::EndTurnLoseHP(_)
+            | Buff::DarkEmbraceBuff
+            | Buff::EvolveBuff(_)
+            | Buff::FNPBuff(_)
+            | Buff::FireBreathingBuff(_)
+            | Buff::TempSpikes(_)
+            | Buff::Metallicize(_) => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -976,7 +970,7 @@ impl Game {
             PlayEffect::MarkExhaust => {
                 context.exhausts = true;
             }
-            PlayEffect::ShuffleInStatus(body) => {
+            PlayEffect::ShuffleInCard(body) => {
                 self.fight.deck.shuffle_in(vec![body.to_card()]);
             }
             PlayEffect::LoseHP(x) => {
@@ -1000,6 +994,9 @@ impl Game {
                 let idx = self.rng.sample(IRONCLAD_ATTACK_CARDS.len());
                 self.gen_temp_card(IRONCLAD_ATTACK_CARDS[idx], true);
                 todo!("Implement infernal blade!")
+            }
+            PlayEffect::AddCardToHand(body) => {
+                self.gen_temp_card(body, false);
             }
         }
         ActionControlFlow::Continue
