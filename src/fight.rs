@@ -240,13 +240,16 @@ impl Fight {
             Cost::X => Some(self.energy),
             Cost::NumMinusHpLoss(x) => Some(max(0, x - self.player_buffs.num_times_lost_hp)),
         };
-        if let Some(base) = base
-            && let Some(temp) = card.temp_cost
-            && !matches!(card.cost, Cost::X)
-        {
-            Some(min(base, temp))
+        if let Some(temp) = card.temp_cost {
+            if let Some(base) = base
+                && !matches!(card.cost, Cost::X)
+            {
+                Some(min(base, temp))
+            } else {
+                None
+            }
         } else {
-            None
+            base
         }
     }
 }
