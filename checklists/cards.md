@@ -44,7 +44,7 @@
 - [x] Flame Barrier
 - [x] Ghostly Armor
 - [x] Hemokinesis
-- [ ] Infernal Blade
+- [x] Infernal Blade
 - [ ] Inflame
 - [ ] Intimidate
 - [ ] Metallicize

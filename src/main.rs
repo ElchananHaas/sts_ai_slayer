@@ -1,6 +1,6 @@
 #![feature(random)]
 
-use crate::{agents::agent_helper::Agent, card::ATTACK_CARDS};
+use crate::{agents::agent_helper::Agent, card::IRONCLAD_ATTACK_CARDS};
 use agents::agent_helper::SkipSingleChoiceAgent;
 use agents::mcts_agent::MctsAgent;
 use agents::random_agent::RandomAgent;
@@ -16,7 +16,6 @@ mod game;
 mod rng;
 mod util;
 fn main() {
-    dbg!("{}", ATTACK_CARDS);
     let mut game = Game::new(Charachter::IRONCLAD);
     let mut choice = game.setup_cultist_fight();
     let mut rng = Rng::new();

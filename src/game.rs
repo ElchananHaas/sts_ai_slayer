@@ -1,17 +1,16 @@
-use std::{collections::VecDeque, fmt::Display, mem, vec};
+use std::{fmt::Display, mem, vec};
 
 use crate::{
-    card::{Buff, Card, CardBody, CardType, Debuff, PlayEffect, SelectCardEffect},
+    card::{
+        Buff, Card, CardBody, CardType, Debuff, IRONCLAD_ATTACK_CARDS, PlayEffect, SelectCardEffect,
+    },
     deck::Deck,
     enemies::{
         cultist::generate_cultist, green_louse::generate_green_louse, jaw_worm::generate_jaw_worm,
         med_black_slime::generate_med_black_slime, med_green_slime::generate_med_green_slime,
         red_louse::generate_red_louse,
     },
-    fight::{
-        self, Enemies, Enemy, EnemyAction, EnemyIdx, Fight, PlayCardContext, PlayerBuffs,
-        PlayerDebuffs, PostCardItem,
-    },
+    fight::{Enemy, EnemyAction, EnemyIdx, Fight, PlayCardContext, PostCardItem},
     rng::Rng,
     util::insert_sorted,
 };
@@ -276,7 +275,7 @@ impl Game {
         match action {
             PlayCardAction::PlayCard(idx) => {
                 let card = &self.fight.hand[idx as usize];
-                if card.body.requires_target() {
+                if card.requires_target() {
                     return self.choose_enemy_choice(idx as usize);
                 }
                 //If a card doesn't require targets supply 0 as a target since it won't matter.
@@ -409,7 +408,8 @@ impl Game {
     fn discard_hand_end_of_turn(&mut self) {
         let mut old_hand = Vec::new();
         mem::swap(&mut old_hand, &mut self.fight.hand);
-        for card in old_hand {
+        for mut card in old_hand {
+            card.temp_cost = None;
             if card.ethereal() {
                 self.exhaust(card);
             } else {
@@ -482,8 +482,8 @@ impl Game {
                 return Some(self.win_battle());
             }
             if let Some(mut card_context) = context {
-                if card_context.effect_index < card_context.card.body.actions().len() {
-                    let action = card_context.card.body.actions()[card_context.effect_index];
+                if card_context.effect_index < card_context.card.actions().len() {
+                    let action = card_context.card.actions()[card_context.effect_index];
                     card_context.effect_index += 1;
                     let next = self.handle_action(action, &mut card_context);
                     //If the player needs to make a selection, break out of the loop. It will be
@@ -507,6 +507,7 @@ impl Game {
                             enemy.buffs.queued_block = 0;
                         }
                     }
+                    card_context.card.temp_cost = None;
                     if card_context.card.body.card_type() == CardType::Power {
                         //Do nothing for powers, they just go away after playing.
                     } else if card_context.exhausts {
@@ -996,12 +997,25 @@ impl Game {
                 self.fight.player_block *= 2;
             }
             PlayEffect::GenerateAttackInfernal => {
+                let idx = self.rng.sample(IRONCLAD_ATTACK_CARDS.len());
+                self.gen_temp_card(IRONCLAD_ATTACK_CARDS[idx], true);
                 todo!("Implement infernal blade!")
             }
         }
         ActionControlFlow::Continue
     }
 
+    fn gen_temp_card(&mut self, body: CardBody, costs_0_this_turn: bool) {
+        let mut card = body.to_card();
+        if self.fight.hand.len() < 10 {
+            if costs_0_this_turn {
+                card.temp_cost = Some(0);
+            }
+            insert_sorted(card, &mut self.fight.hand);
+        } else {
+            insert_sorted(card, &mut self.fight.discard_pile);
+        }
+    }
     fn choose_random_enemy(&mut self) -> usize {
         let num_targets = self.fight.enemies.len();
         let mut sample = self.rng.sample(num_targets);
@@ -1016,7 +1030,7 @@ impl Game {
     }
 
     fn select_random_target(&mut self, card: &Card) -> usize {
-        if card.body.requires_target() {
+        if card.requires_target() {
             self.choose_random_enemy()
         } else {
             0

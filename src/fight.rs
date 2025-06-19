@@ -1,5 +1,5 @@
 use std::{
-    cmp::max,
+    cmp::{max, min},
     collections::VecDeque,
     mem,
     ops::{Index, IndexMut},
@@ -233,11 +233,19 @@ impl Fight {
     }
 
     pub fn evaluate_cost(&self, card: &Card) -> Option<i32> {
-        match card.cost {
+        let base = match card.cost {
             Cost::Unplayable => None,
             Cost::Fixed(x) => Some(x),
             Cost::X => Some(self.energy),
             Cost::NumMinusHpLoss(x) => Some(max(0, x - self.player_buffs.num_times_lost_hp)),
+        };
+        if let Some(base) = base
+            && let Some(temp) = card.temp_cost
+            && !matches!(card.cost, Cost::X)
+        {
+            Some(min(base, temp))
+        } else {
+            None
         }
     }
 }
