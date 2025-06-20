@@ -1,3 +1,3 @@
 - [x] Create a random agent.
 - [x] Provide a decent way of viewing the game state.
-- [ ] Get MCTS running on single combats.
+- [x] Get MCTS running on single combats.

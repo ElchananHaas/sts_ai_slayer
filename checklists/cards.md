@@ -48,8 +48,8 @@
 - [x] Inflame
 - [x] Intimidate
 - [x] Metallicize
-- [ ] Power Through
-- [ ] Pummel
+- [x] Power Through
+- [x] Pummel
 - [ ] Rage
 - [ ] Rampage
 - [ ] Reckless Charge

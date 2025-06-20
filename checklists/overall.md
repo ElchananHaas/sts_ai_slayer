@@ -1,5 +1,0 @@
-- [x] Implement basic gameplay.
-- [x] Implement Act 1 enemies.
-- [x] Chain combats together (no map yet)
-- [x] Implement a learning agent based on MCTS
-- [ ] Ironclad Cards.

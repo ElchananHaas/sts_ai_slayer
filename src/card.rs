@@ -86,6 +86,7 @@ pub enum CardBody {
     Intimidate,
     Metallicize,
     PowerThrough,
+    Pummel
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -752,6 +753,25 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),           
+            CardBody::Pummel => const_card!(&CardProps::new(
+                &[
+                    PlayEffect::Attack(2),
+                    PlayEffect::Attack(2),
+                    PlayEffect::Attack(2),
+                    PlayEffect::Attack(2),
+                ],
+                &[
+                    PlayEffect::Attack(2),
+                    PlayEffect::Attack(2),
+                    PlayEffect::Attack(2),
+                    PlayEffect::Attack(2),
+                    PlayEffect::Attack(2),
+                ],
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
                 CardCharachter::IRONCLAD
             )),
         };
