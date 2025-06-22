@@ -106,6 +106,7 @@ pub enum CardBody {
     Shockwave,
     SpotWeakness,
     Uppercut,
+    Whirlwind,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -137,6 +138,7 @@ pub enum PlayEffect {
     ExhaustNonAttackForBlock(i32),
     ExhaustNonAttack,
     SpotWeakness(i32),
+    AttackAllX(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -920,6 +922,14 @@ impl CardBody {
                 ],
                 Cost::Fixed(2),
                 true,
+                CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Whirlwind => const_card!(&CardProps::new(
+                &[PlayEffect::AttackAllX(5),],
+                &[PlayEffect::AttackAllX(8),],
+                Cost::X,
+                false,
                 CardType::Attack,
                 CardCharachter::IRONCLAD
             )),

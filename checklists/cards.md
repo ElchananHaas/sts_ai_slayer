@@ -62,7 +62,7 @@
 - [x] Shockwave
 - [x] Spot Weakness
 - [x] Uppercut
-- [ ] Whirlwind
+- [x] Whirlwind
 
 ### Rare Ironclad Cards
 TODO

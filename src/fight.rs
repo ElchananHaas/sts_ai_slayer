@@ -71,6 +71,7 @@ pub struct PlayCardContext {
     pub target: usize,
     pub exhausts: bool,
     pub effect_index: usize,
+    pub x: i32
 }
 
 impl Fight {

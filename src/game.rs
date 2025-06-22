@@ -463,12 +463,15 @@ impl Game {
         let card = fight.hand.remove(card_idx);
         let cost = fight.evaluate_cost(&card).expect("Card is playable");
         assert!(fight.energy >= cost);
+        //Record the cost of an X spell before it is spent.
+        let x = fight.energy;
         fight.energy -= cost;
         let context = PlayCardContext {
             card,
             target,
             exhausts: false,
             effect_index: 0,
+            x
         };
         self.trigger_play_card_effects(&context);
         if let Some(choice) = self.resolve_actions(Some(context)) {
@@ -999,6 +1002,7 @@ impl Game {
                             target,
                             exhausts: true,
                             effect_index: 0,
+                            x: self.fight.energy
                         }));
                 }
             }
@@ -1067,6 +1071,13 @@ impl Game {
             PlayEffect::SpotWeakness(amount) => {
                 if self.intends_to_attack(target) {
                     self.apply_buff_to_player(Buff::Strength(amount));
+                }
+            }
+            PlayEffect::AttackAllX(attack) => {
+                for _ in 0..context.x {
+                    for enemy in self.fight.enemies.indicies() {
+                        self.attack_enemy(&context.card, attack, enemy.0 as usize);
+                    }
                 }
             }
         }
