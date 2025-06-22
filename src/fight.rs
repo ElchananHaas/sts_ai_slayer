@@ -62,6 +62,7 @@ pub enum PostCardItem {
     Draw(i32),
     GainBlock(i32),
     DamageAll(i32),
+    GainEnergy(i32),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

@@ -553,7 +553,10 @@ impl Game {
                             for idx in self.fight.enemies.indicies() {
                                 Self::damage_enemy(&mut self.fight.enemies[idx], amount);
                             }
-                        }
+                        },
+                        PostCardItem::GainEnergy(amount) => {
+                            self.fight.energy += amount;
+                        },
                     }
                 } else {
                     return None;
@@ -571,6 +574,8 @@ impl Game {
     }
 
     fn exhaust(&mut self, card: Card) {
+        let body = card.body;
+        let upgraded = card.is_upgraded();
         insert_sorted(card, &mut self.fight.exhaust);
         if self.fight.player_buffs.dark_embrace > 0 {
             self.fight
@@ -581,6 +586,11 @@ impl Game {
             self.fight
                 .post_card_queue
                 .push_back(PostCardItem::GainBlock(self.fight.player_buffs.fnp));
+        }
+        if body == CardBody::Sentinel {
+            self.fight
+                .post_card_queue
+                .push_back(PostCardItem::GainEnergy(if upgraded { 3 } else { 2 }));
         }
     }
 
@@ -1026,6 +1036,22 @@ impl Game {
             PlayEffect::IncreaseDamage(amount) => {
                 card.assoc_data =
                     CardAssoc::BonusDamage(card.assoc_data.get_bonus_damage() + amount);
+            }
+            PlayEffect::ExhaustNonAttackForBlock(amount) => {
+                let mut temp_hand = Vec::new();
+                mem::swap(&mut temp_hand, &mut self.fight.hand);
+                let mut count = 0;
+                for card in temp_hand {
+                    if card.body.card_type() == CardType::Attack {
+                        self.fight.hand.push(card);
+                    } else {
+                        self.exhaust(card);
+                        count += 1;
+                    }
+                }
+                for _ in 0..count {
+                    self.fight.player_block += amount;
+                }
             }
         }
         ActionControlFlow::Continue

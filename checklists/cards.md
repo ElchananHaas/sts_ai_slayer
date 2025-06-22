@@ -55,8 +55,8 @@
 - [x] Reckless Charge
 - [x] Rupture
 - [x] Searing Blow
-- [ ] Second Wind
-- [ ] Seeing Red
+- [x] Second Wind
+- [x] Seeing Red
 - [ ] Sentinel
 - [ ] Sever Soul
 - [ ] Shockwave

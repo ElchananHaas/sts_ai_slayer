@@ -99,6 +99,9 @@ pub enum CardBody {
     RecklessCharge,
     Dazed,
     Rupture,
+    SecondWind,
+    SeeingRed,
+    Sentinel,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -127,6 +130,7 @@ pub enum PlayEffect {
     GenerateAttackInfernal,
     AddCardToHand(CardBody),
     IncreaseDamage(i32),
+    ExhaustNonAttackForBlock(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -830,13 +834,39 @@ impl CardBody {
                 )
                 .with_ethereal(Ethereal::Yes)
             ),
-            //TODO - handle Burn, Decay, Pain, Regret too.
             CardBody::Rupture => const_card!(&CardProps::new(
                 &[PlayEffect::Buff(Buff::RuptureBuff(1)),],
                 &[PlayEffect::Buff(Buff::RuptureBuff(2)),],
                 Cost::Fixed(1),
                 false,
                 CardType::Power,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::SecondWind => const_card!(&CardProps::new(
+                &[PlayEffect::ExhaustNonAttackForBlock(5)],
+                &[PlayEffect::ExhaustNonAttackForBlock(7)],
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::SeeingRed => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::GainEnergy(2), PlayEffect::MarkExhaust],
+                    &[PlayEffect::GainEnergy(2), PlayEffect::MarkExhaust],
+                    Cost::Fixed(1),
+                    false,
+                    CardType::Skill,
+                    CardCharachter::IRONCLAD
+                )
+                .with_upgraded_cost(Cost::Fixed(0))
+            ),
+            CardBody::Sentinel => const_card!(&CardProps::new(
+                &[PlayEffect::Block(5)],
+                &[PlayEffect::Block(8)],
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
                 CardCharachter::IRONCLAD
             )),
         };
