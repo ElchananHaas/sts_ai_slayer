@@ -102,6 +102,10 @@ pub enum CardBody {
     SecondWind,
     SeeingRed,
     Sentinel,
+    SeverSoul,
+    Shockwave,
+    SpotWeakness,
+    Uppercut,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -131,6 +135,8 @@ pub enum PlayEffect {
     AddCardToHand(CardBody),
     IncreaseDamage(i32),
     ExhaustNonAttackForBlock(i32),
+    ExhaustNonAttack,
+    SpotWeakness(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -867,6 +873,54 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::SeverSoul => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(16), PlayEffect::ExhaustNonAttack],
+                &[PlayEffect::Attack(22), PlayEffect::ExhaustNonAttack],
+                Cost::Fixed(2),
+                true,
+                CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Shockwave => const_card!(&CardProps::new(
+                &[
+                    PlayEffect::DebuffAll(Debuff::Weak(3)),
+                    PlayEffect::DebuffAll(Debuff::Vulnerable(3)),
+                    PlayEffect::MarkExhaust
+                ],
+                &[
+                    PlayEffect::DebuffAll(Debuff::Weak(5)),
+                    PlayEffect::DebuffAll(Debuff::Vulnerable(5)),
+                    PlayEffect::MarkExhaust
+                ],
+                Cost::Fixed(2),
+                false,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::SpotWeakness => const_card!(&CardProps::new(
+                &[PlayEffect::SpotWeakness(3),],
+                &[PlayEffect::SpotWeakness(3),],
+                Cost::Fixed(1),
+                true,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Uppercut => const_card!(&CardProps::new(
+                &[
+                    PlayEffect::Attack(13),
+                    PlayEffect::DebuffEnemy(Debuff::Weak(1)),
+                    PlayEffect::DebuffEnemy(Debuff::Vulnerable(1))
+                ],
+                &[
+                    PlayEffect::Attack(13),
+                    PlayEffect::DebuffEnemy(Debuff::Weak(2)),
+                    PlayEffect::DebuffEnemy(Debuff::Vulnerable(2))
+                ],
+                Cost::Fixed(2),
+                true,
+                CardType::Attack,
                 CardCharachter::IRONCLAD
             )),
         };

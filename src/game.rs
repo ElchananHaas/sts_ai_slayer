@@ -553,10 +553,10 @@ impl Game {
                             for idx in self.fight.enemies.indicies() {
                                 Self::damage_enemy(&mut self.fight.enemies[idx], amount);
                             }
-                        },
+                        }
                         PostCardItem::GainEnergy(amount) => {
                             self.fight.energy += amount;
-                        },
+                        }
                     }
                 } else {
                     return None;
@@ -1053,10 +1053,37 @@ impl Game {
                     self.fight.player_block += amount;
                 }
             }
+            PlayEffect::ExhaustNonAttack => {
+                let mut temp_hand = Vec::new();
+                mem::swap(&mut temp_hand, &mut self.fight.hand);
+                for card in temp_hand {
+                    if card.body.card_type() == CardType::Attack {
+                        self.fight.hand.push(card);
+                    } else {
+                        self.exhaust(card);
+                    }
+                }
+            }
+            PlayEffect::SpotWeakness(amount) => {
+                if self.intends_to_attack(target) {
+                    self.apply_buff_to_player(Buff::Strength(amount));
+                }
+            }
         }
         ActionControlFlow::Continue
     }
 
+    fn intends_to_attack(&mut self, target: usize) -> bool {
+        if let Some(enemy) = &self.fight.enemies[target] {
+            let behavior = (enemy.behavior)(&mut self.rng, &self.fight, &enemy, enemy.ai_state);
+            for behave in behavior.1 {
+                if let EnemyAction::Attack(_) = *behave {
+                    return true;
+                }
+            }
+        }
+        false
+    }
     fn gen_temp_card(&mut self, body: CardBody, costs_0_this_turn: bool) {
         let mut card = body.to_card();
         if self.fight.hand.len() < 10 {

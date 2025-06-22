@@ -57,11 +57,11 @@
 - [x] Searing Blow
 - [x] Second Wind
 - [x] Seeing Red
-- [ ] Sentinel
-- [ ] Sever Soul
-- [ ] Shockwave
-- [ ] Spot Weakness
-- [ ] Uppercut
+- [x] Sentinel
+- [x] Sever Soul
+- [x] Shockwave
+- [x] Spot Weakness
+- [x] Uppercut
 - [ ] Whirlwind
 
 ### Rare Ironclad Cards
