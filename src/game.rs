@@ -2,7 +2,8 @@ use std::{fmt::Display, mem, vec};
 
 use crate::{
     card::{
-        Buff, Card, CardBody, CardType, Debuff, IRONCLAD_ATTACK_CARDS, PlayEffect, SelectCardEffect,
+        Buff, Card, CardAssoc, CardBody, CardType, Debuff, IRONCLAD_ATTACK_CARDS, PlayEffect,
+        SelectCardEffect,
     },
     deck::Deck,
     enemies::{
@@ -325,7 +326,7 @@ impl Game {
                         if damage > self.fight.player_block {
                             let dealt = damage - self.fight.player_block;
                             self.fight.player_block = 0;
-                            self.player_lose_hp(dealt);
+                            self.player_lose_hp(dealt, false);
                         } else {
                             self.fight.player_block -= damage;
                         }
@@ -398,6 +399,7 @@ impl Game {
         decrement(&mut self.fight.player_debuffs.weak);
         decrement(&mut self.fight.player_debuffs.frail);
         self.fight.player_buffs.temp_spikes = 0;
+        self.fight.player_buffs.rage = 0;
         for _ in 0..5 {
             self.fight.draw(&mut self.rng);
         }
@@ -427,7 +429,9 @@ impl Game {
         if self.fight.player_buffs.metallicize > 0 {
             self.fight.player_block += self.fight.player_buffs.metallicize;
         }
-        self.player_lose_hp(self.fight.player_buffs.end_turn_lose_hp);
+        if self.fight.player_buffs.end_turn_lose_hp > 0 {
+            self.player_lose_hp(self.fight.player_buffs.end_turn_lose_hp, true);
+        }
         let damage_all_enemies = self.fight.player_buffs.end_turn_damage_all_enemies;
         if damage_all_enemies > 0 {
             for idx in self.fight.enemies.indicies() {
@@ -438,9 +442,15 @@ impl Game {
     }
 
     //TODO handle various effects of HP loss.
-    fn player_lose_hp(&mut self, amount: i32) {
+    fn player_lose_hp(&mut self, amount: i32, from_card: bool) {
+        if amount <= 0 {
+            return;
+        }
         self.fight.player_buffs.num_times_lost_hp += 1;
         self.player_hp -= amount;
+        if from_card && self.fight.player_buffs.rupture > 0 {
+            self.apply_buff_to_player(Buff::Strength(self.fight.player_buffs.rupture));
+        }
     }
 
     fn play_card_targets(&mut self, card_idx: usize, target: usize) -> Choice {
@@ -460,6 +470,7 @@ impl Game {
             exhausts: false,
             effect_index: 0,
         };
+        self.trigger_play_card_effects(&context);
         if let Some(choice) = self.resolve_actions(Some(context)) {
             return choice;
         }
@@ -527,6 +538,7 @@ impl Game {
                 if let Some(front) = self.fight.post_card_queue.pop_front() {
                     match front {
                         PostCardItem::PlayCard(play_card_context) => {
+                            self.trigger_play_card_effects(&play_card_context);
                             context = Some(play_card_context);
                         }
                         PostCardItem::Draw(amount) => {
@@ -547,6 +559,14 @@ impl Game {
                     return None;
                 }
             }
+        }
+    }
+
+    fn trigger_play_card_effects(&mut self, context: &PlayCardContext) {
+        if context.card.body.card_type() == CardType::Attack && self.fight.player_buffs.rage > 0 {
+            self.fight
+                .post_card_queue
+                .push_back(PostCardItem::GainBlock(self.fight.player_buffs.rage));
         }
     }
 
@@ -611,6 +631,8 @@ impl Game {
             Buff::FireBreathingBuff(x) => self.fight.player_buffs.fire_breathing += x,
             Buff::TempSpikes(x) => self.fight.player_buffs.temp_spikes += x,
             Buff::Metallicize(x) => self.fight.player_buffs.metallicize += x,
+            Buff::RageBuff(x) => self.fight.player_buffs.rage += x,
+            Buff::RuptureBuff(x) => self.fight.player_buffs.rupture += x,
         }
     }
 
@@ -635,7 +657,9 @@ impl Game {
             | Buff::FNPBuff(_)
             | Buff::FireBreathingBuff(_)
             | Buff::TempSpikes(_)
-            | Buff::Metallicize(_) => {
+            | Buff::Metallicize(_)
+            | Buff::RageBuff(_)
+            | Buff::RuptureBuff(_) => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -823,6 +847,7 @@ impl Game {
             CardBody::PerfectedStrike => {
                 self.num_strikes() * (if card.is_upgraded() { 3 } else { 2 })
             }
+            CardBody::Rampage => card.assoc_data.get_bonus_damage(),
             _ => 0,
         }
     }
@@ -974,7 +999,7 @@ impl Game {
                 self.fight.deck.shuffle_in(vec![body.to_card()]);
             }
             PlayEffect::LoseHP(x) => {
-                self.player_lose_hp(x);
+                self.player_lose_hp(x, true);
             }
             PlayEffect::GainEnergy(x) => {
                 self.fight.energy += x;
@@ -997,6 +1022,10 @@ impl Game {
             }
             PlayEffect::AddCardToHand(body) => {
                 self.gen_temp_card(body, false);
+            }
+            PlayEffect::IncreaseDamage(amount) => {
+                card.assoc_data =
+                    CardAssoc::BonusDamage(card.assoc_data.get_bonus_damage() + amount);
             }
         }
         ActionControlFlow::Continue
@@ -1131,7 +1160,7 @@ impl Game {
         self.fight.energy = 3;
     }
 
-    pub fn setup_jawworm_fight(&mut self) -> ChoiceState {
+    pub fn setup_jawworm_fight(&mut self) -> ChoiceState<'_> {
         self.setup_fight();
         self.fight.enemies[0] = Some(generate_jaw_worm(&mut self.rng));
         let choice = self.start_fight();
@@ -1141,7 +1170,7 @@ impl Game {
         }
     }
 
-    pub fn setup_cultist_fight(&mut self) -> ChoiceState {
+    pub fn setup_cultist_fight(&mut self) -> ChoiceState<'_> {
         self.setup_fight();
         self.fight.enemies[0] = Some(generate_cultist(&mut self.rng));
         let choice = self.start_fight();
@@ -1151,7 +1180,7 @@ impl Game {
         }
     }
 
-    pub fn setup_redlouse_fight(&mut self) -> ChoiceState {
+    pub fn setup_redlouse_fight(&mut self) -> ChoiceState<'_> {
         self.setup_fight();
         self.fight.enemies[0] = Some(generate_red_louse(&mut self.rng));
         let choice = self.start_fight();
@@ -1161,7 +1190,7 @@ impl Game {
         }
     }
 
-    pub fn setup_greenlouse_fight(&mut self) -> ChoiceState {
+    pub fn setup_greenlouse_fight(&mut self) -> ChoiceState<'_> {
         self.setup_fight();
         self.fight.enemies[0] = Some(generate_green_louse(&mut self.rng));
         let choice = self.start_fight();

@@ -1,5 +1,3 @@
-#![feature(random)]
-
 use crate::{agents::agent_helper::Agent, card::IRONCLAD_ATTACK_CARDS};
 use agents::agent_helper::SkipSingleChoiceAgent;
 use agents::mcts_agent::MctsAgent;

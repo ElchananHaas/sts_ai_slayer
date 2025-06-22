@@ -19,12 +19,19 @@ pub struct Card {
 pub enum CardAssoc {
     None,
     UnlimitedUpgrade(i32), //Used for Searing Blow
+    BonusDamage(i32),      //Used for Rampage
 }
 
 impl CardAssoc {
     pub fn get_unlimited_upgrade(&self) -> i32 {
         let Self::UnlimitedUpgrade(amount) = self else {
             panic!("Expected unlimited upgrade data");
+        };
+        *amount
+    }
+    pub fn get_bonus_damage(&self) -> i32 {
+        let Self::BonusDamage(amount) = self else {
+            panic!("Expected bonus damage data");
         };
         *amount
     }
@@ -86,7 +93,12 @@ pub enum CardBody {
     Intimidate,
     Metallicize,
     PowerThrough,
-    Pummel
+    Pummel,
+    Rage,
+    Rampage,
+    RecklessCharge,
+    Dazed,
+    Rupture,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -114,6 +126,7 @@ pub enum PlayEffect {
     DoubleBlock,
     GenerateAttackInfernal,
     AddCardToHand(CardBody),
+    IncreaseDamage(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -148,6 +161,8 @@ pub enum Buff {
     FireBreathingBuff(i32),
     TempSpikes(i32),
     Metallicize(i32),
+    RageBuff(i32),
+    RuptureBuff(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -754,7 +769,7 @@ impl CardBody {
                 false,
                 CardType::Skill,
                 CardCharachter::IRONCLAD
-            )),           
+            )),
             CardBody::Pummel => const_card!(&CardProps::new(
                 &[
                     PlayEffect::Attack(2),
@@ -772,6 +787,56 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Rage => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::RageBuff(3))],
+                &[PlayEffect::Buff(Buff::RageBuff(5))],
+                Cost::Fixed(0),
+                false,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Rampage => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(8), PlayEffect::IncreaseDamage(5)],
+                &[PlayEffect::Attack(8), PlayEffect::IncreaseDamage(5)],
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::RecklessCharge => const_card!(&CardProps::new(
+                &[
+                    PlayEffect::Attack(7),
+                    PlayEffect::ShuffleInCard(CardBody::Dazed)
+                ],
+                &[
+                    PlayEffect::Attack(10),
+                    PlayEffect::ShuffleInCard(CardBody::Dazed)
+                ],
+                Cost::Fixed(0),
+                true,
+                CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Dazed => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::MarkExhaust],
+                    &[PlayEffect::MarkExhaust],
+                    Cost::Unplayable,
+                    false,
+                    CardType::Status,
+                    CardCharachter::COLORLESS
+                )
+                .with_ethereal(Ethereal::Yes)
+            ),
+            //TODO - handle Burn, Decay, Pain, Regret too.
+            CardBody::Rupture => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::RuptureBuff(1)),],
+                &[PlayEffect::Buff(Buff::RuptureBuff(2)),],
+                Cost::Fixed(1),
+                false,
+                CardType::Power,
                 CardCharachter::IRONCLAD
             )),
         };

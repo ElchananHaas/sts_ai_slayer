@@ -50,10 +50,10 @@
 - [x] Metallicize
 - [x] Power Through
 - [x] Pummel
-- [ ] Rage
-- [ ] Rampage
-- [ ] Reckless Charge
-- [ ] Rupture
+- [x] Rage
+- [x] Rampage
+- [x] Reckless Charge
+- [x] Rupture
 - [x] Searing Blow
 - [ ] Second Wind
 - [ ] Seeing Red
