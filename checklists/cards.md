@@ -70,10 +70,10 @@
 - [x] Bludgeon
 - [x] Brutality
 - [x] Corruption
-- [ ] Demon Form
-- [ ] Double Tap
-- [ ] Exhume
-- [ ] Feed
+- [x] Demon Form
+- [x] Double Tap
+- [x] Exhume
+- [x] Feed
 - [ ] Fiend Fire
 - [ ] Immolate
 - [ ] Impervious

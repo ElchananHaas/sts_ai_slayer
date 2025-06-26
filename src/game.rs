@@ -74,6 +74,7 @@ pub enum Choice {
 pub enum SelectionPile {
     Hand,
     Discard,
+    Exhaust,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -92,6 +93,13 @@ pub enum ActionControlFlow {
     Continue,
     SelectCards(Vec<SelectCardAction>, SelectCardEffect, SelectionPile),
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default)]
+pub struct AttackResult {
+    lethal: bool,
+    damage_dealt: i32,
+}
+
 impl<'a> ChoiceState<'a> {
     pub fn is_over(&self) -> bool {
         match self.choice {
@@ -208,6 +216,11 @@ impl<'a> ChoiceState<'a> {
                                 "Select {:?}",
                                 self.game.fight.discard_pile[choice as usize].body
                             )
+                        }
+                    },
+                    SelectionPile::Exhaust => match action {
+                        SelectCardAction::ChooseCard(choice) => {
+                            format!("Select {:?}", self.game.fight.exhaust[choice as usize].body)
                         }
                     },
                 }
@@ -426,8 +439,10 @@ impl Game {
         //TODO handle artifact.
         self.fight.player_buffs.strength -= self.fight.player_debuffs.strength_down;
         self.fight.player_debuffs.strength_down = 0;
+        self.fight.player_buffs.strength += self.fight.player_buffs.ritual;
         self.fight.player_debuffs.entangled = false;
         self.fight.player_debuffs.no_draw = false;
+        self.fight.player_buffs.double_tap = 0;
         for idx in self.fight.enemies.indicies() {
             self.fight.enemies[idx].block = 0;
         }
@@ -474,6 +489,7 @@ impl Game {
         let mut context = PlayCardContext {
             card,
             target,
+            real_card: true,
             exhausts: false,
             effect_index: 0,
             x,
@@ -531,8 +547,10 @@ impl Game {
                         }
                     }
                     card_context.card.temp_cost = None;
-                    if card_context.card.body.card_type() == CardType::Power {
-                        //Do nothing for powers, they just go away after playing.
+                    if card_context.card.body.card_type() == CardType::Power
+                        || !card_context.real_card
+                    {
+                        //Do nothing for powers or duplicated cards, they just go away after playing.
                     } else if card_context.exhausts {
                         self.exhaust(card_context.card);
                     } else {
@@ -581,6 +599,17 @@ impl Game {
             self.fight
                 .post_card_queue
                 .push_back(PostCardItem::GainBlock(self.fight.player_buffs.rage));
+        }
+        if self.fight.player_buffs.double_tap > 0
+            && context.card.body.card_type() == CardType::Attack
+            && context.real_card
+        {
+            self.fight.player_buffs.double_tap -= 1;
+            let mut new_context = context.clone();
+            new_context.real_card = false;
+            self.fight
+                .post_card_queue
+                .push_back(PostCardItem::PlayCard(new_context));
         }
     }
 
@@ -640,7 +669,7 @@ impl Game {
             Buff::Strength(x) => {
                 self.fight.player_buffs.strength += x;
             }
-            Buff::Ritual(_) => todo!(),
+            Buff::Ritual(x) => self.fight.player_buffs.ritual += x,
             Buff::RitualSkipFirst(_) => unimplemented!("Player gets normal ritual"),
             Buff::EndTurnLoseHP(x) => self.fight.player_buffs.end_turn_lose_hp += x,
             Buff::EndTurnDamageAllEnemies(x) => {
@@ -658,6 +687,7 @@ impl Game {
             Buff::EnergyEveryTurn => self.fight.player_buffs.energy_every_turn += 1,
             Buff::BrutalityBuff => self.fight.player_buffs.brutality += 1,
             Buff::CorruptionBuff => self.fight.player_buffs.corruption = true,
+            Buff::DoubleTap(x) => self.fight.player_buffs.double_tap += x,
         }
     }
 
@@ -688,7 +718,8 @@ impl Game {
             | Buff::BarricadeBuff
             | Buff::EnergyEveryTurn
             | Buff::BrutalityBuff
-            | Buff::CorruptionBuff => {
+            | Buff::CorruptionBuff
+            | Buff::DoubleTap(_) => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -783,6 +814,12 @@ impl Game {
                     self.add_card_to_hand(card.clone());
                 }
             }
+            SelectCardEffect::ExhaustToHand => {
+                let card = match action {
+                    SelectCardAction::ChooseCard(idx) => self.fight.exhaust.remove(idx),
+                };
+                self.add_card_to_hand(card);
+            }
         }
     }
 
@@ -815,7 +852,7 @@ impl Game {
         damage
     }
 
-    fn attack_enemy(&mut self, card: &Card, amount: i32, target: usize) {
+    fn attack_enemy(&mut self, card: &Card, amount: i32, target: usize) -> AttackResult {
         let strength = match card.body {
             CardBody::HeavyBlade => {
                 self.fight.player_buffs.strength * (if card.is_upgraded() { 5 } else { 3 })
@@ -824,7 +861,7 @@ impl Game {
         };
         let mut damage: f32 = (amount + strength) as f32;
         let Some(enemy) = &mut self.fight.enemies[target] else {
-            return;
+            return AttackResult::default();
         };
         if enemy.debuffs.vulnerable > 0 {
             damage *= 1.5;
@@ -832,21 +869,28 @@ impl Game {
         if self.fight.player_debuffs.weak > 0 {
             damage *= 0.75;
         }
-        let mut damage = damage as i32;
-        damage = Self::damage_enemy(enemy, damage);
-        if damage > 0 {
+        let damage = damage as i32;
+        let damage_dealt = Self::damage_enemy(enemy, damage);
+        if damage_dealt > 0 {
             if enemy.buffs.curl_up > 0 {
                 enemy.buffs.queued_block += enemy.buffs.curl_up;
                 enemy.buffs.curl_up = 0;
             }
             enemy.buffs.strength += enemy.buffs.angry;
         }
-        if enemy.hp <= 0 {
+        let lethal = if enemy.hp <= 0 {
             if enemy.buffs.spore_cloud > 0 {
                 self.fight.player_debuffs.vulnerable += 2;
             }
             self.fight.stolen_back_gold += enemy.buffs.stolen_gold;
             self.fight.enemies[target] = None;
+            true
+        } else {
+            false
+        };
+        AttackResult {
+            lethal,
+            damage_dealt,
         }
     }
 
@@ -1002,6 +1046,16 @@ impl Game {
                         );
                     }
                 }
+                SelectCardEffect::ExhaustToHand => {
+                    let targets = choose_card_filter(&self.fight.exhaust, |_| true);
+                    if targets.len() > 0 {
+                        return ActionControlFlow::SelectCards(
+                            targets,
+                            select_effect,
+                            SelectionPile::Exhaust,
+                        );
+                    }
+                }
             },
             PlayEffect::UpgradeAllCardsInHand => {
                 for card in &mut self.fight.hand {
@@ -1016,6 +1070,7 @@ impl Game {
                         .push_back(PostCardItem::PlayCard(PlayCardContext {
                             card,
                             target,
+                            real_card: true,
                             exhausts: true,
                             effect_index: 0,
                             x: self.fight.energy,
@@ -1096,10 +1151,28 @@ impl Game {
                     }
                 }
             }
+            PlayEffect::AttackLethalEffect(attack, lethal_effect) => {
+                let res = self.attack_enemy(&context.card, attack, target);
+                if res.lethal {
+                    match lethal_effect {
+                        crate::card::LethalEffect::Gain3MaxHP => {
+                            self.gain_max_hp(3);
+                        }
+                        crate::card::LethalEffect::Gain4MaxHP => {
+                            self.gain_max_hp(4);
+                        }
+                    }
+                }
+            }
         }
         ActionControlFlow::Continue
     }
 
+    fn gain_max_hp(&mut self, amount: i32) {
+        self.player_max_hp += amount;
+        self.player_hp += amount;
+    }
+    
     fn intends_to_attack(&mut self, target: usize) -> bool {
         if let Some(enemy) = &self.fight.enemies[target] {
             let behavior = (enemy.behavior)(&mut self.rng, &self.fight, &enemy, enemy.ai_state);

@@ -56,6 +56,8 @@ pub struct PlayerBuffs {
     pub energy_every_turn: i32,
     pub brutality: i32,
     pub corruption: bool,
+    pub ritual: i32,
+    pub double_tap: i32,
 }
 
 //This holds effects that happen after a card finishes resolving.
@@ -74,6 +76,7 @@ pub struct PlayCardContext {
     pub card: Card,
     pub target: usize,
     pub exhausts: bool,
+    pub real_card: bool,
     pub effect_index: usize,
     pub x: i32,
 }

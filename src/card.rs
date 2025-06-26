@@ -112,6 +112,10 @@ pub enum CardBody {
     Bludgeon,
     Brutality,
     Corruption,
+    DemonForm,
+    DoubleTap,
+    Exhume,
+    Feed,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -144,6 +148,15 @@ pub enum PlayEffect {
     ExhaustNonAttack,
     SpotWeakness(i32),
     AttackAllX(i32),
+    AttackLethalEffect(i32, LethalEffect),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum LethalEffect {
+    //This is done to keep the enum size small.
+    //An additional i32 would raise the overall size of the containing enum.
+    Gain3MaxHP,
+    Gain4MaxHP,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -153,6 +166,7 @@ pub enum SelectCardEffect {
     ExhaustChosen,
     HandToTop,
     DuplicatePowerOrAttack(i32),
+    ExhaustToHand,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -184,6 +198,7 @@ pub enum Buff {
     EnergyEveryTurn,
     BrutalityBuff,
     CorruptionBuff,
+    DoubleTap(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -1007,6 +1022,47 @@ impl CardBody {
                 )
                 .with_upgraded_cost(Cost::Fixed(2))
             ),
+            CardBody::DemonForm => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::Ritual(2))],
+                &[PlayEffect::Buff(Buff::Ritual(3))],
+                Cost::Fixed(3),
+                false,
+                CardType::Power,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::DoubleTap => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::DoubleTap(1))],
+                &[PlayEffect::Buff(Buff::DoubleTap(2))],
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Exhume => const_card!(
+                &CardProps::new(
+                    &[
+                        PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustToHand),
+                        PlayEffect::MarkExhaust
+                    ],
+                    &[
+                        PlayEffect::SelectCardEffect(SelectCardEffect::ExhaustToHand),
+                        PlayEffect::MarkExhaust
+                    ],
+                    Cost::Fixed(1),
+                    false,
+                    CardType::Skill,
+                    CardCharachter::IRONCLAD
+                )
+                .with_upgraded_cost(Cost::Fixed(0))
+            ),
+            CardBody::Feed => const_card!(&CardProps::new(
+                &[PlayEffect::AttackLethalEffect(10, LethalEffect::Gain3MaxHP)],
+                &[PlayEffect::AttackLethalEffect(12, LethalEffect::Gain4MaxHP)],
+                Cost::Fixed(1),
+                true,
+                CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
         };
     }
     pub const fn to_card(&self) -> Card {
