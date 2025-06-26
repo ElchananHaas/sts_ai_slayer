@@ -52,6 +52,10 @@ pub struct PlayerBuffs {
     pub metallicize: i32,
     pub rage: i32,
     pub rupture: i32,
+    pub barricade: bool,
+    pub energy_every_turn: i32,
+    pub brutality: i32,
+    pub corruption: bool,
 }
 
 //This holds effects that happen after a card finishes resolving.
@@ -71,7 +75,7 @@ pub struct PlayCardContext {
     pub target: usize,
     pub exhausts: bool,
     pub effect_index: usize,
-    pub x: i32
+    pub x: i32,
 }
 
 impl Fight {
@@ -243,6 +247,12 @@ impl Fight {
             Cost::Fixed(x) => Some(x),
             Cost::X => Some(self.energy),
             Cost::NumMinusHpLoss(x) => Some(max(0, x - self.player_buffs.num_times_lost_hp)),
+        };
+        if self.player_buffs.corruption
+            && base.is_some()
+            && card.body.card_type() == CardType::Skill
+        {
+            return Some(0);
         };
         if let Some(temp) = card.temp_cost {
             if let Some(base) = base

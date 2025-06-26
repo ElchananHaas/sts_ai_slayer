@@ -107,6 +107,11 @@ pub enum CardBody {
     SpotWeakness,
     Uppercut,
     Whirlwind,
+    Barricade,
+    Berserk,
+    Bludgeon,
+    Brutality,
+    Corruption,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -175,6 +180,10 @@ pub enum Buff {
     Metallicize(i32),
     RageBuff(i32),
     RuptureBuff(i32),
+    BarricadeBuff,
+    EnergyEveryTurn,
+    BrutalityBuff,
+    CorruptionBuff,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -206,6 +215,7 @@ struct CardProps {
     ethereal: Ethereal,
     charachter: CardCharachter,
     starter: bool,
+    innate: Innate,
 }
 
 enum Ethereal {
@@ -214,6 +224,11 @@ enum Ethereal {
     NotUpgraded,
 }
 
+enum Innate {
+    No,
+    Yes,
+    Upgraded,
+}
 impl CardProps {
     const fn new(
         actions: &'static [PlayEffect],
@@ -232,6 +247,7 @@ impl CardProps {
             upgraded_cost: cost,
             upgraded_requires_target: requires_target,
             ethereal: Ethereal::No,
+            innate: Innate::No,
             charachter,
             starter: false,
         }
@@ -256,6 +272,9 @@ impl CardProps {
     }
     const fn with_ethereal(self, ethereal: Ethereal) -> Self {
         Self { ethereal, ..self }
+    }
+    const fn with_innate(self, innate: Innate) -> Self {
+        Self { innate, ..self }
     }
 }
 
@@ -926,13 +945,68 @@ impl CardBody {
                 CardCharachter::IRONCLAD
             )),
             CardBody::Whirlwind => const_card!(&CardProps::new(
-                &[PlayEffect::AttackAllX(5),],
-                &[PlayEffect::AttackAllX(8),],
+                &[PlayEffect::AttackAllX(5)],
+                &[PlayEffect::AttackAllX(8)],
                 Cost::X,
                 false,
                 CardType::Attack,
                 CardCharachter::IRONCLAD
             )),
+            CardBody::Barricade => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::Buff(Buff::BarricadeBuff)],
+                    &[PlayEffect::Buff(Buff::BarricadeBuff)],
+                    Cost::Fixed(3),
+                    false,
+                    CardType::Power,
+                    CardCharachter::IRONCLAD
+                )
+                .with_upgraded_cost(Cost::Fixed(2))
+            ),
+            CardBody::Berserk => const_card!(&CardProps::new(
+                &[
+                    PlayEffect::Buff(Buff::EnergyEveryTurn),
+                    PlayEffect::DebuffSelf(Debuff::Vulnerable(2))
+                ],
+                &[
+                    PlayEffect::Buff(Buff::EnergyEveryTurn),
+                    PlayEffect::DebuffSelf(Debuff::Vulnerable(2))
+                ],
+                Cost::Fixed(0),
+                false,
+                CardType::Power,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Bludgeon => const_card!(&CardProps::new(
+                &[PlayEffect::Attack(32)],
+                &[PlayEffect::Attack(42)],
+                Cost::Fixed(3),
+                true,
+                CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Brutality => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::Buff(Buff::BrutalityBuff),],
+                    &[PlayEffect::Buff(Buff::BrutalityBuff),],
+                    Cost::Fixed(0),
+                    false,
+                    CardType::Power,
+                    CardCharachter::IRONCLAD
+                )
+                .with_innate(Innate::Upgraded)
+            ),
+            CardBody::Corruption => const_card!(
+                &CardProps::new(
+                    &[PlayEffect::Buff(Buff::CorruptionBuff)],
+                    &[PlayEffect::Buff(Buff::CorruptionBuff)],
+                    Cost::Fixed(3),
+                    false,
+                    CardType::Power,
+                    CardCharachter::IRONCLAD
+                )
+                .with_upgraded_cost(Cost::Fixed(2))
+            ),
         };
     }
     pub const fn to_card(&self) -> Card {
@@ -1059,6 +1133,14 @@ impl Card {
             self.props().upgraded_requires_target
         } else {
             self.props().requires_target
+        }
+    }
+
+    pub fn innate(&self) -> bool {
+        match self.body.props().innate {
+            Innate::No => false,
+            Innate::Yes => true,
+            Innate::Upgraded => self.upgraded,
         }
     }
 }

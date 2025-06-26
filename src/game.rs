@@ -237,7 +237,6 @@ impl<'a> ChoiceState<'a> {
 impl Game {
     //This function starts a fight in the given game. Useful for testing.
     pub fn start_fight(&mut self) -> Choice {
-        self.draw_initial_hand();
         self.play_card_choice()
     }
 
@@ -400,11 +399,17 @@ impl Game {
         decrement(&mut self.fight.player_debuffs.frail);
         self.fight.player_buffs.temp_spikes = 0;
         self.fight.player_buffs.rage = 0;
-        for _ in 0..5 {
+        let draw_amount = 5 + self.fight.player_buffs.brutality;
+        for _ in 0..draw_amount {
             self.fight.draw(&mut self.rng);
         }
-        self.fight.player_block = 0;
-        self.fight.energy = 3;
+        if self.fight.player_buffs.brutality > 0 {
+            self.player_lose_hp(self.fight.player_buffs.brutality, false);
+        }
+        if !self.fight.player_buffs.barricade {
+            self.fight.player_block = 0;
+        }
+        self.fight.energy = 3 + self.fight.player_buffs.energy_every_turn;
     }
 
     fn discard_hand_end_of_turn(&mut self) {
@@ -466,14 +471,14 @@ impl Game {
         //Record the cost of an X spell before it is spent.
         let x = fight.energy;
         fight.energy -= cost;
-        let context = PlayCardContext {
+        let mut context = PlayCardContext {
             card,
             target,
             exhausts: false,
             effect_index: 0,
-            x
+            x,
         };
-        self.trigger_play_card_effects(&context);
+        self.trigger_play_card_effects(&mut context);
         if let Some(choice) = self.resolve_actions(Some(context)) {
             return choice;
         }
@@ -540,8 +545,8 @@ impl Game {
                 //this happens pop them off and play them until there are none left.
                 if let Some(front) = self.fight.post_card_queue.pop_front() {
                     match front {
-                        PostCardItem::PlayCard(play_card_context) => {
-                            self.trigger_play_card_effects(&play_card_context);
+                        PostCardItem::PlayCard(mut play_card_context) => {
+                            self.trigger_play_card_effects(&mut play_card_context);
                             context = Some(play_card_context);
                         }
                         PostCardItem::Draw(amount) => {
@@ -568,7 +573,10 @@ impl Game {
         }
     }
 
-    fn trigger_play_card_effects(&mut self, context: &PlayCardContext) {
+    fn trigger_play_card_effects(&mut self, context: &mut PlayCardContext) {
+        if self.fight.player_buffs.corruption && context.card.body.card_type() == CardType::Skill {
+            context.exhausts = true;
+        }
         if context.card.body.card_type() == CardType::Attack && self.fight.player_buffs.rage > 0 {
             self.fight
                 .post_card_queue
@@ -646,6 +654,10 @@ impl Game {
             Buff::Metallicize(x) => self.fight.player_buffs.metallicize += x,
             Buff::RageBuff(x) => self.fight.player_buffs.rage += x,
             Buff::RuptureBuff(x) => self.fight.player_buffs.rupture += x,
+            Buff::BarricadeBuff => self.fight.player_buffs.barricade = true,
+            Buff::EnergyEveryTurn => self.fight.player_buffs.energy_every_turn += 1,
+            Buff::BrutalityBuff => self.fight.player_buffs.brutality += 1,
+            Buff::CorruptionBuff => self.fight.player_buffs.corruption = true,
         }
     }
 
@@ -672,7 +684,11 @@ impl Game {
             | Buff::TempSpikes(_)
             | Buff::Metallicize(_)
             | Buff::RageBuff(_)
-            | Buff::RuptureBuff(_) => {
+            | Buff::RuptureBuff(_)
+            | Buff::BarricadeBuff
+            | Buff::EnergyEveryTurn
+            | Buff::BrutalityBuff
+            | Buff::CorruptionBuff => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -1002,7 +1018,7 @@ impl Game {
                             target,
                             exhausts: true,
                             effect_index: 0,
-                            x: self.fight.energy
+                            x: self.fight.energy,
                         }));
                 }
             }
@@ -1210,18 +1226,24 @@ impl Game {
         }
     }
 
-    pub fn draw_initial_hand(&mut self) {
-        //TODO handle relics that affect initial hand size.
-        //TODO handle innate cards.
-        for _ in 0..5 {
-            self.fight.draw(&mut self.rng);
-        }
-    }
+    pub fn draw_initial_hand(&mut self) {}
 
     fn setup_fight(&mut self) {
         self.fight = Default::default();
-        self.fight.deck = Deck::shuffled(self.base_deck.clone());
+        let mut deck_cards = Vec::new();
+        for card in self.base_deck.clone() {
+            if card.innate() {
+                self.add_card_to_hand(card);
+            } else {
+                deck_cards.push(card);
+            }
+        }
+        self.fight.deck = Deck::shuffled(deck_cards);
         self.fight.energy = 3;
+        //TODO handle relics that affect initial hand size.
+        for _ in 0..(5_usize.saturating_sub(self.fight.hand.len())) {
+            self.fight.draw(&mut self.rng);
+        }
     }
 
     pub fn setup_jawworm_fight(&mut self) -> ChoiceState<'_> {

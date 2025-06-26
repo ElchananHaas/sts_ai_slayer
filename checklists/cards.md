@@ -65,4 +65,19 @@
 - [x] Whirlwind
 
 ### Rare Ironclad Cards
-TODO
+- [x] Barricade
+- [x] Berserk
+- [x] Bludgeon
+- [x] Brutality
+- [x] Corruption
+- [ ] Demon Form
+- [ ] Double Tap
+- [ ] Exhume
+- [ ] Feed
+- [ ] Fiend Fire
+- [ ] Immolate
+- [ ] Impervious
+- [ ] Juggernaut
+- [ ] Limit Break
+- [ ] Offering
+- [ ] Reaper
