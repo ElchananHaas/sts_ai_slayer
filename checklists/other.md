@@ -1,5 +1,4 @@
 - [x] Create a random agent.
 - [x] Provide a decent way of viewing the game state.
 - [x] Get MCTS running on single combats.
-- [ ] Fix Mad Gremlin
 - [ ] Fix enemies dying from player spikes during a multi-attack.

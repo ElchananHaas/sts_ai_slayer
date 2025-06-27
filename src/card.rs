@@ -121,6 +121,9 @@ pub enum CardBody {
     Burn,
     Impervious,
     Juggernaut,
+    LimitBreak,
+    Offering,
+    Reaper,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -156,6 +159,8 @@ pub enum PlayEffect {
     AttackLethalEffect(i32, LethalEffect),
     AttackFiendFire(i32),
     AddCardToDiscard(CardBody),
+    DoubleStrength,
+    AttackAllForHP(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -1110,11 +1115,45 @@ impl CardBody {
                 CardCharachter::IRONCLAD
             )),
             CardBody::Juggernaut => const_card!(&CardProps::new(
-                &[PlayEffect::Buff(Buff::Juggernaut(5)),],
-                &[PlayEffect::Buff(Buff::Juggernaut(7)),],
+                &[PlayEffect::Buff(Buff::Juggernaut(5))],
+                &[PlayEffect::Buff(Buff::Juggernaut(7))],
                 Cost::Fixed(2),
                 false,
                 CardType::Power,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::LimitBreak => const_card!(&CardProps::new(
+                &[PlayEffect::DoubleStrength, PlayEffect::MarkExhaust],
+                &[PlayEffect::DoubleStrength],
+                Cost::Fixed(1),
+                false,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Offering => const_card!(&CardProps::new(
+                &[
+                    PlayEffect::LoseHP(6),
+                    PlayEffect::GainEnergy(2),
+                    PlayEffect::Draw(3),
+                    PlayEffect::MarkExhaust
+                ],
+                &[
+                    PlayEffect::LoseHP(6),
+                    PlayEffect::GainEnergy(2),
+                    PlayEffect::Draw(5),
+                    PlayEffect::MarkExhaust
+                ],
+                Cost::Fixed(0),
+                false,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Reaper => const_card!(&CardProps::new(
+                &[PlayEffect::AttackAllForHP(4), PlayEffect::MarkExhaust],
+                &[PlayEffect::AttackAllForHP(5), PlayEffect::MarkExhaust],
+                Cost::Fixed(2),
+                false,
+                CardType::Attack,
                 CardCharachter::IRONCLAD
             )),
         };

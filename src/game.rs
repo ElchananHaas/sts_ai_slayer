@@ -1,4 +1,4 @@
-use std::{fmt::Display, mem, vec};
+use std::{cmp::min, fmt::Display, mem, vec};
 
 use crate::{
     card::{
@@ -885,7 +885,7 @@ impl Game {
             damage -= enemy.block;
             enemy.block = 0;
         }
-        damage = std::cmp::min(damage, enemy.hp);
+        damage = min(damage, enemy.hp);
         enemy.hp -= damage as i32;
         if damage > 0 && from_card {
             if enemy.buffs.curl_up > 0 {
@@ -1188,6 +1188,21 @@ impl Game {
             PlayEffect::AddCardToDiscard(card_body) => {
                 insert_sorted(card_body.to_card(), &mut self.fight.discard_pile);
             }
+            PlayEffect::DoubleStrength => {
+                self.fight.player_buffs.strength *= 2;
+                self.fight.player_debuffs.strength_down *= 2;
+            }
+            PlayEffect::AttackAllForHP(amount) => {
+                let mut total = 0;
+                for enemy in self.fight.enemies.indicies() {
+                    total += self
+                        .attack_enemy(&context.card, amount, enemy.0 as usize)
+                        .damage_dealt;
+                }
+                if total > 0 {
+                    self.heal(total);
+                }
+            }
         }
         ActionControlFlow::Continue
     }
@@ -1195,6 +1210,10 @@ impl Game {
     fn gain_max_hp(&mut self, amount: i32) {
         self.player_max_hp += amount;
         self.player_hp += amount;
+    }
+
+    fn heal(&mut self, amount: i32) {
+        self.player_hp = min(self.player_max_hp, self.player_hp + amount);
     }
 
     fn intends_to_attack(&mut self, target: usize) -> bool {

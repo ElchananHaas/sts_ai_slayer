@@ -77,7 +77,7 @@
 - [x] Fiend Fire
 - [x] Immolate
 - [x] Impervious
-- [ ] Juggernaut
-- [ ] Limit Break
-- [ ] Offering
-- [ ] Reaper
+- [x] Juggernaut
+- [x] Limit Break
+- [x] Offering
+- [x] Reaper
