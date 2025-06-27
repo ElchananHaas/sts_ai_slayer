@@ -58,6 +58,7 @@ pub struct PlayerBuffs {
     pub corruption: bool,
     pub ritual: i32,
     pub double_tap: i32,
+    pub juggernaut: i32,
 }
 
 //This holds effects that happen after a card finishes resolving.
@@ -69,6 +70,7 @@ pub enum PostCardItem {
     GainBlock(i32),
     DamageAll(i32),
     GainEnergy(i32),
+    DamageRandomEnemy(i32),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

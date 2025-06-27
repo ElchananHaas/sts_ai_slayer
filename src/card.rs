@@ -116,6 +116,11 @@ pub enum CardBody {
     DoubleTap,
     Exhume,
     Feed,
+    FiendFire,
+    Immolate,
+    Burn,
+    Impervious,
+    Juggernaut,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -149,6 +154,8 @@ pub enum PlayEffect {
     SpotWeakness(i32),
     AttackAllX(i32),
     AttackLethalEffect(i32, LethalEffect),
+    AttackFiendFire(i32),
+    AddCardToDiscard(CardBody),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -199,6 +206,7 @@ pub enum Buff {
     BrutalityBuff,
     CorruptionBuff,
     DoubleTap(i32),
+    Juggernaut(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -1061,6 +1069,52 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::FiendFire => const_card!(&CardProps::new(
+                &[PlayEffect::AttackFiendFire(7), PlayEffect::MarkExhaust],
+                &[PlayEffect::AttackFiendFire(10), PlayEffect::MarkExhaust],
+                Cost::Fixed(2),
+                true,
+                CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Immolate => const_card!(&CardProps::new(
+                &[
+                    PlayEffect::AttackAll(21),
+                    PlayEffect::AddCardToDiscard(CardBody::Burn)
+                ],
+                &[
+                    PlayEffect::AttackAll(28),
+                    PlayEffect::AddCardToDiscard(CardBody::Burn)
+                ],
+                Cost::Fixed(2),
+                false,
+                CardType::Attack,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Burn => const_card!(&CardProps::new(
+                &[PlayEffect::MarkExhaust],
+                &[PlayEffect::MarkExhaust],
+                Cost::Unplayable,
+                false,
+                CardType::Status,
+                CardCharachter::COLORLESS
+            )),
+            CardBody::Impervious => const_card!(&CardProps::new(
+                &[PlayEffect::Block(30), PlayEffect::MarkExhaust],
+                &[PlayEffect::Block(40), PlayEffect::MarkExhaust],
+                Cost::Fixed(2),
+                false,
+                CardType::Skill,
+                CardCharachter::IRONCLAD
+            )),
+            CardBody::Juggernaut => const_card!(&CardProps::new(
+                &[PlayEffect::Buff(Buff::Juggernaut(5)),],
+                &[PlayEffect::Buff(Buff::Juggernaut(7)),],
+                Cost::Fixed(2),
+                false,
+                CardType::Power,
                 CardCharachter::IRONCLAD
             )),
         };

@@ -54,6 +54,7 @@ pub enum RewardStateAction {
     Proceed,
 }
 
+#[must_use]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Choice {
     //See if this can be improved for more allocation reuse.
@@ -311,6 +312,20 @@ impl Game {
         }
     }
 
+    fn damage_player(&mut self, damage: i32, from_card: bool) -> Option<Choice> {
+        if damage > self.fight.player_block {
+            let dealt = damage - self.fight.player_block;
+            self.fight.player_block = 0;
+            self.player_lose_hp(dealt, from_card);
+        } else {
+            self.fight.player_block -= damage;
+        }
+        if self.player_hp <= 0 {
+            self.player_hp = 0;
+            return Some(Choice::Loss);
+        }
+        return None;
+    }
     fn enemy_phase(&mut self) -> Choice {
         self.discard_hand_end_of_turn();
         for i in self.fight.enemies.indicies() {
@@ -335,20 +350,12 @@ impl Game {
                             damage *= 1.5;
                         }
                         let damage = damage as i32;
-                        if damage > self.fight.player_block {
-                            let dealt = damage - self.fight.player_block;
-                            self.fight.player_block = 0;
-                            self.player_lose_hp(dealt, false);
-                        } else {
-                            self.fight.player_block -= damage;
-                        }
-                        if self.player_hp <= 0 {
-                            self.player_hp = 0;
-                            return Choice::Loss;
+                        if let Some(choice) = self.damage_player(damage, false) {
+                            return choice;
                         }
                         let player_spikiness = self.fight.player_buffs.temp_spikes;
                         if player_spikiness > 0 {
-                            Self::damage_enemy(&mut self.fight.enemies[i], player_spikiness);
+                            self.damage_enemy(player_spikiness, i.0 as usize, false);
                         }
                         let enemy = &self.fight.enemies[i];
                         //An enemy dying from spikes can interrupt a multi-attack.
@@ -430,6 +437,9 @@ impl Game {
         mem::swap(&mut old_hand, &mut self.fight.hand);
         for mut card in old_hand {
             card.temp_cost = None;
+            if card.body == CardBody::Burn {
+                self.damage_player(2, true);
+            }
             if card.ethereal() {
                 self.exhaust(card);
             } else {
@@ -447,7 +457,7 @@ impl Game {
             self.fight.enemies[idx].block = 0;
         }
         if self.fight.player_buffs.metallicize > 0 {
-            self.fight.player_block += self.fight.player_buffs.metallicize;
+            self.player_gain_block(self.fight.player_buffs.metallicize, false);
         }
         if self.fight.player_buffs.end_turn_lose_hp > 0 {
             self.player_lose_hp(self.fight.player_buffs.end_turn_lose_hp, true);
@@ -455,8 +465,7 @@ impl Game {
         let damage_all_enemies = self.fight.player_buffs.end_turn_damage_all_enemies;
         if damage_all_enemies > 0 {
             for idx in self.fight.enemies.indicies() {
-                let enemy = &mut self.fight.enemies[idx];
-                Self::damage_enemy(enemy, damage_all_enemies);
+                self.damage_enemy(damage_all_enemies, idx.0 as usize, false);
             }
         }
     }
@@ -573,15 +582,19 @@ impl Game {
                             }
                         }
                         PostCardItem::GainBlock(amount) => {
-                            self.fight.player_block += amount;
+                            self.player_gain_block(amount, false);
                         }
                         PostCardItem::DamageAll(amount) => {
                             for idx in self.fight.enemies.indicies() {
-                                Self::damage_enemy(&mut self.fight.enemies[idx], amount);
+                                self.damage_enemy(amount, idx.0 as usize, false);
                             }
                         }
                         PostCardItem::GainEnergy(amount) => {
                             self.fight.energy += amount;
+                        }
+                        PostCardItem::DamageRandomEnemy(amount) => {
+                            let enemy = self.choose_random_enemy();
+                            self.damage_enemy(amount, enemy, false);
                         }
                     }
                 } else {
@@ -688,6 +701,7 @@ impl Game {
             Buff::BrutalityBuff => self.fight.player_buffs.brutality += 1,
             Buff::CorruptionBuff => self.fight.player_buffs.corruption = true,
             Buff::DoubleTap(x) => self.fight.player_buffs.double_tap += x,
+            Buff::Juggernaut(x) => self.fight.player_buffs.juggernaut += x,
         }
     }
 
@@ -719,7 +733,8 @@ impl Game {
             | Buff::EnergyEveryTurn
             | Buff::BrutalityBuff
             | Buff::CorruptionBuff
-            | Buff::DoubleTap(_) => {
+            | Buff::DoubleTap(_)
+            | Buff::Juggernaut(_) => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -835,23 +850,6 @@ impl Game {
         self.fight.deck.put_on_top(vec![card]);
     }
 
-    //This function handles the effect of damage on enemy block. Returns the damage dealt.
-    fn damage_enemy(enemy: &mut Enemy, mut damage: i32) -> i32 {
-        if damage <= 0 {
-            return 0;
-        }
-        if damage < enemy.block {
-            enemy.block -= damage;
-            damage = 0;
-        } else {
-            damage -= enemy.block;
-            enemy.block = 0;
-        }
-        damage = std::cmp::min(damage, enemy.hp);
-        enemy.hp -= damage as i32;
-        damage
-    }
-
     fn attack_enemy(&mut self, card: &Card, amount: i32, target: usize) -> AttackResult {
         let strength = match card.body {
             CardBody::HeavyBlade => {
@@ -870,8 +868,26 @@ impl Game {
             damage *= 0.75;
         }
         let damage = damage as i32;
-        let damage_dealt = Self::damage_enemy(enemy, damage);
-        if damage_dealt > 0 {
+        self.damage_enemy(damage, target, true)
+    }
+
+    fn damage_enemy(&mut self, mut damage: i32, target: usize, from_card: bool) -> AttackResult {
+        let Some(enemy) = &mut self.fight.enemies[target] else {
+            return AttackResult::default();
+        };
+        if damage <= 0 {
+            return AttackResult::default();
+        }
+        if damage < enemy.block {
+            enemy.block -= damage;
+            damage = 0;
+        } else {
+            damage -= enemy.block;
+            enemy.block = 0;
+        }
+        damage = std::cmp::min(damage, enemy.hp);
+        enemy.hp -= damage as i32;
+        if damage > 0 && from_card {
             if enemy.buffs.curl_up > 0 {
                 enemy.buffs.queued_block += enemy.buffs.curl_up;
                 enemy.buffs.curl_up = 0;
@@ -890,7 +906,7 @@ impl Game {
         };
         AttackResult {
             lethal,
-            damage_dealt,
+            damage_dealt: damage,
         }
     }
 
@@ -976,13 +992,7 @@ impl Game {
                 self.apply_buff_to_player(buff);
             }
             PlayEffect::Block(block) => {
-                //TODO handle player buffs and debuffs.
-                let mut block = block as f32;
-                if self.fight.player_debuffs.frail > 0 {
-                    block *= 0.75;
-                }
-                let block = block as i32;
-                self.fight.player_block += block;
+                self.player_gain_block(block, true);
             }
             PlayEffect::AddCopyToDiscard => {
                 insert_sorted(card.clone(), &mut self.fight.discard_pile);
@@ -1098,7 +1108,7 @@ impl Game {
                 }
             }
             PlayEffect::DoubleBlock => {
-                self.fight.player_block *= 2;
+                self.player_gain_block(self.fight.player_block, true);
             }
             PlayEffect::GenerateAttackInfernal => {
                 let idx = self.rng.sample(IRONCLAD_ATTACK_CARDS.len());
@@ -1125,7 +1135,7 @@ impl Game {
                     }
                 }
                 for _ in 0..count {
-                    self.fight.player_block += amount;
+                    self.player_gain_block(amount, false);
                 }
             }
             PlayEffect::ExhaustNonAttack => {
@@ -1164,6 +1174,20 @@ impl Game {
                     }
                 }
             }
+            PlayEffect::AttackFiendFire(amount) => {
+                let mut temp_hand = Vec::new();
+                mem::swap(&mut temp_hand, &mut self.fight.hand);
+                let count = temp_hand.len();
+                for card in temp_hand {
+                    self.exhaust(card);
+                }
+                for _ in 0..count {
+                    self.attack_enemy(&context.card, amount, target);
+                }
+            }
+            PlayEffect::AddCardToDiscard(card_body) => {
+                insert_sorted(card_body.to_card(), &mut self.fight.discard_pile);
+            }
         }
         ActionControlFlow::Continue
     }
@@ -1172,7 +1196,7 @@ impl Game {
         self.player_max_hp += amount;
         self.player_hp += amount;
     }
-    
+
     fn intends_to_attack(&mut self, target: usize) -> bool {
         if let Some(enemy) = &self.fight.enemies[target] {
             let behavior = (enemy.behavior)(&mut self.rng, &self.fight, &enemy, enemy.ai_state);
@@ -1213,6 +1237,28 @@ impl Game {
             self.choose_random_enemy()
         } else {
             0
+        }
+    }
+
+    fn player_gain_block(&mut self, block: i32, from_card: bool) {
+        let block = if from_card {
+            let mut block = block as f32;
+            if self.fight.player_debuffs.frail > 0 {
+                block *= 0.75;
+            }
+            block as i32
+        } else {
+            block
+        };
+        if block > 0 {
+            if self.fight.player_buffs.juggernaut > 0 {
+                self.fight
+                    .post_card_queue
+                    .push_back(PostCardItem::DamageRandomEnemy(
+                        self.fight.player_buffs.juggernaut,
+                    ));
+            }
+            self.fight.player_block += block;
         }
     }
 }

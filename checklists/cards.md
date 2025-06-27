@@ -74,9 +74,9 @@
 - [x] Double Tap
 - [x] Exhume
 - [x] Feed
-- [ ] Fiend Fire
-- [ ] Immolate
-- [ ] Impervious
+- [x] Fiend Fire
+- [x] Immolate
+- [x] Impervious
 - [ ] Juggernaut
 - [ ] Limit Break
 - [ ] Offering
