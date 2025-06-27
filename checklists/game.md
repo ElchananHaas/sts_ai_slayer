@@ -1,7 +1,10 @@
 ### Act 1 Enemies
-DONE
+DONE!
 
 ### Ironclad Cards
+DONE
+
+### Relics/Potions Placeholders
 TODO
 
 ### Act 1 Events
@@ -14,6 +17,9 @@ TODO
 TODO
 
 ### Events Common Across Acts
+TODO
+
+### Colorless Cards
 TODO
 
 ### Map Generation
