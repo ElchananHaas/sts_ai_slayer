@@ -174,9 +174,7 @@ impl<'a> ChoiceState<'a> {
                 let action = select_card_actions[action_idx];
                 game.handle_select_card_action(play_card_context, effect, action)
             }
-            Choice::Event(event, actions) => event
-                .data()
-                .take_action(&mut self.game, actions[action_idx]),
+            Choice::Event(event, actions) => event.take_action(&mut self.game, actions[action_idx]),
             Choice::RemoveCardState(actions) => game.handle_remove_card_action(actions[action_idx]),
         }
     }
@@ -247,9 +245,9 @@ impl<'a> ChoiceState<'a> {
                     },
                 }
             }
-            Choice::Event(event, event_actions) => event
-                .data()
-                .action_str(&self.game, event_actions[action_idx]),
+            Choice::Event(event, event_actions) => {
+                event.action_str(&self.game, event_actions[action_idx])
+            }
             Choice::RemoveCardState(remove_card_actions) => {
                 let card = &self.game.base_deck[remove_card_actions[action_idx].0];
                 format!("Remove {:?}", card.body)
@@ -1553,7 +1551,7 @@ impl<'a> Display for ChoiceState<'a> {
             Choice::Loss => "Loss",
             Choice::MapState(_) => "MapState",
             Choice::SelectCardState(_ctx, __effect, _actions, _type) => "SelectCard",
-            Choice::Event(event, _actions) => event.data().name(),
+            Choice::Event(event, _actions) => event.name(),
             Choice::RemoveCardState(_) => "RemoveCard",
         };
         dash_line(f)?;

@@ -27,7 +27,7 @@ impl EventData for BigFish {
             2 => {
                 game.add_card_to_deck(CardBody::Regret);
                 let relic = game.relic_pool.get_random_tier_relic(&mut game.rng);
-                game.relics.add(relic);
+                game.relics.add(relic); //TODO - handle bottle relics.
                 game.goto_map()
             }
             _ => panic!("Invalid action: {}", action.0),

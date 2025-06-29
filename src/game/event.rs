@@ -3,7 +3,10 @@ mod cleric;
 
 use strum::VariantArray;
 
-use crate::game::{Choice, EventAction, Game, event::big_fish::BigFish};
+use crate::game::{
+    Choice, EventAction, Game,
+    event::{big_fish::BigFish, cleric::Cleric},
+};
 /*
 Event Generation works as follows:
 
@@ -17,7 +20,7 @@ pub enum Event {
     //Act 1 exclusive.
     //Neow,
     BigFish,
-    //Cleric,
+    Cleric,
     //DeadAdventurer,
     //GoldenIdol,
     //HypnotizingShrooms,
@@ -57,10 +60,44 @@ pub trait EventData {
     fn name(&self) -> &'static str;
 }
 
-impl Event {
-    pub fn data(&self) -> impl EventData {
-        match self {
-            Event::BigFish => BigFish,
+macro_rules! delegate {
+    ($($x:pat, $y:expr);*) => {
+        fn get_actions(&self, game: &Game) -> Vec<EventAction> {
+            match self {
+                $(
+                    $x => $y.get_actions(game),
+                )*
+            }
         }
-    }
+
+        fn take_action(&self, game: &mut Game, action: EventAction) -> Choice {
+                match self {
+                    $(
+                        $x => $y.take_action(game, action),
+                    )*
+                }
+        }
+
+        fn action_str(&self, game: &Game, action: EventAction) -> String {
+                match self {
+                    $(
+                        $x => $y.action_str(game, action),
+                    )*
+                }
+        }
+
+        fn name(&self) -> &'static str {
+                match self {
+                    $(
+                        $x => $y.name(),
+                    )*
+                }
+        }
+    };
+}
+impl EventData for Event {
+    delegate!(
+        Event::BigFish, BigFish;
+        Event::Cleric, Cleric
+    );
 }
