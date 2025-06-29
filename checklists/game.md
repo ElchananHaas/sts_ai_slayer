@@ -5,7 +5,7 @@ DONE!
 DONE
 
 ### Relics/Potions Placeholders
-TODO
+DONE
 
 ### Act 1 Events
 TODO
