@@ -65,6 +65,10 @@ pub enum MapStateAction {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct EventAction(usize);
 
+//Remove the i'th card in the deck.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct RemoveCardAction(usize);
+
 #[must_use]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Choice {
@@ -81,6 +85,7 @@ pub enum Choice {
         SelectionPile,
     ),
     Event(Event, Vec<EventAction>),
+    RemoveCardState(Vec<RemoveCardAction>),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -172,6 +177,7 @@ impl<'a> ChoiceState<'a> {
             Choice::Event(event, actions) => event
                 .data()
                 .take_action(&mut self.game, actions[action_idx]),
+            Choice::RemoveCardState(actions) => game.handle_remove_card_action(actions[action_idx]),
         }
     }
 
@@ -244,6 +250,10 @@ impl<'a> ChoiceState<'a> {
             Choice::Event(event, event_actions) => event
                 .data()
                 .action_str(&self.game, event_actions[action_idx]),
+            Choice::RemoveCardState(remove_card_actions) => {
+                let card = &self.game.base_deck[remove_card_actions[action_idx].0];
+                format!("Remove {:?}", card.body)
+            }
         }
     }
 
@@ -261,6 +271,7 @@ impl<'a> ChoiceState<'a> {
                 _selection_type,
             ) => select_card_actions.len(),
             Choice::Event(_event, event_actions) => event_actions.len(),
+            Choice::RemoveCardState(actions) => actions.len(),
         }
     }
 }
@@ -272,6 +283,11 @@ impl Game {
     //This function starts a fight in the given game. Useful for testing.
     pub fn start_fight(&mut self) -> Choice {
         self.play_card_choice()
+    }
+
+    fn handle_remove_card_action(&mut self, removal: RemoveCardAction) -> Choice {
+        self.base_deck.remove(removal.0);
+        self.goto_map()
     }
 
     fn handle_select_card_action(
@@ -1312,6 +1328,23 @@ impl Game {
     fn add_card_to_deck(&mut self, card: CardBody) {
         insert_sorted(card.to_card(), &mut self.base_deck);
     }
+
+    fn lose_gold(&mut self, amount: i32) {
+        assert!(amount > 0);
+        self.gold -= amount;
+        //It's a bug to have an option to pay more gold than the charachter has.
+        assert!(self.gold > 0);
+    }
+
+    fn goto_remove_card(&mut self) -> Choice {
+        let mut res = Vec::new();
+        for i in 0..self.base_deck.len() {
+            if self.base_deck[i].body.removable() {
+                res.push(RemoveCardAction(i));
+            }
+        }
+        Choice::RemoveCardState(res)
+    }
 }
 
 fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
@@ -1521,6 +1554,7 @@ impl<'a> Display for ChoiceState<'a> {
             Choice::MapState(_) => "MapState",
             Choice::SelectCardState(_ctx, __effect, _actions, _type) => "SelectCard",
             Choice::Event(event, _actions) => event.data().name(),
+            Choice::RemoveCardState(_) => "RemoveCard",
         };
         dash_line(f)?;
         write!(f, "| ")?;

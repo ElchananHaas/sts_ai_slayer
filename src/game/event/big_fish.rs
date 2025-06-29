@@ -37,11 +37,11 @@ impl EventData for BigFish {
     fn action_str(&self, game: &Game, action: EventAction) -> String {
         match action.0 {
             0 => {
-                format!("Heal {}", heal_amount(game))
+                format!("Heal {}.", heal_amount(game))
             }
-            1 => "Heal 5 hp".to_string(),
-            2 => "Get cursed by Regret. Gain a random relic".to_string(),
-            _ => panic!("Invalid action: {}", action.0),
+            1 => "Heal 5 hp.".to_string(),
+            2 => "Get cursed by Regret. Gain a random relic.".to_string(),
+            _ => panic!("Invalid action: {}.", action.0),
         }
     }
 

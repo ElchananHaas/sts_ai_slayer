@@ -1,4 +1,5 @@
 mod big_fish;
+mod cleric;
 
 use strum::VariantArray;
 

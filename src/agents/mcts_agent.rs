@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    game::{ChoiceState, Game},
+    game::{Choice, ChoiceState, Game},
     rng::Rng,
 };
 
@@ -151,23 +151,13 @@ fn mcts_rollout(
     let reward: i32 = loop {
         //Check if the game is over before computing any hashes
         let num_actions = match &state.get_choice() {
-            crate::game::Choice::PlayCardState(play_card_actions) => play_card_actions.len(),
-            crate::game::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
-                choose_enemy_actions.len()
-            }
-            crate::game::Choice::Win => {
+            Choice::Win => {
                 break state.get_game().get_floor();
             }
-            crate::game::Choice::Loss => {
+            Choice::Loss => {
                 break state.get_game().get_floor();
             }
-            crate::game::Choice::MapState(reward_state_actions) => reward_state_actions.len(),
-            crate::game::Choice::SelectCardState(
-                _play_card_context,
-                _effect,
-                select_card_actions,
-                _selection_type,
-            ) => select_card_actions.len(),
+            _ => state.num_actions(),
         };
         //Once the agent is in an unexplored state, play randomly from there on. There is no
         //point in recording it. This helps reduce bias and speed up the MCTS

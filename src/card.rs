@@ -243,6 +243,7 @@ struct CardProps {
     upgraded_requires_target: bool,
     ethereal: Ethereal,
     charachter: CardCharachter,
+    removable: bool,
     starter: bool,
     innate: Innate,
 }
@@ -277,6 +278,7 @@ impl CardProps {
             upgraded_requires_target: requires_target,
             ethereal: Ethereal::No,
             innate: Innate::No,
+            removable: true,
             charachter,
             starter: false,
         }
@@ -1185,6 +1187,9 @@ impl CardBody {
     }
     pub fn card_type(&self) -> CardType {
         self.props().card_type
+    }
+    pub fn removable(&self) -> bool {
+        self.props().removable
     }
     pub fn is_strike(&self) -> bool {
         match self {
