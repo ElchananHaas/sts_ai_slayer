@@ -7,8 +7,11 @@ DONE
 ### Relics/Potions Placeholders
 DONE
 
+### Act 1 Elites
+IN PROGRESS
+
 ### Act 1 Events
-TODO
+IN PROGRESS
 
 ### Combat Rewards
 TODO
@@ -20,6 +23,9 @@ TODO
 TODO
 
 ### Colorless Cards
+TODO
+
+### Shops
 TODO
 
 ### Map Generation

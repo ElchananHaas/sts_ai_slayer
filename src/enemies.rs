@@ -6,6 +6,7 @@ pub mod fungi_beast;
 pub mod green_louse;
 pub mod gremlin_fat;
 pub mod gremlin_mad;
+mod gremlin_nob;
 pub mod gremlin_shield;
 pub mod gremlin_sneaky;
 pub mod gremlin_wizard;

@@ -213,6 +213,7 @@ pub enum Buff {
     CorruptionBuff,
     DoubleTap(i32),
     Juggernaut(i32),
+    Enrage(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

@@ -402,7 +402,7 @@ impl Game {
                         self.fight.enemies[i].block += block;
                     }
                     EnemyAction::Buff(buff) => {
-                        Self::enemy_buff(&mut self.fight.enemies[i], *buff);
+                        Self::buff_enemy(&mut self.fight.enemies[i], *buff);
                     }
                     EnemyAction::Debuff(debuff) => {
                         self.apply_debuff_to_player(*debuff);
@@ -663,6 +663,14 @@ impl Game {
                 .post_card_queue
                 .push_back(PostCardItem::PlayCard(new_context));
         }
+        if context.card.body.card_type() == CardType::Skill {
+            for idx in self.fight.enemies.indicies() {
+                let enraged = self.fight.enemies[idx].buffs.enrage;
+                if enraged > 0 {
+                    Self::buff_enemy(&mut self.fight.enemies[idx], Buff::Strength(enraged));
+                }
+            }
+        }
     }
 
     fn exhaust(&mut self, card: Card) {
@@ -719,6 +727,9 @@ impl Game {
     }
 
     fn apply_buff_to_player(&mut self, buff: Buff) {
+        fn panic_not_apply_player(buff: Buff) -> ! {
+            panic!("Buff {:?} doesn't apply to the player", buff);
+        }
         match buff {
             //TODO handle if player has negative strength.
             Buff::Strength(x) => {
@@ -744,10 +755,11 @@ impl Game {
             Buff::CorruptionBuff => self.fight.player_buffs.corruption = true,
             Buff::DoubleTap(x) => self.fight.player_buffs.double_tap += x,
             Buff::Juggernaut(x) => self.fight.player_buffs.juggernaut += x,
+            Buff::Enrage(_) => panic_not_apply_player(buff),
         }
     }
 
-    fn enemy_buff(enemy: &mut Enemy, buff: Buff) {
+    fn buff_enemy(enemy: &mut Enemy, buff: Buff) {
         fn panic_not_apply_enemies(buff: Buff) -> ! {
             panic!("Buff {:?} doesn't apply to enemies", buff);
         }
@@ -760,6 +772,9 @@ impl Game {
             }
             Buff::RitualSkipFirst(x) => {
                 enemy.buffs.ritual_skip_first += x;
+            }
+            Buff::Enrage(x) => {
+                enemy.buffs.enrage += x;
             }
             Buff::EndTurnDamageAllEnemies(_)
             | Buff::EndTurnLoseHP(_)

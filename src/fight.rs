@@ -320,6 +320,7 @@ pub struct EnemyBuffs {
     pub angry: i32,
     pub spore_cloud: i32,
     pub stolen_gold: i32,
+    pub enrage: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
