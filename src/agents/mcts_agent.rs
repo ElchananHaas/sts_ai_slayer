@@ -156,12 +156,12 @@ fn mcts_rollout(
                 choose_enemy_actions.len()
             }
             crate::game::Choice::Win => {
-                break state.get_game().floor;
+                break state.get_game().get_floor();
             }
             crate::game::Choice::Loss => {
-                break state.get_game().floor;
+                break state.get_game().get_floor();
             }
-            crate::game::Choice::RewardState(reward_state_actions) => reward_state_actions.len(),
+            crate::game::Choice::MapState(reward_state_actions) => reward_state_actions.len(),
             crate::game::Choice::SelectCardState(
                 _play_card_context,
                 _effect,

@@ -11,11 +11,10 @@ mod deck;
 mod enemies;
 mod fight;
 mod game;
+mod potion;
+mod relic;
 mod rng;
 mod util;
-mod relic;
-mod potion;
-mod event;
 fn main() {
     let mut game = Game::new(Charachter::IRONCLAD);
     let mut choice = game.setup_cultist_fight();

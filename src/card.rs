@@ -124,6 +124,7 @@ pub enum CardBody {
     LimitBreak,
     Offering,
     Reaper,
+    Regret,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -1155,6 +1156,14 @@ impl CardBody {
                 false,
                 CardType::Attack,
                 CardCharachter::IRONCLAD
+            )),
+            CardBody::Regret => const_card!(&CardProps::new(
+                &[PlayEffect::MarkExhaust],
+                &[PlayEffect::MarkExhaust],
+                Cost::Unplayable,
+                false,
+                CardType::Curse,
+                CardCharachter::COLORLESS
             )),
         };
     }

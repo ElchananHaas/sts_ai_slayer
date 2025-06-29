@@ -1,5 +1,8 @@
+mod event;
+
 use std::{cmp::min, fmt::Display, mem, vec};
 
+use crate::game::event::EventData;
 use crate::{
     card::{
         Buff, Card, CardAssoc, CardBody, CardType, Debuff, IRONCLAD_ATTACK_CARDS, PlayEffect,
@@ -12,6 +15,8 @@ use crate::{
         red_louse::generate_red_louse,
     },
     fight::{Enemy, EnemyAction, EnemyIdx, Fight, PlayCardContext, PostCardItem},
+    game::event::Event,
+    relic::{RelicPool, Relics},
     rng::Rng,
     util::insert_sorted,
 };
@@ -24,9 +29,11 @@ pub struct Game {
     charachter: Charachter,
     fight: Fight,
     base_deck: Vec<Card>,
+    relic_pool: RelicPool,
+    relics: Relics,
     gold: i32,
     rng: Rng,
-    pub floor: i32,
+    floor: i32,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -49,10 +56,14 @@ pub struct ChooseEnemyAction {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum RewardStateAction {
+pub enum MapStateAction {
     //Proceed to choosing the next node.
     Proceed,
 }
+//Choose the i'th choice in the event. The interpretation
+//of this is event dependent.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct EventAction(usize);
 
 #[must_use]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -62,13 +73,14 @@ pub enum Choice {
     ChooseEnemyState(Vec<ChooseEnemyAction>, usize),
     Win,
     Loss,
-    RewardState(Vec<RewardStateAction>),
+    MapState(Vec<MapStateAction>),
     SelectCardState(
         PlayCardContext,
         SelectCardEffect,
         Vec<SelectCardAction>,
         SelectionPile,
     ),
+    Event(Event, Vec<EventAction>),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -144,9 +156,9 @@ impl<'a> ChoiceState<'a> {
             Choice::Loss => {
                 panic!("The game is lost, no actions can be taken");
             }
-            Choice::RewardState(reward_state_actions) => {
-                let action = reward_state_actions[action_idx];
-                game.take_reward_state_action(action)
+            Choice::MapState(map_state_actions) => {
+                let action = map_state_actions[action_idx];
+                game.take_map_state_action(action)
             }
             Choice::SelectCardState(
                 play_card_context,
@@ -157,6 +169,9 @@ impl<'a> ChoiceState<'a> {
                 let action = select_card_actions[action_idx];
                 game.handle_select_card_action(play_card_context, effect, action)
             }
+            Choice::Event(event, actions) => event
+                .data()
+                .take_action(&mut self.game, actions[action_idx]),
         }
     }
 
@@ -195,8 +210,8 @@ impl<'a> ChoiceState<'a> {
             Choice::Loss => {
                 panic!("Loss state has no actions.")
             }
-            Choice::RewardState(reward_state_actions) => match reward_state_actions[action_idx] {
-                RewardStateAction::Proceed => "Proceed".to_owned(),
+            Choice::MapState(reward_state_actions) => match reward_state_actions[action_idx] {
+                MapStateAction::Proceed => "Proceed".to_owned(),
             },
             Choice::SelectCardState(
                 _play_card_context,
@@ -226,29 +241,34 @@ impl<'a> ChoiceState<'a> {
                     },
                 }
             }
+            Choice::Event(event, event_actions) => event
+                .data()
+                .action_str(&self.game, event_actions[action_idx]),
         }
     }
 
     pub fn num_actions(&self) -> usize {
         match &self.choice {
-            crate::game::Choice::PlayCardState(play_card_actions) => play_card_actions.len(),
-            crate::game::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
-                choose_enemy_actions.len()
-            }
-            crate::game::Choice::Win => 0,
-            crate::game::Choice::Loss => 0,
-            crate::game::Choice::RewardState(reward_state_actions) => reward_state_actions.len(),
-            crate::game::Choice::SelectCardState(
+            Choice::PlayCardState(play_card_actions) => play_card_actions.len(),
+            Choice::ChooseEnemyState(choose_enemy_actions, _) => choose_enemy_actions.len(),
+            Choice::Win => 0,
+            Choice::Loss => 0,
+            Choice::MapState(map_state_actions) => map_state_actions.len(),
+            Choice::SelectCardState(
                 _play_card_context,
                 _effect,
                 select_card_actions,
                 _selection_type,
             ) => select_card_actions.len(),
+            Choice::Event(_event, event_actions) => event_actions.len(),
         }
     }
 }
 
 impl Game {
+    pub fn get_floor(&self) -> i32 {
+        self.floor
+    }
     //This function starts a fight in the given game. Useful for testing.
     pub fn start_fight(&mut self) -> Choice {
         self.play_card_choice()
@@ -303,9 +323,10 @@ impl Game {
         self.play_card_targets(card_idx, action.enemy as usize)
     }
 
-    fn take_reward_state_action(&mut self, action: RewardStateAction) -> Choice {
+    fn take_map_state_action(&mut self, action: MapStateAction) -> Choice {
         match &action {
-            RewardStateAction::Proceed => {
+            MapStateAction::Proceed => {
+                self.floor += 1;
                 self.setup_jawworm_fight();
                 self.play_card_choice()
             }
@@ -433,12 +454,16 @@ impl Game {
     }
 
     fn discard_hand_end_of_turn(&mut self) {
+        let hand_size = self.fight.hand.len();
         let mut old_hand = Vec::new();
         mem::swap(&mut old_hand, &mut self.fight.hand);
         for mut card in old_hand {
             card.temp_cost = None;
             if card.body == CardBody::Burn {
                 self.damage_player(2, true);
+            }
+            if card.body == CardBody::Regret {
+                self.player_lose_hp(hand_size as i32, true);
             }
             if card.ethereal() {
                 self.exhaust(card);
@@ -648,9 +673,12 @@ impl Game {
     }
 
     fn win_battle(&mut self) -> Choice {
-        self.floor += 1;
         self.fight = Fight::default();
-        Choice::RewardState(vec![RewardStateAction::Proceed])
+        self.goto_map()
+    }
+
+    fn goto_map(&self) -> Choice {
+        Choice::MapState(vec![MapStateAction::Proceed])
     }
 
     fn apply_debuff_to_player(&mut self, debuff: Debuff) {
@@ -1280,6 +1308,10 @@ impl Game {
             self.fight.player_block += block;
         }
     }
+
+    fn add_card_to_deck(&mut self, card: CardBody) {
+        insert_sorted(card.to_card(), &mut self.base_deck);
+    }
 }
 
 fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
@@ -1344,18 +1376,20 @@ impl Game {
                 gold: 99,
                 floor: 0,
                 base_deck: vec![
-                    CardBody::Strike.to_card(),
-                    CardBody::Strike.to_card(),
-                    CardBody::Strike.to_card(),
-                    CardBody::Strike.to_card(),
-                    CardBody::Strike.to_card(),
-                    CardBody::Headbutt.to_card(),
-                    CardBody::Defend.to_card(),
-                    CardBody::Defend.to_card(),
-                    CardBody::Defend.to_card(),
-                    CardBody::Defend.to_card(),
                     CardBody::Bash.to_card(),
+                    CardBody::Defend.to_card(),
+                    CardBody::Defend.to_card(),
+                    CardBody::Defend.to_card(),
+                    CardBody::Defend.to_card(),
+                    CardBody::Headbutt.to_card(),
+                    CardBody::Strike.to_card(),
+                    CardBody::Strike.to_card(),
+                    CardBody::Strike.to_card(),
+                    CardBody::Strike.to_card(),
+                    CardBody::Strike.to_card(),
                 ],
+                relics: Relics::new(),
+                relic_pool: RelicPool::new(),
                 rng: Rng::new(),
             },
             Charachter::SILENT => todo!(),
@@ -1484,8 +1518,9 @@ impl<'a> Display for ChoiceState<'a> {
             Choice::ChooseEnemyState(_, _) => "ChooseEnemy",
             Choice::Win => "Win",
             Choice::Loss => "Loss",
-            Choice::RewardState(_) => "Rewards",
-            Choice::SelectCardState(_ctx, __effect, actions, _type) => "SelectCard",
+            Choice::MapState(_) => "MapState",
+            Choice::SelectCardState(_ctx, __effect, _actions, _type) => "SelectCard",
+            Choice::Event(event, _actions) => event.data().name(),
         };
         dash_line(f)?;
         write!(f, "| ")?;
