@@ -188,6 +188,9 @@ pub enum Debuff {
     Weak(i32),
     Frail(i32),
     StrengthDown(i32),
+    DexterityDown(i32),
+    MinusStrength(i32),
+    MinusDexterity(i32),
     Entangled,
     NoDraw,
 }

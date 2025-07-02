@@ -54,7 +54,7 @@ pub fn generate_med_green_slime(rng: &mut Rng) -> Enemy {
         // 2) Attack
         // 3) Debuff
         // 4) Debuff (second)
-        const SLIMEDS: &'static [Card] = &[CardBody::Slimed.to_card()];
+        const SLIMEDS: &'static [CardBody] = &[CardBody::Slimed];
         const ENEMY_TABLE: &'static [StateEntry] = make_green_slime_table!(7, 10, 1, SLIMEDS);
         return weighted_transition(rng, state, ENEMY_TABLE);
     }

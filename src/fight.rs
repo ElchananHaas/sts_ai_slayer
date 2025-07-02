@@ -34,7 +34,9 @@ pub struct PlayerDebuffs {
     pub vulnerable: i32,
     pub frail: i32,
     pub entangled: bool,
+    //These are used for temporary dex/str for the turn effects.
     pub strength_down: i32,
+    pub dexterity_down: i32,
     pub no_draw: bool,
 }
 
@@ -59,6 +61,7 @@ pub struct PlayerBuffs {
     pub ritual: i32,
     pub double_tap: i32,
     pub juggernaut: i32,
+    pub dexterity: i32,
 }
 
 //This holds effects that happen after a card finishes resolving.
@@ -279,7 +282,7 @@ pub enum EnemyAction {
     Block(i32),
     Buff(Buff),
     Debuff(Debuff),
-    AddToDiscard(&'static [Card]),
+    AddToDiscard(&'static [CardBody]),
     Split,
     DefendAlly(i32),
     Escape,
@@ -321,6 +324,8 @@ pub struct EnemyBuffs {
     pub spore_cloud: i32,
     pub stolen_gold: i32,
     pub enrage: i32,
+    pub metallicize: i32,
+    pub asleep: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]

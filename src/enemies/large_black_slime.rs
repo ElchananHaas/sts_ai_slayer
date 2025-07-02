@@ -11,7 +11,7 @@ pub const ENEMY_NAME: &'static str = "Black Slime [L]";
 pub fn generate_large_black_slime(rng: &mut Rng) -> Enemy {
     let hp = uniform_inclusive(rng, 64, 70);
     fn ai(rng: &mut Rng, _: &Fight, enemy: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
-        const SLIMEDS: &'static [Card] = &[CardBody::Slimed.to_card(), CardBody::Slimed.to_card()];
+        const SLIMEDS: &'static [CardBody] = &[CardBody::Slimed, CardBody::Slimed];
         const ENEMY_TABLE: &'static [StateEntry] = make_black_slime_table!(16, 2, SLIMEDS);
         if enemy.hp * 2 <= enemy.max_hp {
             return (0, &[EnemyAction::Split]);

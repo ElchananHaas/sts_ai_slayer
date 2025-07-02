@@ -10,15 +10,13 @@ pub fn generate_sneaky_gremlin(rng: &mut Rng) -> Enemy {
     fn ai(_: &mut Rng, _: &Fight, _: &Enemy, _: u32) -> (u32, &'static [EnemyAction]) {
         return (0, &[EnemyAction::Attack(9)]);
     }
-    let mut buffs = EnemyBuffs::default();
-    buffs.angry = 1;
     Enemy {
         name: ENEMY_NAME,
         ai_state: 0,
         behavior: ai,
         hp,
         max_hp: hp,
-        buffs,
+        buffs: EnemyBuffs::default(),
         debuffs: EnemyDebuffs::default(),
         block: 0,
     }

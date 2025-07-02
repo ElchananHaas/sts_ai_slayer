@@ -6,12 +6,9 @@ use crate::{
 };
 
 const ENEMY_NAME: &'static str = "Gremlin Nob";
-pub fn gremlin_nob(rng: &mut Rng) -> Enemy {
+pub fn generate_gremlin_nob(rng: &mut Rng) -> Enemy {
     let hp = uniform_inclusive(rng, 82, 86);
     fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
-        // States are
-        // 0) Playing Attack
-        // 1) Debuff
         const ENEMY_TABLE: &'static [StateEntry] = &[
             StateEntry {
                 actions: &[EnemyAction::Buff(Buff::Enrage(2))],

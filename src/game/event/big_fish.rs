@@ -2,7 +2,7 @@ use crate::{
     card::CardBody,
     game::{Choice, EventAction, Game, event::EventData},
 };
-
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BigFish;
 
 fn heal_amount(game: &Game) -> i32 {

@@ -14,15 +14,13 @@ pub fn generate_shield_gremlin(rng: &mut Rng) -> Enemy {
             return (0, &[EnemyAction::Attack(6)]);
         }
     }
-    let mut buffs = EnemyBuffs::default();
-    buffs.angry = 1;
     Enemy {
         name: ENEMY_NAME,
         ai_state: 0,
         behavior: ai,
         hp,
         max_hp: hp,
-        buffs,
+        buffs: EnemyBuffs::default(),
         debuffs: EnemyDebuffs::default(),
         block: 0,
     }

@@ -15,7 +15,7 @@ use crate::{
         red_louse::generate_red_louse,
     },
     fight::{Enemy, EnemyAction, EnemyIdx, Fight, PlayCardContext, PostCardItem},
-    game::event::Event,
+    game::event::EventName,
     relic::{RelicPool, Relics},
     rng::Rng,
     util::insert_sorted,
@@ -84,7 +84,7 @@ pub enum Choice {
         Vec<SelectCardAction>,
         SelectionPile,
     ),
-    Event(Event, Vec<EventAction>),
+    Event(EventName, Vec<EventAction>),
     RemoveCardState(Vec<RemoveCardAction>),
 }
 
@@ -408,7 +408,9 @@ impl Game {
                         self.apply_debuff_to_player(*debuff);
                     }
                     EnemyAction::AddToDiscard(cards) => {
-                        self.fight.discard_pile.extend(cards.into_iter().cloned());
+                        self.fight
+                            .discard_pile
+                            .extend(cards.into_iter().map(|c| c.to_card()));
                         //Sort for greater MCTS efficiency. Technically, this is different from STS
                         //with regards to All For One, but I will accept this for now.
                         self.fight.discard_pile.sort();
@@ -448,6 +450,9 @@ impl Game {
             enemy.buffs.ritual_skip_first = 0;
             decrement(&mut enemy.debuffs.vulnerable);
             decrement(&mut enemy.debuffs.weak);
+            if enemy.buffs.metallicize > 0 {
+                enemy.block += enemy.buffs.metallicize;
+            }
         }
         decrement(&mut self.fight.player_debuffs.vulnerable);
         decrement(&mut self.fight.player_debuffs.weak);
@@ -488,12 +493,14 @@ impl Game {
         //TODO handle artifact.
         self.fight.player_buffs.strength -= self.fight.player_debuffs.strength_down;
         self.fight.player_debuffs.strength_down = 0;
+        self.fight.player_buffs.dexterity -= self.fight.player_debuffs.dexterity_down;
+        self.fight.player_debuffs.dexterity_down = 0;
         self.fight.player_buffs.strength += self.fight.player_buffs.ritual;
         self.fight.player_debuffs.entangled = false;
         self.fight.player_debuffs.no_draw = false;
         self.fight.player_buffs.double_tap = 0;
-        for idx in self.fight.enemies.indicies() {
-            self.fight.enemies[idx].block = 0;
+        for i in self.fight.enemies.indicies() {
+            self.fight.enemies[i].block = 0;
         }
         if self.fight.player_buffs.metallicize > 0 {
             self.player_gain_block(self.fight.player_buffs.metallicize, false);
@@ -723,6 +730,15 @@ impl Game {
             Debuff::NoDraw => {
                 self.fight.player_debuffs.no_draw = true;
             }
+            Debuff::DexterityDown(x) => {
+                self.fight.player_debuffs.dexterity_down += x;
+            }
+            Debuff::MinusStrength(x) => {
+                self.fight.player_buffs.strength -= x;
+            }
+            Debuff::MinusDexterity(x) => {
+                self.fight.player_buffs.dexterity -= x;
+            }
         }
     }
 
@@ -944,6 +960,13 @@ impl Game {
         }
         damage = min(damage, enemy.hp);
         enemy.hp -= damage as i32;
+        if damage > 0 && enemy.buffs.asleep {
+            enemy.buffs.asleep = false;
+            enemy.buffs.metallicize = 0;
+            //This is the AI state for Lagabulin when it wakes up. No other
+            //enemies sleep so this is
+            enemy.ai_state = 2;
+        }
         if damage > 0 && from_card {
             if enemy.buffs.curl_up > 0 {
                 enemy.buffs.queued_block += enemy.buffs.curl_up;
@@ -1247,7 +1270,6 @@ impl Game {
             }
             PlayEffect::DoubleStrength => {
                 self.fight.player_buffs.strength *= 2;
-                self.fight.player_debuffs.strength_down *= 2;
             }
             PlayEffect::AttackAllForHP(amount) => {
                 let mut total = 0;
@@ -1318,6 +1340,7 @@ impl Game {
 
     fn player_gain_block(&mut self, block: i32, from_card: bool) {
         let block = if from_card {
+            let block = block + self.fight.player_buffs.dexterity;
             let mut block = block as f32;
             if self.fight.player_debuffs.frail > 0 {
                 block *= 0.75;
@@ -1368,17 +1391,14 @@ fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
         Debuff::Weak(amount) => {
             enemy.debuffs.weak += amount;
         }
-        Debuff::Frail(_) => {
-            panic!("Frail cannot be applied to enemies!");
-        }
-        Debuff::Entangled => {
-            panic!("Entangled cannot be applied to enemies!");
-        }
-        Debuff::StrengthDown(_) => {
-            panic!("Strength down cannot be applied to enemies!");
-        }
-        Debuff::NoDraw => {
-            panic!("No draw cannot be applied to enemies!");
+        Debuff::Frail(_)
+        | Debuff::Entangled
+        | Debuff::StrengthDown(_)
+        | Debuff::NoDraw
+        | Debuff::DexterityDown(_)
+        | Debuff::MinusStrength(_)
+        | Debuff::MinusDexterity(_) => {
+            panic!("{:?} cannot be applied to enemies!", debuff);
         }
     }
 }

@@ -42,7 +42,7 @@ const ENEMY_NAME: &'static str = "Black Slime [M]";
 pub fn generate_med_black_slime(rng: &mut Rng) -> Enemy {
     let hp = uniform_inclusive(rng, 28, 32);
     fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
-        const SLIMEDS: &'static [Card] = &[CardBody::Slimed.to_card()];
+        const SLIMEDS: &'static [CardBody] = &[CardBody::Slimed];
         const ENEMY_TABLE: &'static [StateEntry] = make_black_slime_table!(8, 1, SLIMEDS);
         return weighted_transition(rng, state, ENEMY_TABLE);
     }

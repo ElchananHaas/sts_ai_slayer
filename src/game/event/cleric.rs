@@ -1,5 +1,6 @@
 use crate::game::{Choice, EventAction, Game, event::EventData};
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Cleric;
 
 fn heal_amount(game: &Game) -> i32 {

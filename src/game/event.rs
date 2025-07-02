@@ -1,11 +1,13 @@
 mod big_fish;
 mod cleric;
+mod dead_adventurer;
 
+use paste::paste;
 use strum::VariantArray;
 
 use crate::game::{
     Choice, EventAction, Game,
-    event::{big_fish::BigFish, cleric::Cleric},
+    event::{big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer},
 };
 /*
 Event Generation works as follows:
@@ -16,12 +18,12 @@ Otherwise, a standard event is generated with a shrine as backup.
 */
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, VariantArray)]
-pub enum Event {
+pub enum EventNameOld {
     //Act 1 exclusive.
     //Neow,
     BigFish,
     Cleric,
-    //DeadAdventurer,
+    DeadAdventurer,
     //GoldenIdol,
     //HypnotizingShrooms,
     //LivingWall,
@@ -50,7 +52,7 @@ pub enum Event {
     //Nloth,
     //Joust,
     //WomanInBlue,
-    //I'm not inluding Secret Portal.
+    //I'm not including Secret Portal.
 }
 
 pub trait EventData {
@@ -60,44 +62,58 @@ pub trait EventData {
     fn name(&self) -> &'static str;
 }
 
-macro_rules! delegate {
-    ($($x:pat, $y:expr);*) => {
-        fn get_actions(&self, game: &Game) -> Vec<EventAction> {
-            match self {
+macro_rules! event_array {
+    ($($x:expr),*) => {
+        paste!{
+            #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+            pub enum EventName {
                 $(
-                    $x => $y.get_actions(game),
+                    $x,
                 )*
             }
-        }
 
-        fn take_action(&self, game: &mut Game, action: EventAction) -> Choice {
-                match self {
-                    $(
-                        $x => $y.take_action(game, action),
-                    )*
-                }
-        }
+            #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+            pub enum Event {
+                $(
+                    $x($x),
+                )*
+            }
 
-        fn action_str(&self, game: &Game, action: EventAction) -> String {
-                match self {
-                    $(
-                        $x => $y.action_str(game, action),
-                    )*
+            impl EventData for EventName {
+                fn get_actions(&self, game: &Game) -> Vec<EventAction> {
+                    match self {
+                        $(
+                            Self::$x => $x.get_actions(game),
+                        )*
+                    }
                 }
-        }
 
-        fn name(&self) -> &'static str {
-                match self {
-                    $(
-                        $x => $y.name(),
-                    )*
+                fn take_action(&self, game: &mut Game, action: EventAction) -> Choice {
+                        match self {
+                            $(
+                                Self::$x => $x.take_action(game, action),
+                            )*
+                        }
                 }
+
+                fn action_str(&self, game: &Game, action: EventAction) -> String {
+                        match self {
+                            $(
+                                Self::$x => $x.action_str(game, action),
+                            )*
+                        }
+                }
+
+                fn name(&self) -> &'static str {
+                        match self {
+                            $(
+                                Self::$x => $x.name(),
+                            )*
+                        }
+                }
+            }
         }
-    };
+    }
 }
-impl EventData for Event {
-    delegate!(
-        Event::BigFish, BigFish;
-        Event::Cleric, Cleric
-    );
-}
+
+event_array!(BigFish, Cleric, DeadAdventurer);

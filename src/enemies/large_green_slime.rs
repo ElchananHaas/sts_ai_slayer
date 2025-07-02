@@ -17,7 +17,7 @@ pub fn generate_med_green_slime(rng: &mut Rng) -> Enemy {
         // 2) Attack
         // 3) Debuff
         // 4) Debuff (second)
-        const SLIMEDS: &'static [Card] = &[CardBody::Slimed.to_card(), CardBody::Slimed.to_card()];
+        const SLIMEDS: &'static [CardBody] = &[CardBody::Slimed, CardBody::Slimed];
         const ENEMY_TABLE: &'static [StateEntry] = make_green_slime_table!(11, 16, 2, SLIMEDS);
         if enemy.hp * 2 <= enemy.max_hp {
             return (0, &[EnemyAction::Split]);
