@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 paste = "1.0.15"
 rand_chacha = { version = "0.9.0", features = ["os_rng"] }
+smallvec = "1.15.1"
 strum = { version = "0.27.1", features = ["derive", "strum_macros"] }

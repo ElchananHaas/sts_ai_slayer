@@ -1,4 +1,4 @@
-use crate::game::{Choice, EventAction, Game, event::EventData};
+use crate::{game::{event::EventRoom, Choice, EventAction, Game}, rng::Rng};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Cleric;
@@ -7,7 +7,7 @@ fn heal_amount(game: &Game) -> i32 {
     return game.player_max_hp / 4;
 }
 
-impl EventData for Cleric {
+impl EventRoom for Cleric {
     fn get_actions(&self, game: &Game) -> Vec<EventAction> {
         let mut res = Vec::new();
         if game.gold > 35 {
@@ -20,7 +20,7 @@ impl EventData for Cleric {
         res
     }
 
-    fn take_action(&self, game: &mut Game, action: EventAction) -> Choice {
+    fn take_action(self, game: &mut Game, action: EventAction) -> Choice {
         match action.0 {
             0 => {
                 game.lose_gold(35);
@@ -49,5 +49,9 @@ impl EventData for Cleric {
 
     fn name(&self) -> &'static str {
         "Big Fish"
+    }
+
+    fn new(_rng: &mut Rng) -> Self {
+        Cleric
     }
 }

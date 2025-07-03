@@ -26,6 +26,14 @@ pub struct Fight {
     pub stolen_back_gold: i32,
     //This is used for cards which play other cards, such as Havoc and some powers.
     pub post_card_queue: VecDeque<PostCardItem>,
+    pub rewards: FightRewards,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+pub struct FightRewards {
+    pub gold_min: i32,
+    pub gold_max: i32,
+    pub relic_count: i32,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
@@ -103,6 +111,7 @@ impl Fight {
             exhaust: vec![],
             stolen_back_gold: 0,
             post_card_queue: VecDeque::new(),
+            rewards: FightRewards::default(),
         }
     }
     //This removes the top of the deck, reshuffling if needed.

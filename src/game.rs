@@ -1,8 +1,9 @@
 mod event;
+mod encounter;
 
 use std::{cmp::min, fmt::Display, mem, vec};
 
-use crate::game::event::EventData;
+use crate::game::event::{Event};
 use crate::{
     card::{
         Buff, Card, CardAssoc, CardBody, CardType, Debuff, IRONCLAD_ATTACK_CARDS, PlayEffect,
@@ -15,7 +16,6 @@ use crate::{
         red_louse::generate_red_louse,
     },
     fight::{Enemy, EnemyAction, EnemyIdx, Fight, PlayCardContext, PostCardItem},
-    game::event::EventName,
     relic::{RelicPool, Relics},
     rng::Rng,
     util::insert_sorted,
@@ -84,7 +84,7 @@ pub enum Choice {
         Vec<SelectCardAction>,
         SelectionPile,
     ),
-    Event(EventName, Vec<EventAction>),
+    Event(Event, Vec<EventAction>),
     RemoveCardState(Vec<RemoveCardAction>),
 }
 
@@ -174,7 +174,7 @@ impl<'a> ChoiceState<'a> {
                 let action = select_card_actions[action_idx];
                 game.handle_select_card_action(play_card_context, effect, action)
             }
-            Choice::Event(event, actions) => event.take_action(&mut self.game, actions[action_idx]),
+            Choice::Event(mut event, actions) => event.take_action(&mut self.game, actions[action_idx]),
             Choice::RemoveCardState(actions) => game.handle_remove_card_action(actions[action_idx]),
         }
     }
@@ -1370,6 +1370,10 @@ impl Game {
         self.gold -= amount;
         //It's a bug to have an option to pay more gold than the charachter has.
         assert!(self.gold > 0);
+    }
+
+    fn gain_gold(&mut self, amount: i32) {
+        self.gold += amount;
     }
 
     fn goto_remove_card(&mut self) -> Choice {

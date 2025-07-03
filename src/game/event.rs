@@ -5,10 +5,9 @@ mod dead_adventurer;
 use paste::paste;
 use strum::VariantArray;
 
-use crate::game::{
-    Choice, EventAction, Game,
-    event::{big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer},
-};
+use crate::{game::{
+    event::{big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer}, Choice, EventAction, Game
+}, rng::Rng};
 /*
 Event Generation works as follows:
 
@@ -55,15 +54,16 @@ pub enum EventNameOld {
     //I'm not including Secret Portal.
 }
 
-pub trait EventData {
+pub trait EventRoom {
+    fn new(rng: &mut Rng) -> Self;
     fn get_actions(&self, game: &Game) -> Vec<EventAction>;
-    fn take_action(&self, game: &mut Game, action: EventAction) -> Choice;
+    fn take_action(self, game: &mut Game, action: EventAction) -> Choice;
     fn action_str(&self, game: &Game, action: EventAction) -> String;
     fn name(&self) -> &'static str;
 }
 
 macro_rules! event_array {
-    ($($x:expr),*) => {
+    ($($x:ident),*) => {
         paste!{
             #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
             pub enum EventName {
@@ -79,35 +79,45 @@ macro_rules! event_array {
                 )*
             }
 
-            impl EventData for EventName {
-                fn get_actions(&self, game: &Game) -> Vec<EventAction> {
-                    match self {
+            impl EventName {
+                fn new(&self, rng: &mut Rng) -> Event {
+                    match &self {
                         $(
-                            Self::$x => $x.get_actions(game),
+                            Self::$x => Event::$x($x::new(rng)),
+                        )*
+                    }
+                }
+            }
+
+            impl Event {
+                pub fn get_actions(&self, game: &Game) -> Vec<EventAction> {
+                    match &self {
+                        $(
+                           Self::$x(event) => event.get_actions(game),
                         )*
                     }
                 }
 
-                fn take_action(&self, game: &mut Game, action: EventAction) -> Choice {
+                pub fn take_action(self, game: &mut Game, action: EventAction) -> Choice {
                         match self {
                             $(
-                                Self::$x => $x.take_action(game, action),
+                                Self::$x(event) => event.take_action(game, action),
                             )*
                         }
                 }
 
-                fn action_str(&self, game: &Game, action: EventAction) -> String {
-                        match self {
+                pub fn action_str(&self, game: &Game, action: EventAction) -> String {
+                        match &self {
                             $(
-                                Self::$x => $x.action_str(game, action),
+                                Self::$x(event) => event.action_str(game, action),
                             )*
                         }
                 }
 
-                fn name(&self) -> &'static str {
-                        match self {
+                pub fn name(&self) -> &'static str {
+                        match &self {
                             $(
-                                Self::$x => $x.name(),
+                                Self::$x(event) => event.name(),
                             )*
                         }
                 }

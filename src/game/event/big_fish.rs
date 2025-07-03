@@ -1,6 +1,6 @@
 use crate::{
     card::CardBody,
-    game::{Choice, EventAction, Game, event::EventData},
+    game::{event::EventRoom, Choice, EventAction, Game}, rng::Rng,
 };
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BigFish;
@@ -9,12 +9,12 @@ fn heal_amount(game: &Game) -> i32 {
     return game.player_max_hp / 3;
 }
 
-impl EventData for BigFish {
-    fn get_actions(&self, game: &Game) -> Vec<EventAction> {
+impl EventRoom for BigFish {
+    fn get_actions(&self, _game: &Game) -> Vec<EventAction> {
         (0..=2).map(EventAction).collect()
     }
 
-    fn take_action(&self, game: &mut Game, action: EventAction) -> Choice {
+    fn take_action(self, game: &mut Game, action: EventAction) -> Choice {
         match action.0 {
             0 => {
                 game.heal(heal_amount(game));
@@ -47,5 +47,9 @@ impl EventData for BigFish {
 
     fn name(&self) -> &'static str {
         "Big Fish"
+    }
+    
+    fn new(_rng: &mut Rng) -> Self {
+        BigFish
     }
 }
