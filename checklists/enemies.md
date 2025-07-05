@@ -20,9 +20,9 @@
 - [x] Looter
 
 ### Act 1 Elites
-- [ ] Gremlin Nob
-- [ ] Lagavulin
-- [ ] Sentries
+- [x] Gremlin Nob
+- [x] Lagavulin
+- [x] Sentries
 
 ### Act 1 Bosses
 - [ ] Guardian
