@@ -4,6 +4,7 @@ mod dead_adventurer;
 mod golden_idol;
 mod living_wall;
 mod shrooms;
+mod scrap_ooze;
 
 use paste::paste;
 use strum::VariantArray;
@@ -13,7 +14,8 @@ use crate::{
         Choice, EventAction, Game,
         event::{
             big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer,
-            golden_idol::GoldenIdol, shrooms::HypnotizingShrooms,
+            golden_idol::GoldenIdol, shrooms::HypnotizingShrooms, living_wall::LivingWall,
+            scrap_ooze::ScrapOoze
         },
     },
     rng::Rng,
@@ -36,7 +38,7 @@ pub enum EventNameOld {
     GoldenIdol,
     HypnotizingShrooms,
     LivingWall,
-    //ScrapOoze,
+    ScrapOoze,
     //ShiningLight,
     //TheSsserpent,
     //WorldOfGoop,
@@ -141,5 +143,7 @@ event_array!(
     Cleric,
     DeadAdventurer,
     GoldenIdol,
-    HypnotizingShrooms
+    HypnotizingShrooms,
+    LivingWall,
+    ScrapOoze
 );
