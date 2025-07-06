@@ -1,6 +1,7 @@
 use crate::{
     enemies::{
-        gremlin_nob::generate_gremlin_nob, lagavulin::generate_lagavulin, sentry::generate_sentry,
+        fungi_beast::generate_fungi_beast, gremlin_nob::generate_gremlin_nob,
+        lagavulin::generate_lagavulin, sentry::generate_sentry,
     },
     game::{Choice, Game},
 };
@@ -9,6 +10,7 @@ pub enum Encounter {
     Lagavulin,
     GremlinNob,
     Sentries,
+    EventMushrooms,
 }
 
 impl Game {
@@ -23,8 +25,13 @@ impl Game {
             }
             Encounter::Sentries => {
                 self.fight.enemies[0] = Some(generate_sentry(&mut self.rng, 0));
-                self.fight.enemies[0] = Some(generate_sentry(&mut self.rng, 1));
-                self.fight.enemies[0] = Some(generate_sentry(&mut self.rng, 0));
+                self.fight.enemies[1] = Some(generate_sentry(&mut self.rng, 1));
+                self.fight.enemies[2] = Some(generate_sentry(&mut self.rng, 0));
+            }
+            Encounter::EventMushrooms => {
+                self.fight.enemies[0] = Some(generate_fungi_beast(&mut self.rng));
+                self.fight.enemies[1] = Some(generate_fungi_beast(&mut self.rng));
+                self.fight.enemies[2] = Some(generate_fungi_beast(&mut self.rng));
             }
         }
         self.play_card_choice()

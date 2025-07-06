@@ -2,6 +2,7 @@ mod big_fish;
 mod cleric;
 mod dead_adventurer;
 mod golden_idol;
+mod shrooms;
 
 use paste::paste;
 use strum::VariantArray;
@@ -11,7 +12,7 @@ use crate::{
         Choice, EventAction, Game,
         event::{
             big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer,
-            golden_idol::GoldenIdol,
+            golden_idol::GoldenIdol, shrooms::HypnotizingShrooms,
         },
     },
     rng::Rng,
@@ -32,7 +33,7 @@ pub enum EventNameOld {
     Cleric,
     DeadAdventurer,
     GoldenIdol,
-    //HypnotizingShrooms,
+    HypnotizingShrooms,
     //LivingWall,
     //ScrapOoze,
     //ShiningLight,
@@ -134,4 +135,10 @@ macro_rules! event_array {
     }
 }
 
-event_array!(BigFish, Cleric, DeadAdventurer, GoldenIdol);
+event_array!(
+    BigFish,
+    Cleric,
+    DeadAdventurer,
+    GoldenIdol,
+    HypnotizingShrooms
+);

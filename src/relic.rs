@@ -1,5 +1,6 @@
 use crate::rng::Rng;
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Relic {
     Placeholder1,
     Placeholder2,
@@ -11,6 +12,7 @@ pub enum Relic {
     Placeholder8,
     Placeholder9,
     GoldenIdol,
+    OddMushroom,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RelicPool {}

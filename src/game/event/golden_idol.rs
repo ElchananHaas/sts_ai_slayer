@@ -9,11 +9,11 @@ use crate::{
 pub struct GoldenIdol;
 
 fn damage_amount(game: &Game) -> i32 {
-    return (game.player_hp as f32 * 0.25) as i32;
+    return (game.player_max_hp as f32 * 0.25) as i32;
 }
 
 fn lose_max_hp_amount(game: &Game) -> i32 {
-    return (game.player_hp as f32 * 0.08) as i32;
+    return (game.player_max_hp as f32 * 0.08) as i32;
 }
 
 impl EventRoom for GoldenIdol {

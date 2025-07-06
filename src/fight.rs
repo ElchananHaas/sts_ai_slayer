@@ -8,6 +8,7 @@ use std::{
 use crate::{
     card::{Buff, Card, CardBody, CardType, Cost, Debuff},
     deck::Deck,
+    relic::Relic,
     rng::Rng,
     util::insert_sorted,
 };
@@ -34,6 +35,7 @@ pub struct FightRewards {
     pub gold_min: i32,
     pub gold_max: i32,
     pub relic_count: i32,
+    pub fixed_relic: Option<Relic>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
