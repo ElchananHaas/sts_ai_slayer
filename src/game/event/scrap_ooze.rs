@@ -11,7 +11,6 @@ pub struct ScrapOoze {
     pub click_count: i32,
 }
 
-
 impl ScrapOoze {
     fn odds(&self) -> i32 {
         25 + 10 * self.click_count
@@ -62,8 +61,6 @@ impl EventRoom for ScrapOoze {
     }
 
     fn new(_rng: &mut Rng) -> Self {
-        Self {
-            click_count: 0
-        }
+        Self { click_count: 0 }
     }
 }

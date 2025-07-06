@@ -40,7 +40,7 @@ impl DeadAdventurer {
 }
 
 impl EventRoom for DeadAdventurer {
-    fn get_actions(&self, game: &Game) -> Vec<EventAction> {
+    fn get_actions(&self, _game: &Game) -> Vec<EventAction> {
         vec![EventAction(0), EventAction(1)]
     }
 

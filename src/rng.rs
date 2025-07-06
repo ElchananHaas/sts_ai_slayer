@@ -60,6 +60,10 @@ impl Rng {
         self.sample(max as usize) as i32
     }
 
+    pub fn sample_i32_inclusive(&mut self, min: i32, max: i32) -> i32 {
+        min + self.sample((max - min + 1) as usize) as i32
+    }
+
     pub fn sample_u32(&mut self, max: u32) -> u32 {
         self.sample(max as usize) as u32
     }

@@ -34,10 +34,8 @@ impl EventRoom for ShiningLight {
                     game.base_deck[card_idx].upgrade();
                 }
                 game.goto_map()
-            },
-            1 => {
-                game.goto_map()
             }
+            1 => game.goto_map(),
             _ => panic!("Invalid action: {}", action.0),
         }
     }

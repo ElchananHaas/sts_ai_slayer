@@ -1,5 +1,7 @@
 use crate::{
-    card::CardBody, game::{event::EventRoom, Choice, EventAction, Game}, rng::Rng
+    card::CardBody,
+    game::{Choice, EventAction, Game, event::EventRoom},
+    rng::Rng,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -16,10 +18,8 @@ impl EventRoom for TheSsserpent {
                 game.gain_gold(175);
                 game.add_card_to_deck(CardBody::Doubt);
                 game.goto_map()
-            },
-            1 => {
-                game.goto_map()
             }
+            1 => game.goto_map(),
             _ => panic!("Invalid action: {}", action.0),
         }
     }

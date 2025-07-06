@@ -74,7 +74,6 @@ pub struct RemoveCardAction(usize);
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TransformCardAction(usize);
 
-
 //Upgrade the i'th card in the deck.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct UpgradeCardAction(usize);
@@ -1447,7 +1446,7 @@ impl Game {
             }
         }
         if res.len() == 0 {
-            return self.goto_map()
+            return self.goto_map();
         }
         Choice::RemoveCardState(res)
     }
@@ -1460,7 +1459,7 @@ impl Game {
             }
         }
         if res.len() == 0 {
-            return self.goto_map()
+            return self.goto_map();
         }
         Choice::TransformCardState(res)
     }
@@ -1473,7 +1472,7 @@ impl Game {
             }
         }
         if res.len() == 0 {
-            return self.goto_map()
+            return self.goto_map();
         }
         Choice::UpgradeCardState(res)
     }

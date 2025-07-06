@@ -1,12 +1,13 @@
 use std::cmp::min;
 
 use crate::{
-    card::CardBody, game::{event::EventRoom, Choice, EventAction, Game}, rng::Rng
+    game::{Choice, EventAction, Game, event::EventRoom},
+    rng::Rng,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct WorldOfGoop {
-    loss: i32
+    loss: i32,
 }
 
 impl EventRoom for WorldOfGoop {
@@ -20,7 +21,7 @@ impl EventRoom for WorldOfGoop {
                 game.gain_gold(75);
                 game.player_lose_hp(11, false);
                 game.goto_map()
-            },
+            }
             1 => {
                 game.lose_gold(min(self.loss, game.gold));
                 game.goto_map()
@@ -47,7 +48,7 @@ impl EventRoom for WorldOfGoop {
 
     fn new(rng: &mut Rng) -> Self {
         WorldOfGoop {
-            loss: 20 + rng.sample_i32( 30)
+            loss: rng.sample_i32_inclusive(20, 50),
         }
     }
 }

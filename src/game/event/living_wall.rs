@@ -14,12 +14,8 @@ impl EventRoom for LivingWall {
     fn take_action(self, game: &mut Game, action: EventAction) -> Choice {
         match action.0 {
             0 => game.goto_remove_card(),
-            1 => {
-                game.goto_transform_card()
-            }
-            2 => {
-                game.goto_upgrade_card()
-            }
+            1 => game.goto_transform_card(),
+            2 => game.goto_upgrade_card(),
             _ => panic!("Invalid action: {}", action.0),
         }
     }

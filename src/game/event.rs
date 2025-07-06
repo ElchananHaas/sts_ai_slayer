@@ -3,10 +3,11 @@ mod cleric;
 mod dead_adventurer;
 mod golden_idol;
 mod living_wall;
-mod shrooms;
 mod scrap_ooze;
 mod shining_light;
+mod shrooms;
 mod the_ssserpent;
+mod wing_statue;
 mod world_of_goop;
 
 use paste::paste;
@@ -17,9 +18,9 @@ use crate::{
         Choice, EventAction, Game,
         event::{
             big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer,
-            golden_idol::GoldenIdol, shrooms::HypnotizingShrooms, living_wall::LivingWall,
-            scrap_ooze::ScrapOoze, shining_light::ShiningLight, the_ssserpent::TheSsserpent,
-            world_of_goop::WorldOfGoop
+            golden_idol::GoldenIdol, living_wall::LivingWall, scrap_ooze::ScrapOoze,
+            shining_light::ShiningLight, shrooms::HypnotizingShrooms, the_ssserpent::TheSsserpent,
+            wing_statue::WingStatue, world_of_goop::WorldOfGoop,
         },
     },
     rng::Rng,
@@ -46,7 +47,7 @@ pub enum EventNameOld {
     ShiningLight,
     TheSsserpent,
     WorldOfGoop,
-    //WingStatue,
+    WingStatue,
     //Shrines
     //BonfireSpirits,
     //GoldenShrine,
@@ -152,5 +153,6 @@ event_array!(
     ScrapOoze,
     ShiningLight,
     TheSsserpent,
-    WorldOfGoop
+    WorldOfGoop,
+    WingStatue
 );
