@@ -7,6 +7,7 @@ mod shrooms;
 mod scrap_ooze;
 mod shining_light;
 mod the_ssserpent;
+mod world_of_goop;
 
 use paste::paste;
 use strum::VariantArray;
@@ -17,7 +18,8 @@ use crate::{
         event::{
             big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer,
             golden_idol::GoldenIdol, shrooms::HypnotizingShrooms, living_wall::LivingWall,
-            scrap_ooze::ScrapOoze, shining_light::ShiningLight, the_ssserpent::TheSsserpent
+            scrap_ooze::ScrapOoze, shining_light::ShiningLight, the_ssserpent::TheSsserpent,
+            world_of_goop::WorldOfGoop
         },
     },
     rng::Rng,
@@ -43,7 +45,7 @@ pub enum EventNameOld {
     ScrapOoze,
     ShiningLight,
     TheSsserpent,
-    //WorldOfGoop,
+    WorldOfGoop,
     //WingStatue,
     //Shrines
     //BonfireSpirits,
@@ -149,5 +151,6 @@ event_array!(
     LivingWall,
     ScrapOoze,
     ShiningLight,
-    TheSsserpent
+    TheSsserpent,
+    WorldOfGoop
 );
