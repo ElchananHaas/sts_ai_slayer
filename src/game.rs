@@ -3,6 +3,7 @@ mod event;
 
 use std::{cmp::min, fmt::Display, mem, vec};
 
+use crate::card::{COLORLESS_CARDS, CURSE_CARDS, CardCharachter, IRONCLAD_CARDS, sample_card};
 use crate::game::event::Event;
 use crate::{
     card::{
@@ -69,6 +70,15 @@ pub struct EventAction(usize);
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RemoveCardAction(usize);
 
+//Transform the i'th card in the deck.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct TransformCardAction(usize);
+
+
+//Upgrade the i'th card in the deck.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct UpgradeCardAction(usize);
+
 #[must_use]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum Choice {
@@ -86,6 +96,8 @@ pub enum Choice {
     ),
     Event(Event, Vec<EventAction>),
     RemoveCardState(Vec<RemoveCardAction>),
+    TransformCardState(Vec<TransformCardAction>),
+    UpgradeCardState(Vec<UpgradeCardAction>),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -178,6 +190,12 @@ impl<'a> ChoiceState<'a> {
                 event.take_action(&mut self.game, actions[action_idx])
             }
             Choice::RemoveCardState(actions) => game.handle_remove_card_action(actions[action_idx]),
+            Choice::TransformCardState(actions) => {
+                game.handle_transform_card_action(actions[action_idx])
+            }
+            Choice::UpgradeCardState(actions) => {
+                game.handle_upgrade_card_action(actions[action_idx])
+            }
         }
     }
 
@@ -254,6 +272,14 @@ impl<'a> ChoiceState<'a> {
                 let card = &self.game.base_deck[remove_card_actions[action_idx].0];
                 format!("Remove {:?}", card.body)
             }
+            Choice::TransformCardState(transform_card_actions) => {
+                let card = &self.game.base_deck[transform_card_actions[action_idx].0];
+                format!("Transform {:?}", card.body)
+            }
+            Choice::UpgradeCardState(transform_card_actions) => {
+                let card = &self.game.base_deck[transform_card_actions[action_idx].0];
+                format!("Upgrade {:?}", card.body)
+            }
         }
     }
 
@@ -272,6 +298,8 @@ impl<'a> ChoiceState<'a> {
             ) => select_card_actions.len(),
             Choice::Event(_event, event_actions) => event_actions.len(),
             Choice::RemoveCardState(actions) => actions.len(),
+            Choice::TransformCardState(actions) => actions.len(),
+            Choice::UpgradeCardState(actions) => actions.len(),
         }
     }
 }
@@ -287,6 +315,28 @@ impl Game {
 
     fn handle_remove_card_action(&mut self, removal: RemoveCardAction) -> Choice {
         self.base_deck.remove(removal.0);
+        self.goto_map()
+    }
+
+    fn handle_transform_card_action(&mut self, transform: TransformCardAction) -> Choice {
+        let card = self.base_deck.remove(transform.0);
+        let transformed = if card.body.card_type() == CardType::Curse {
+            sample_card(CURSE_CARDS, &mut self.rng)
+        } else {
+            match card.charachter() {
+                CardCharachter::IRONCLAD => sample_card(IRONCLAD_CARDS, &mut self.rng),
+                CardCharachter::SILENT => todo!(),
+                CardCharachter::DEFECT => todo!(),
+                CardCharachter::WATCHER => todo!(),
+                CardCharachter::COLORLESS => sample_card(COLORLESS_CARDS, &mut self.rng),
+            }
+        };
+        self.add_card_to_deck(transformed);
+        self.goto_map()
+    }
+
+    fn handle_upgrade_card_action(&mut self, upgrade: UpgradeCardAction) -> Choice {
+        self.base_deck[upgrade.0].upgrade();
         self.goto_map()
     }
 
@@ -1393,7 +1443,36 @@ impl Game {
                 res.push(RemoveCardAction(i));
             }
         }
+        if res.len() == 0 {
+            return self.goto_map()
+        }
         Choice::RemoveCardState(res)
+    }
+
+    fn goto_transform_card(&mut self) -> Choice {
+        let mut res = Vec::new();
+        for i in 0..self.base_deck.len() {
+            if self.base_deck[i].body.removable() {
+                res.push(TransformCardAction(i));
+            }
+        }
+        if res.len() == 0 {
+            return self.goto_map()
+        }
+        Choice::TransformCardState(res)
+    }
+
+    fn goto_upgrade_card(&mut self) -> Choice {
+        let mut res = Vec::new();
+        for i in 0..self.base_deck.len() {
+            if self.base_deck[i].can_upgrade() {
+                res.push(UpgradeCardAction(i));
+            }
+        }
+        if res.len() == 0 {
+            return self.goto_map()
+        }
+        Choice::UpgradeCardState(res)
     }
 }
 
@@ -1602,6 +1681,8 @@ impl<'a> Display for ChoiceState<'a> {
             Choice::SelectCardState(_ctx, __effect, _actions, _type) => "SelectCard",
             Choice::Event(event, _actions) => event.name(),
             Choice::RemoveCardState(_) => "RemoveCard",
+            Choice::TransformCardState(_) => "TransformCard",
+            Choice::UpgradeCardState(_) => "UpgradeCard",
         };
         dash_line(f)?;
         write!(f, "| ")?;

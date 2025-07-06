@@ -2,6 +2,8 @@ use std::cmp::max;
 
 use strum::VariantArray;
 
+use crate::rng::Rng;
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Card {
     pub body: CardBody,
@@ -1265,6 +1267,30 @@ const fn ironclad_attack_filter(props: &'static CardProps) -> bool {
 }
 pub const IRONCLAD_ATTACK_CARDS: &'static [CardBody] = filtered_cards!(ironclad_attack_filter);
 
+const fn ironclad_filter(props: &'static CardProps) -> bool {
+    matches!(props.charachter, CardCharachter::IRONCLAD) && !props.starter
+}
+pub const IRONCLAD_CARDS: &'static [CardBody] = filtered_cards!(ironclad_filter);
+
+const fn curse_filter(props: &'static CardProps) -> bool {
+    matches!(props.card_type, CardType::Curse)
+}
+pub const CURSE_CARDS: &'static [CardBody] = filtered_cards!(curse_filter);
+
+const fn colorless_filter(props: &'static CardProps) -> bool {
+    (matches!(props.card_type, CardType::Power)
+        || matches!(props.card_type, CardType::Skill)
+        || matches!(props.card_type, CardType::Attack))
+        && matches!(props.charachter, CardCharachter::COLORLESS)
+}
+
+pub const COLORLESS_CARDS: &'static [CardBody] = filtered_cards!(curse_filter);
+
+pub fn sample_card(cards: &'static [CardBody], rng: &mut Rng) -> CardBody {
+    let idx = rng.sample(cards.len());
+    cards[idx]
+}
+
 impl Card {
     fn props(&self) -> &'static CardProps {
         self.body.props()
@@ -1327,5 +1353,9 @@ impl Card {
             Innate::Yes => true,
             Innate::Upgraded => self.upgraded,
         }
+    }
+
+    pub fn charachter(&self) -> CardCharachter {
+        self.body.props().charachter
     }
 }

@@ -2,6 +2,7 @@ mod big_fish;
 mod cleric;
 mod dead_adventurer;
 mod golden_idol;
+mod living_wall;
 mod shrooms;
 
 use paste::paste;
@@ -34,7 +35,7 @@ pub enum EventNameOld {
     DeadAdventurer,
     GoldenIdol,
     HypnotizingShrooms,
-    //LivingWall,
+    LivingWall,
     //ScrapOoze,
     //ShiningLight,
     //TheSsserpent,
