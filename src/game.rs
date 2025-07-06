@@ -536,6 +536,9 @@ impl Game {
             if card.body == CardBody::Regret {
                 self.player_lose_hp(hand_size as i32, true);
             }
+            if card.body == CardBody::Doubt {
+                self.apply_debuff_to_player(Debuff::Weak(1));
+            }
             if card.ethereal() {
                 self.exhaust(card);
             } else {

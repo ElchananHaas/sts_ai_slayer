@@ -55,7 +55,7 @@ impl EventRoom for ShiningLight {
     }
 
     fn name(&self) -> &'static str {
-        "Living Wall"
+        "Shining Light"
     }
 
     fn new(_rng: &mut Rng) -> Self {

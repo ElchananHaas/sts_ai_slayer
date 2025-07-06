@@ -129,6 +129,7 @@ pub enum CardBody {
     Regret,
     Injury,
     Parasite,
+    Doubt,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -1184,6 +1185,14 @@ impl CardBody {
                 CardCharachter::COLORLESS
             )),
             CardBody::Parasite => const_card!(&CardProps::new(
+                &[PlayEffect::MarkExhaust],
+                &[PlayEffect::MarkExhaust],
+                Cost::Unplayable,
+                false,
+                CardType::Curse,
+                CardCharachter::COLORLESS
+            )),
+            CardBody::Doubt => const_card!(&CardProps::new(
                 &[PlayEffect::MarkExhaust],
                 &[PlayEffect::MarkExhaust],
                 Cost::Unplayable,
