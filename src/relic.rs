@@ -10,6 +10,7 @@ pub enum Relic {
     Placeholder7,
     Placeholder8,
     Placeholder9,
+    GoldenIdol,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RelicPool {}
@@ -27,7 +28,9 @@ impl Relics {
     pub fn new() -> Self {
         Relics {}
     }
-    pub fn add(&mut self, relic: Relic) {}
+    pub fn add(&mut self, relic: Relic) {
+        todo!("Implement adding relics")
+    }
 }
 
 pub enum RelicRarity {

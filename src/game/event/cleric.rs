@@ -1,4 +1,7 @@
-use crate::{game::{event::EventRoom, Choice, EventAction, Game}, rng::Rng};
+use crate::{
+    game::{Choice, EventAction, Game, event::EventRoom},
+    rng::Rng,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Cleric;

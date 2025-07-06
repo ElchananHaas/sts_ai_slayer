@@ -1,13 +1,21 @@
 mod big_fish;
 mod cleric;
 mod dead_adventurer;
+mod golden_idol;
 
 use paste::paste;
 use strum::VariantArray;
 
-use crate::{game::{
-    event::{big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer}, Choice, EventAction, Game
-}, rng::Rng};
+use crate::{
+    game::{
+        Choice, EventAction, Game,
+        event::{
+            big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer,
+            golden_idol::GoldenIdol,
+        },
+    },
+    rng::Rng,
+};
 /*
 Event Generation works as follows:
 
@@ -23,7 +31,7 @@ pub enum EventNameOld {
     BigFish,
     Cleric,
     DeadAdventurer,
-    //GoldenIdol,
+    GoldenIdol,
     //HypnotizingShrooms,
     //LivingWall,
     //ScrapOoze,
@@ -126,4 +134,4 @@ macro_rules! event_array {
     }
 }
 
-event_array!(BigFish, Cleric, DeadAdventurer);
+event_array!(BigFish, Cleric, DeadAdventurer, GoldenIdol);

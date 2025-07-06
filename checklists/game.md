@@ -8,10 +8,13 @@ DONE
 DONE
 
 ### Act 1 Elites
-IN PROGRESS
+DONE
 
 ### Act 1 Events
 IN PROGRESS
+
+### Map Generation
+TODO
 
 ### Combat Rewards
 TODO
@@ -26,9 +29,6 @@ TODO
 TODO
 
 ### Shops
-TODO
-
-### Map Generation
 TODO
 
 ### Relics

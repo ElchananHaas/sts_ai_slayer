@@ -1,9 +1,9 @@
-mod event;
 mod encounter;
+mod event;
 
 use std::{cmp::min, fmt::Display, mem, vec};
 
-use crate::game::event::{Event};
+use crate::game::event::Event;
 use crate::{
     card::{
         Buff, Card, CardAssoc, CardBody, CardType, Debuff, IRONCLAD_ATTACK_CARDS, PlayEffect,
@@ -174,7 +174,9 @@ impl<'a> ChoiceState<'a> {
                 let action = select_card_actions[action_idx];
                 game.handle_select_card_action(play_card_context, effect, action)
             }
-            Choice::Event(mut event, actions) => event.take_action(&mut self.game, actions[action_idx]),
+            Choice::Event(mut event, actions) => {
+                event.take_action(&mut self.game, actions[action_idx])
+            }
             Choice::RemoveCardState(actions) => game.handle_remove_card_action(actions[action_idx]),
         }
     }
@@ -526,6 +528,14 @@ impl Game {
         if from_card && self.fight.player_buffs.rupture > 0 {
             self.apply_buff_to_player(Buff::Strength(self.fight.player_buffs.rupture));
         }
+    }
+
+    fn player_lose_max_hp(&mut self, amount: i32) {
+        self.player_max_hp -= amount;
+        if self.player_max_hp < 1 {
+            self.player_max_hp = 1;
+        }
+        self.player_hp = min(self.player_hp, self.player_max_hp);
     }
 
     fn play_card_targets(&mut self, card_idx: usize, target: usize) -> Choice {

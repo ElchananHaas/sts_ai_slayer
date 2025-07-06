@@ -1,11 +1,14 @@
-use crate::{enemies::{gremlin_nob::generate_gremlin_nob, lagavulin::generate_lagavulin, sentry::generate_sentry}, game::{Choice, Game}};
-
-
+use crate::{
+    enemies::{
+        gremlin_nob::generate_gremlin_nob, lagavulin::generate_lagavulin, sentry::generate_sentry,
+    },
+    game::{Choice, Game},
+};
 
 pub enum Encounter {
     Lagavulin,
     GremlinNob,
-    Sentries
+    Sentries,
 }
 
 impl Game {
@@ -14,15 +17,15 @@ impl Game {
         match encounter {
             Encounter::Lagavulin => {
                 self.fight.enemies[0] = Some(generate_lagavulin(&mut self.rng));
-            },
+            }
             Encounter::GremlinNob => {
                 self.fight.enemies[0] = Some(generate_gremlin_nob(&mut self.rng));
-            },
-            Encounter::Sentries =>  {
+            }
+            Encounter::Sentries => {
                 self.fight.enemies[0] = Some(generate_sentry(&mut self.rng, 0));
                 self.fight.enemies[0] = Some(generate_sentry(&mut self.rng, 1));
                 self.fight.enemies[0] = Some(generate_sentry(&mut self.rng, 0));
-            },
+            }
         }
         self.play_card_choice()
     }

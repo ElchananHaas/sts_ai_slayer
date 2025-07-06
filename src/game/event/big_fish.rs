@@ -1,6 +1,7 @@
 use crate::{
     card::CardBody,
-    game::{event::EventRoom, Choice, EventAction, Game}, rng::Rng,
+    game::{Choice, EventAction, Game, event::EventRoom},
+    rng::Rng,
 };
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BigFish;
@@ -48,7 +49,7 @@ impl EventRoom for BigFish {
     fn name(&self) -> &'static str {
         "Big Fish"
     }
-    
+
     fn new(_rng: &mut Rng) -> Self {
         BigFish
     }
