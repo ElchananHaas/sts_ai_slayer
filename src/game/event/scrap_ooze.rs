@@ -1,7 +1,6 @@
 use crate::{
     game::{
         Choice, EventAction, Game,
-        encounter::Encounter,
         event::{Event, EventRoom},
     },
     rng::Rng,

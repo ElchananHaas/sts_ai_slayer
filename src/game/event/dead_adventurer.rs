@@ -52,7 +52,7 @@ impl EventRoom for DeadAdventurer {
                 let elite_arrived = game.rng.sample(100) < chance;
                 if elite_arrived {
                     let encounter = game.setup_encounter(match self.elite {
-                        DeadAdventurerElite::Lagavulin => Encounter::GremlinNob,
+                        DeadAdventurerElite::Lagavulin => Encounter::Lagavulin,
                         DeadAdventurerElite::GremlinNob => Encounter::GremlinNob,
                         DeadAdventurerElite::Sentries => Encounter::Sentries,
                     });
