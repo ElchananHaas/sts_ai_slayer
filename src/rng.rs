@@ -37,20 +37,20 @@ impl Rng {
         }
     }
     //The samples is exclusive on max. It utilizes rejection sampling.
-    pub fn sample(&mut self, max: usize) -> usize {
-        if max == 0 {
+    pub fn sample(&mut self, bound: usize) -> usize {
+        if bound == 0 {
             panic!("Invalid range: Max cannot be 0");
         }
         //The RNG is sometimes called with a max of 1, have a fast path for that.
-        if max == 1 {
+        if bound == 1 {
             return 0;
         }
-        let next_pow_2 = max.next_power_of_two();
+        let next_pow_2 = bound.next_power_of_two();
         let mask = next_pow_2 - 1;
         loop {
             let rand = { self.source.borrow_mut().next_u64() };
             let rand = mask & (rand as usize);
-            if rand < max {
+            if rand < bound {
                 return rand;
             }
         }

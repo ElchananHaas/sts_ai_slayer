@@ -11,6 +11,7 @@ mod deck;
 mod enemies;
 mod fight;
 mod game;
+mod map;
 mod potion;
 mod relic;
 mod rng;
