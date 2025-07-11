@@ -81,6 +81,25 @@ impl Rng {
         }
         panic!("A weight wasn't chosen!");
     }
+
+    pub fn shuffle<T>(&mut self, v: &mut Vec<T>) {
+        for i in (1..v.len()).rev() {
+            //Make sure the element can stay where it is.
+            let idx = self.sample(i + 1);
+            if i == idx {
+                continue;
+            }
+            //The code needs to swap these two elements, which requires accessing mulitple
+            //disjoint parts of the vec. Since stable rust doesn't have a safe method
+            //for this  and there is no way of initializing a temporary for an arbitrary T
+            //this requires unsafe.
+            let first = &mut v[i] as *mut T;
+            let second = &mut v[idx] as *mut T;
+            unsafe {
+                std::ptr::swap(first, second);
+            }
+        }
+    }
 }
 
 impl Hash for Rng {

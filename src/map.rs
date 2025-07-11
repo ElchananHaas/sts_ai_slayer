@@ -33,7 +33,7 @@ impl Map {
     fn create(&mut self, rng: &mut Rng) {
         self.create_paths(6, rng);
         self.assign_fixed_rows();
-        self.assign_random(rng);
+        self.assign_remaining_random(rng);
     }
 
     fn assign_fixed_rows(&mut self) {
@@ -48,7 +48,7 @@ impl Map {
         }
     }
 
-    fn assign_random(&mut self, rng: &mut Rng) {
+    fn assign_remaining_random(&mut self, rng: &mut Rng) {
         let count = self.room_count_for_buckets() as f32;
         let mut bucket = Vec::new();
         for _ in 0..((count * SHOP_CHANCE).round_ties_even() as usize) {
@@ -66,6 +66,7 @@ impl Map {
         for _ in bucket.len()..self.unassigned_count() {
             bucket.push(RoomType::Monster);
         }
+        rng.shuffle(&mut bucket);
     }
 
     //The code of STS counts the first row and treasure row for the purpose
