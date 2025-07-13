@@ -1,3 +1,5 @@
+use smallvec::SmallVec;
+
 use crate::rng::Rng;
 
 const ROW_WIDTH: usize = 7;
@@ -17,7 +19,7 @@ enum Direction {
     Forward,
     Right,
 }
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Copy)]
 enum RoomType {
     QuestionMark,
     Shop,
@@ -67,6 +69,83 @@ impl Map {
             bucket.push(RoomType::Monster);
         }
         rng.shuffle(&mut bucket);
+        //No need to assign the first or last floors, they are already assigned
+        for i in 1..NUM_FLOORS - 1 {
+            for j in 0..ROW_WIDTH {
+                if self.rooms[i][j].reachable {
+                    self.assign_room(i, j, &mut bucket);
+                }
+            }
+        }
+        for i in 1..NUM_FLOORS - 1 {
+            for j in 0..ROW_WIDTH {
+                if self.rooms[i][j].reachable && self.rooms[i][j].room_type == RoomType::Unassigned
+                {
+                    self.rooms[i][j].room_type = RoomType::Monster;
+                }
+            }
+        }
+    }
+
+    fn assign_room(&mut self, row: usize, x: usize, bucket: &mut Vec<RoomType>) {
+        if self.rooms[row][x].room_type != RoomType::Unassigned {
+            return;
+        }
+        let mut parent_types: SmallVec<[RoomType; 3]> = SmallVec::new();
+        let mut siblings: [bool; ROW_WIDTH] = [false; ROW_WIDTH];
+        let parent_row = &self.rooms[row - 1];
+        fn assign_siblings(parent_x: usize, parent: &Room, siblings: &mut [bool; ROW_WIDTH]) {
+            if parent.has_left_child {
+                siblings[parent_x - 1] = true;
+            }
+            if parent.has_front_child {
+                siblings[parent_x] = true;
+            }
+            if parent.has_right_child {
+                siblings[parent_x + 1] = true;
+            }
+        }
+        if let Some(parent) = parent_row.get(x - 1)
+            && parent.has_right_child
+        {
+            parent_types.push(parent.room_type);
+            assign_siblings(x - 1, parent, &mut siblings);
+        }
+        if let Some(parent) = parent_row.get(x)
+            && parent.has_front_child
+        {
+            parent_types.push(parent.room_type);
+            assign_siblings(x, parent, &mut siblings);
+        }
+        if let Some(parent) = parent_row.get(x + 1)
+            && parent.has_left_child
+        {
+            parent_types.push(parent.room_type);
+            assign_siblings(x + 1, parent, &mut siblings);
+        }
+        for i in 0..bucket.len() {
+            let t = bucket[i];
+            if row < 6 && t == RoomType::Elite {
+                continue;
+            }
+            if row == NUM_FLOORS - 2 && t == RoomType::Rest {
+                continue;
+            }
+            if (t == RoomType::Elite || t == RoomType::Rest || t == RoomType::Shop)
+                && ((&parent_types).into_iter().any(|parent_t| *parent_t == t))
+            {
+                continue;
+            }
+            for j in 0..ROW_WIDTH {
+                if siblings[j] && (t == self.rooms[row][j].room_type) {
+                    continue;
+                }
+            }
+            self.rooms[row][x].room_type = t;
+            //This is inefficient, but it is needed to match the STS code.
+            //I will consider improving this later.
+            bucket.remove(i);
+        }
     }
 
     //The code of STS counts the first row and treasure row for the purpose
