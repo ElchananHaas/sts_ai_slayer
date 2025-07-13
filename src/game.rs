@@ -36,6 +36,8 @@ pub struct Game {
     gold: i32,
     rng: Rng,
     floor: i32,
+    map_x: i32,
+    map_y: i32,
     map: ActMap,
 }
 
@@ -60,8 +62,10 @@ pub struct ChooseEnemyAction {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum MapStateAction {
-    //Proceed to choosing the next node.
-    Proceed,
+    Jump(i32),
+    Left,
+    Forwards,
+    Right,
 }
 //Choose the i'th choice in the event. The interpretation
 //of this is event dependent.
@@ -235,9 +239,9 @@ impl<'a> ChoiceState<'a> {
             Choice::Loss => {
                 panic!("Loss state has no actions.")
             }
-            Choice::MapState(reward_state_actions) => match reward_state_actions[action_idx] {
-                MapStateAction::Proceed => "Proceed".to_owned(),
-            },
+            Choice::MapState(map_state_actions) => {
+                format!("Proceed by {:?}", map_state_actions[action_idx])
+            }
             Choice::SelectCardState(
                 _play_card_context,
                 _effect,
@@ -391,12 +395,43 @@ impl Game {
     }
 
     fn take_map_state_action(&mut self, action: MapStateAction) -> Choice {
+        self.map_y += 1;
         match &action {
-            MapStateAction::Proceed => {
-                self.floor += 1;
-                self.setup_jawworm_fight();
-                self.play_card_choice()
+            MapStateAction::Forwards => {
+                //Nothing
             }
+            MapStateAction::Jump(x) => {
+                self.map_x = *x;
+            }
+            MapStateAction::Left => {
+                self.map_x -= 1;
+            }
+            MapStateAction::Right => {
+                self.map_x += 1;
+            }
+        };
+        match self.map.rooms[self.map_y as usize][self.map_x as usize].room_type {
+            crate::map::RoomType::QuestionMark => {
+                ()
+            },
+            crate::map::RoomType::Shop => {
+                ()
+            },
+            crate::map::RoomType::Treasure => {
+                ()
+            },
+            crate::map::RoomType::Rest => {
+                ()
+            },
+            crate::map::RoomType::Monster => {
+                ()
+            },
+            crate::map::RoomType::Elite => {
+                ()
+            },
+            crate::map::RoomType::Unassigned => {
+                panic!("Somehow reached an unassigned room!")
+            },
         }
     }
 
@@ -771,7 +806,29 @@ impl Game {
     }
 
     fn goto_map(&self) -> Choice {
-        Choice::MapState(vec![MapStateAction::Proceed])
+        let mut actions = Vec::new();
+        if self.map_y == -1 {
+            let row = &self.map.rooms[0];
+            for i in 0..row.len() {
+                if row[i].reachable {
+                    actions.push(MapStateAction::Jump(i as i32));
+                }
+            }
+        } else if self.map_y as usize == self.map.rooms.len() - 1 {
+            actions.push(MapStateAction::Forwards);
+        } else {
+            let room = &self.map.rooms[self.map_y as usize][self.map_x as usize];
+            if room.has_left_child {
+                actions.push(MapStateAction::Left);
+            }
+            if room.has_front_child {
+                actions.push(MapStateAction::Forwards);
+            }
+            if room.has_right_child {
+                actions.push(MapStateAction::Right);
+            }
+        }
+        Choice::MapState(actions)
     }
 
     fn apply_debuff_to_player(&mut self, debuff: Debuff) {
@@ -1557,14 +1614,14 @@ impl Game {
                 relic_pool: RelicPool::new(),
                 rng,
                 map,
+                map_x: 0,
+                map_y: -1,
             },
             Charachter::SILENT => todo!(),
             Charachter::DEFECT => todo!(),
             Charachter::WATCHER => todo!(),
         }
     }
-
-    pub fn draw_initial_hand(&mut self) {}
 
     fn setup_fight(&mut self) {
         self.fight = Default::default();

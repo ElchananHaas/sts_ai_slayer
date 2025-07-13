@@ -97,7 +97,6 @@ pub struct PlayCardContext {
 }
 
 impl Fight {
-    //The setup method must be called to allow for allocation reuse.
     pub fn new() -> Self {
         Self::default()
     }

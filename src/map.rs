@@ -11,7 +11,7 @@ const REST_CHANCE: f32 = 0.12;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ActMap {
-    rooms: [[Room; ROW_WIDTH]; NUM_FLOORS],
+    pub rooms: [[Room; ROW_WIDTH]; NUM_FLOORS],
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Direction {
@@ -20,7 +20,7 @@ enum Direction {
     Right,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Copy)]
-enum RoomType {
+pub enum RoomType {
     QuestionMark,
     Shop,
     Treasure,
@@ -237,10 +237,10 @@ impl ActMap {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Copy)]
-struct Room {
-    has_left_child: bool,
-    has_front_child: bool,
-    has_right_child: bool,
-    room_type: RoomType,
-    reachable: bool,
+pub struct Room {
+    pub has_left_child: bool,
+    pub has_front_child: bool,
+    pub has_right_child: bool,
+    pub room_type: RoomType,
+    pub reachable: bool,
 }
