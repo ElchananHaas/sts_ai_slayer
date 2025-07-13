@@ -99,22 +99,7 @@ pub struct PlayCardContext {
 impl Fight {
     //The setup method must be called to allow for allocation reuse.
     pub fn new() -> Self {
-        Self {
-            enemies: Enemies {
-                enemies: [const { None }; 5],
-            },
-            hand: vec![],
-            deck: Deck::shuffled(vec![]),
-            energy: 0,
-            player_block: 0,
-            player_debuffs: PlayerDebuffs::default(),
-            player_buffs: PlayerBuffs::default(),
-            discard_pile: vec![],
-            exhaust: vec![],
-            stolen_back_gold: 0,
-            post_card_queue: VecDeque::new(),
-            rewards: FightRewards::default(),
-        }
+        Self::default()
     }
     //This removes the top of the deck, reshuffling if needed.
     //It can fail if the deck and discard are both empty.

@@ -1,4 +1,4 @@
 - [x] Create a random agent.
 - [x] Provide a decent way of viewing the game state.
 - [x] Get MCTS running on single combats.
-- [ ] Fix enemies dying from player spikes during a multi-attack.
+- [x] Fix enemies dying from player spikes during a multi-attack.

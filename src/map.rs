@@ -9,8 +9,8 @@ const QUESTION_CHANCE: f32 = 0.22;
 const ELITE_CHANCE: f32 = 0.08;
 const REST_CHANCE: f32 = 0.12;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
-struct Map {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ActMap {
     rooms: [[Room; ROW_WIDTH]; NUM_FLOORS],
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -31,7 +31,14 @@ enum RoomType {
     Unassigned,
 }
 
-impl Map {
+impl ActMap {
+    pub fn standard(rng: &mut Rng) -> Self {
+        let mut res = Self {
+            rooms: [[Room::default(); ROW_WIDTH]; NUM_FLOORS],
+        };
+        res.create(rng);
+        res
+    }
     fn create(&mut self, rng: &mut Rng) {
         self.create_paths(6, rng);
         self.assign_fixed_rows();
@@ -77,6 +84,7 @@ impl Map {
                 }
             }
         }
+        //Any remaining unassigned rooms are assigned to Monster as a fallback.
         for i in 1..NUM_FLOORS - 1 {
             for j in 0..ROW_WIDTH {
                 if self.rooms[i][j].reachable && self.rooms[i][j].room_type == RoomType::Unassigned
@@ -94,7 +102,7 @@ impl Map {
         let mut parent_types: SmallVec<[RoomType; 3]> = SmallVec::new();
         let mut siblings: [bool; ROW_WIDTH] = [false; ROW_WIDTH];
         let parent_row = &self.rooms[row - 1];
-        fn assign_siblings(parent_x: usize, parent: &Room, siblings: &mut [bool; ROW_WIDTH]) {
+        fn check_for_siblings(parent_x: usize, parent: &Room, siblings: &mut [bool; ROW_WIDTH]) {
             if parent.has_left_child {
                 siblings[parent_x - 1] = true;
             }
@@ -109,23 +117,23 @@ impl Map {
             && parent.has_right_child
         {
             parent_types.push(parent.room_type);
-            assign_siblings(x - 1, parent, &mut siblings);
+            check_for_siblings(x - 1, parent, &mut siblings);
         }
         if let Some(parent) = parent_row.get(x)
             && parent.has_front_child
         {
             parent_types.push(parent.room_type);
-            assign_siblings(x, parent, &mut siblings);
+            check_for_siblings(x, parent, &mut siblings);
         }
         if let Some(parent) = parent_row.get(x + 1)
             && parent.has_left_child
         {
             parent_types.push(parent.room_type);
-            assign_siblings(x + 1, parent, &mut siblings);
+            check_for_siblings(x + 1, parent, &mut siblings);
         }
         for i in 0..bucket.len() {
             let t = bucket[i];
-            if row < 6 && t == RoomType::Elite {
+            if row < 6 && (t == RoomType::Elite || t == RoomType::Rest) {
                 continue;
             }
             if row == NUM_FLOORS - 2 && t == RoomType::Rest {
@@ -228,7 +236,7 @@ impl Map {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Copy)]
 struct Room {
     has_left_child: bool,
     has_front_child: bool,

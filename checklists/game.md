@@ -14,7 +14,7 @@ DONE
 IN PROGRESS
 
 ### Map Generation
-TODO
+IN PROGRESS
 
 ### Combat Rewards
 TODO

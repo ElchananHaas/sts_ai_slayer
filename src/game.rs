@@ -5,6 +5,7 @@ use std::{cmp::min, fmt::Display, mem, vec};
 
 use crate::card::{COLORLESS_CARDS, CURSE_CARDS, CardCharachter, IRONCLAD_CARDS, sample_card};
 use crate::game::event::Event;
+use crate::map::ActMap;
 use crate::{
     card::{
         Buff, Card, CardAssoc, CardBody, CardType, Debuff, IRONCLAD_ATTACK_CARDS, PlayEffect,
@@ -35,6 +36,7 @@ pub struct Game {
     gold: i32,
     rng: Rng,
     floor: i32,
+    map: ActMap,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -1527,6 +1529,8 @@ fn debuff_player_turn_wind_down(x: &mut i32, amount: i32) {
 
 impl Game {
     pub fn new(charachter: Charachter) -> Self {
+        let mut rng = Rng::new();
+        let map = ActMap::standard(&mut rng);
         match charachter {
             Charachter::IRONCLAD => Game {
                 player_hp: 80,
@@ -1551,7 +1555,8 @@ impl Game {
                 ],
                 relics: Relics::new(),
                 relic_pool: RelicPool::new(),
-                rng: Rng::new(),
+                rng,
+                map,
             },
             Charachter::SILENT => todo!(),
             Charachter::DEFECT => todo!(),
