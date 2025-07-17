@@ -12,7 +12,7 @@ use crate::{
 };
 
 impl Game {
-    pub(super) fn handle_selected_action(
+    pub(super) fn perform_selected_action(
         &mut self,
         context: &mut PlayCardContext,
         effect: SelectCardEffect,
@@ -61,7 +61,7 @@ impl Game {
         }
     }
 
-    pub(super) fn handle_action(
+    pub(super) fn perform_play_effect(
         &mut self,
         action: PlayEffect,
         context: &mut PlayCardContext,

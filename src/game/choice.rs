@@ -121,13 +121,10 @@ impl<'a> ChoiceState<'a> {
         std::mem::swap(&mut choice, &mut self.choice);
         self.choice = match choice {
             Choice::PlayCardState(play_card_actions) => {
-                let action = play_card_actions[action_idx];
-                game.take_play_card_action(action)
+                game.handle_play_card_action(play_card_actions[action_idx])
             }
             Choice::ChooseEnemyState(choose_enemy_actions, card_idx) => {
-                let action = choose_enemy_actions[action_idx];
-                let card_idx = card_idx;
-                game.take_choose_enemy_action(card_idx, action)
+                game.handle_choose_enemy_action(card_idx, choose_enemy_actions[action_idx])
             }
             Choice::Win => {
                 panic!("The game is won, no actions can be taken");
@@ -136,8 +133,7 @@ impl<'a> ChoiceState<'a> {
                 panic!("The game is lost, no actions can be taken");
             }
             Choice::MapState(map_state_actions) => {
-                let action = map_state_actions[action_idx];
-                game.take_map_state_action(action)
+                game.handle_map_state_action(map_state_actions[action_idx])
             }
             Choice::SelectCardState(
                 play_card_context,
@@ -148,8 +144,8 @@ impl<'a> ChoiceState<'a> {
                 let action = select_card_actions[action_idx];
                 game.handle_select_card_action(play_card_context, effect, action)
             }
-            Choice::Event(mut event, actions) => {
-                event.take_action(&mut self.game, actions[action_idx])
+            Choice::Event(event, actions) => {
+                event.handle_action(&mut self.game, actions[action_idx])
             }
             Choice::RemoveCardState(actions) => game.handle_remove_card_action(actions[action_idx]),
             Choice::TransformCardState(actions) => {

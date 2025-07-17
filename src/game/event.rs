@@ -116,7 +116,7 @@ macro_rules! event_array {
                     }
                 }
 
-                pub fn take_action(self, game: &mut Game, action: EventAction) -> Choice {
+                pub fn handle_action(self, game: &mut Game, action: EventAction) -> Choice {
                         match self {
                             $(
                                 Self::$x(event) => event.take_action(game, action),
