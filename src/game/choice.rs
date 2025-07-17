@@ -1,5 +1,10 @@
-use crate::{card::SelectCardEffect, fight::PlayCardContext, game::{event::Event, Game}};
+use std::fmt::Display;
 
+use crate::{
+    card::SelectCardEffect,
+    fight::{Enemy, PlayCardContext},
+    game::{Game, event::Event},
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SelectionPile {
@@ -7,7 +12,6 @@ pub enum SelectionPile {
     Discard,
     Exhaust,
 }
-
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SelectCardAction {
@@ -59,6 +63,12 @@ pub struct TransformCardAction(pub usize);
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct UpgradeCardAction(pub usize);
 
+//Rest Site Actions
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum RestSiteAction {
+    Heal,
+    Upgrade,
+}
 
 #[must_use]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -79,6 +89,7 @@ pub enum Choice {
     RemoveCardState(Vec<RemoveCardAction>),
     TransformCardState(Vec<TransformCardAction>),
     UpgradeCardState(Vec<UpgradeCardAction>),
+    RestSite(Vec<RestSiteAction>),
 }
 
 impl<'a> ChoiceState<'a> {
@@ -146,6 +157,9 @@ impl<'a> ChoiceState<'a> {
             }
             Choice::UpgradeCardState(actions) => {
                 game.handle_upgrade_card_action(actions[action_idx])
+            }
+            Choice::RestSite(rest_site_actions) => {
+                game.handle_rest_site_action(rest_site_actions[action_idx])
             }
         }
     }
@@ -231,6 +245,10 @@ impl<'a> ChoiceState<'a> {
                 let card = &self.game.base_deck[transform_card_actions[action_idx].0];
                 format!("Upgrade {:?}", card.body)
             }
+            Choice::RestSite(actions) => {
+                let action = actions[action_idx];
+                format!("{:?}", action)
+            }
         }
     }
 
@@ -251,6 +269,83 @@ impl<'a> ChoiceState<'a> {
             Choice::RemoveCardState(actions) => actions.len(),
             Choice::TransformCardState(actions) => actions.len(),
             Choice::UpgradeCardState(actions) => actions.len(),
+            Choice::RestSite(actions) => actions.len(),
         }
+    }
+}
+
+impl<'a> Display for ChoiceState<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn dash_line(f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:-<80}\n", "")?;
+            Ok(())
+        }
+        fn fmt_enemy(enemy: &Enemy, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "| ")?;
+            write!(f, "{} | ", enemy.name)?;
+            write!(f, "AI {} | ", enemy.ai_state)?;
+            write!(f, "{}/{} hp | ", enemy.hp, enemy.max_hp)?;
+            if enemy.block > 0 {
+                write!(f, "{} block | ", enemy.block)?;
+            }
+            if enemy.buffs.strength > 0 {
+                write!(f, "{} str | ", enemy.buffs.strength)?;
+            }
+            if enemy.buffs.ritual > 0 || enemy.buffs.ritual_skip_first > 0 {
+                write!(
+                    f,
+                    "{} ritual | ",
+                    enemy.buffs.ritual + enemy.buffs.ritual_skip_first
+                )?;
+            }
+            if enemy.buffs.curl_up > 0 {
+                write!(f, "{} curl up | ", enemy.buffs.curl_up)?;
+            }
+            if enemy.debuffs.vulnerable > 0 {
+                write!(f, "{} vuln | ", enemy.debuffs.vulnerable)?;
+            }
+            write!(f, "\n")?;
+            dash_line(f)?;
+            Ok(())
+        }
+        let game = &*self.game;
+        let state_name = match &self.choice {
+            Choice::PlayCardState(_) => "PlayCard",
+            Choice::ChooseEnemyState(_, _) => "ChooseEnemy",
+            Choice::Win => "Win",
+            Choice::Loss => "Loss",
+            Choice::MapState(_) => "MapState",
+            Choice::SelectCardState(_ctx, __effect, _actions, _type) => "SelectCard",
+            Choice::Event(event, _actions) => event.name(),
+            Choice::RemoveCardState(_) => "RemoveCard",
+            Choice::TransformCardState(_) => "TransformCard",
+            Choice::UpgradeCardState(_) => "UpgradeCard",
+            Choice::RestSite(_) => "RestSite",
+        };
+        dash_line(f)?;
+        write!(f, "| ")?;
+        write!(f, "{} | ", state_name)?;
+        write!(f, "{} | ", game.charachter.name())?;
+        write!(f, "{}/{} hp | ", game.player_hp, game.player_max_hp)?;
+        write!(f, "{}⚡︎ | ", game.fight.energy)?;
+        write!(f, "{} block | ", game.fight.player_block)?;
+        write!(f, "floor {} | ", game.floor)?;
+        write!(f, "\n")?;
+        write!(f, "{:.<80}\n", "")?;
+        write!(f, "| ")?;
+        for card in &game.fight.hand {
+            if let Some(cost) = game.fight.evaluate_cost(card) {
+                write!(f, "{:?} [{}] | ", card.body, cost)?;
+            } else {
+                write!(f, "{:?} [x] | ", card.body)?;
+            }
+        }
+        write!(f, "\n")?;
+        dash_line(f)?;
+        for enemy_idx in game.fight.enemies.indicies() {
+            let enemy = &game.fight.enemies[enemy_idx];
+            fmt_enemy(enemy, f)?;
+        }
+        Ok(())
     }
 }

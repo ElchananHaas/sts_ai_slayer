@@ -1,6 +1,6 @@
 use crate::{
     card::CardBody,
-    game::{choice::EventAction, event::EventRoom, Choice, Game},
+    game::{Choice, Game, choice::EventAction, event::EventRoom},
     rng::Rng,
 };
 #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]

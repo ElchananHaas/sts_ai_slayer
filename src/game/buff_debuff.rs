@@ -1,8 +1,11 @@
-use crate::{card::{Buff, Debuff}, fight::Enemy, game::{debuff_player_turn_wind_down, Game}};
+use crate::{
+    card::{Buff, Debuff},
+    fight::Enemy,
+    game::{Game, debuff_player_turn_wind_down},
+};
 
 impl Game {
-
-    pub fn buff_enemy(enemy: &mut Enemy, buff: Buff) {
+    pub(super) fn buff_enemy(enemy: &mut Enemy, buff: Buff) {
         fn panic_not_apply_enemies(buff: Buff) -> ! {
             panic!("Buff {:?} doesn't apply to enemies", buff);
         }
@@ -39,8 +42,8 @@ impl Game {
             }
         }
     }
-    
-    pub fn apply_debuff_to_player(&mut self, debuff: Debuff) {
+
+    pub(super) fn apply_debuff_to_player(&mut self, debuff: Debuff) {
         match debuff {
             Debuff::Vulnerable(amount) => {
                 debuff_player_turn_wind_down(&mut self.fight.player_debuffs.vulnerable, amount);
@@ -72,7 +75,7 @@ impl Game {
         }
     }
 
-    pub fn apply_buff_to_player(&mut self, buff: Buff) {
+    pub(super) fn apply_buff_to_player(&mut self, buff: Buff) {
         fn panic_not_apply_player(buff: Buff) -> ! {
             panic!("Buff {:?} doesn't apply to the player", buff);
         }
@@ -104,5 +107,4 @@ impl Game {
             Buff::Enrage(_) => panic_not_apply_player(buff),
         }
     }
-
 }
