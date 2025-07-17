@@ -1,5 +1,5 @@
 ### Act 1 Enemies
-DONE!
+DONE
 
 ### Ironclad Cards
 DONE

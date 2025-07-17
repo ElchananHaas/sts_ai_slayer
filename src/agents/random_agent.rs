@@ -1,4 +1,4 @@
-use crate::{game::ChoiceState, rng::Rng};
+use crate::{game::choice::ChoiceState, rng::Rng};
 
 use super::agent_helper::Agent;
 

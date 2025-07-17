@@ -15,13 +15,12 @@ use strum::VariantArray;
 
 use crate::{
     game::{
-        Choice, EventAction, Game,
-        event::{
+        choice::EventAction, event::{
             big_fish::BigFish, cleric::Cleric, dead_adventurer::DeadAdventurer,
             golden_idol::GoldenIdol, living_wall::LivingWall, scrap_ooze::ScrapOoze,
             shining_light::ShiningLight, shrooms::HypnotizingShrooms, the_ssserpent::TheSsserpent,
             wing_statue::WingStatue, world_of_goop::WorldOfGoop,
-        },
+        }, Choice, Game
     },
     rng::Rng,
 };

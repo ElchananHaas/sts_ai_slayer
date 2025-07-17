@@ -2,7 +2,7 @@ use crate::{agents::agent_helper::Agent, card::IRONCLAD_ATTACK_CARDS};
 use agents::agent_helper::SkipSingleChoiceAgent;
 use agents::mcts_agent::MctsAgent;
 use agents::random_agent::RandomAgent;
-use game::{Charachter, ChoiceState, Game};
+use game::{Charachter, Game};
 use rng::Rng;
 
 mod agents;

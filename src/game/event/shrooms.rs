@@ -1,6 +1,6 @@
 use crate::{
     card::CardBody,
-    game::{Choice, EventAction, Game, encounter::Encounter, event::EventRoom},
+    game::{Choice, choice::EventAction, Game, encounter::Encounter, event::EventRoom},
     relic::Relic,
     rng::Rng,
 };

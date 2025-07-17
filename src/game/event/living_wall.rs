@@ -1,5 +1,5 @@
 use crate::{
-    game::{Choice, EventAction, Game, event::EventRoom},
+    game::{Choice, choice::EventAction, Game, event::EventRoom},
     rng::Rng,
 };
 

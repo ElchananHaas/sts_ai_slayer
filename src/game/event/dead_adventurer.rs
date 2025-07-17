@@ -2,7 +2,7 @@ use smallvec::{SmallVec, smallvec};
 
 use crate::{
     game::{
-        Choice, EventAction, Game,
+        Choice, choice::EventAction, Game,
         encounter::Encounter,
         event::{Event, EventRoom},
     },

@@ -1,4 +1,4 @@
-use crate::{game::ChoiceState, rng::Rng};
+use crate::{game::choice::ChoiceState, rng::Rng};
 
 pub trait Agent {
     fn take_action<'a>(&mut self, state: &mut ChoiceState<'a>, rng: &mut Rng);

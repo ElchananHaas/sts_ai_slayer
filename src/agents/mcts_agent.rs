@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    game::{Choice, ChoiceState, Game},
+    game::{choice::Choice, choice::ChoiceState, Game},
     rng::Rng,
 };
 
