@@ -1,4 +1,10 @@
-use crate::game::{choice::{Choice, MapStateAction, RemoveCardAction, RestSiteAction, TransformCardAction, UpgradeCardAction}, Game};
+use crate::game::{
+    Game,
+    choice::{
+        Choice, MapStateAction, RemoveCardAction, RestSiteAction, TransformCardAction,
+        UpgradeCardAction,
+    },
+};
 
 impl Game {
     pub(super) fn goto_transform_card(&mut self) -> Choice {
@@ -71,18 +77,22 @@ impl Game {
     }
 
     pub(super) fn goto_fight(&mut self) -> Choice {
+        //TODO - go to real fight!
         self.goto_map()
     }
 
     pub(super) fn goto_shop(&mut self) -> Choice {
+        //TODO - go to real shop!
         self.goto_map()
     }
 
     pub(super) fn goto_treasure(&mut self) -> Choice {
+        //TODO - go to real treasure!
         self.goto_map()
     }
 
     pub(super) fn goto_event(&mut self) -> Choice {
+        //TODO - go to real event!
         self.goto_map()
     }
 }

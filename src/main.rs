@@ -5,6 +5,7 @@ use agents::random_agent::RandomAgent;
 use game::{Charachter, Game};
 use rng::Rng;
 
+mod act;
 mod agents;
 mod card;
 mod deck;
@@ -16,7 +17,6 @@ mod potion;
 mod relic;
 mod rng;
 mod util;
-mod act;
 fn main() {
     let mut game = Game::new(Charachter::IRONCLAD);
     let mut choice = game.setup_cultist_fight();

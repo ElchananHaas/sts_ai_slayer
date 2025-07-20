@@ -5,7 +5,7 @@ use crate::{
 };
 
 const ENEMY_NAME: &'static str = "Looter";
-pub fn generate_looter_slime(rng: &mut Rng) -> Enemy {
+pub fn generate_looter(rng: &mut Rng) -> Enemy {
     let hp = uniform_inclusive(rng, 8, 12);
     fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
         // States are

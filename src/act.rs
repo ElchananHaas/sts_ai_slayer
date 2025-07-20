@@ -1,4 +1,7 @@
-use crate::game::{encounter::Encounter, QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT, QUESTION_TREASURE_BASE_WEIGHT};
+use crate::game::{
+    QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT, QUESTION_TREASURE_BASE_WEIGHT,
+    encounter::Encounter,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Act {
@@ -18,7 +21,7 @@ impl Act {
             question_treasure_weight: QUESTION_TREASURE_BASE_WEIGHT,
             question_mark_visits: 0,
             prior_floor_shop: false,
-            prior_elite: None
+            prior_elite: None,
         }
     }
 }

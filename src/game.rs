@@ -3,8 +3,8 @@ pub mod choice;
 mod choice_handler;
 pub mod encounter;
 mod event;
-mod perform_action;
 mod goto_state;
+mod perform_action;
 
 use std::{cmp::min, mem, vec};
 
@@ -27,9 +27,9 @@ use crate::{
     util::insert_sorted,
 };
 
-pub const QUESTION_MONSTER_BASE_WEIGHT: i32= 10;
-pub const QUESTION_SHOP_BASE_WEIGHT: i32= 3;
-pub const QUESTION_TREASURE_BASE_WEIGHT: i32= 2;
+pub const QUESTION_MONSTER_BASE_WEIGHT: i32 = 10;
+pub const QUESTION_SHOP_BASE_WEIGHT: i32 = 3;
+pub const QUESTION_TREASURE_BASE_WEIGHT: i32 = 2;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Game {
@@ -47,7 +47,7 @@ pub struct Game {
     map_x: i32,
     map_y: i32,
     map: ActMap,
-    act: Act
+    act: Act,
 }
 
 //Some cards, like Armaments, may require interrupting the execution of a
@@ -715,7 +715,6 @@ impl Game {
     fn gain_gold(&mut self, amount: i32) {
         self.gold += amount;
     }
-
 }
 
 fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
