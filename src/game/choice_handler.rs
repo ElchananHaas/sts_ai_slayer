@@ -118,20 +118,19 @@ impl Game {
                     self.act.question_shop_weight += QUESTION_SHOP_BASE_WEIGHT;
                     self.act.question_treasure_weight += QUESTION_TREASURE_BASE_WEIGHT;
                     self.goto_fight()
-                }
-                if roll < monster_weight + shop_weight {
+                } else if roll < monster_weight + shop_weight {
                     self.act.question_monster_weight += QUESTION_MONSTER_BASE_WEIGHT;
                     self.act.question_shop_weight = QUESTION_SHOP_BASE_WEIGHT;
                     self.act.question_treasure_weight += QUESTION_TREASURE_BASE_WEIGHT;
                     self.goto_shop()
-                }
-                if roll < monster_weight + shop_weight + self.act.question_treasure_weight {
+                } else if roll < monster_weight + shop_weight + self.act.question_treasure_weight {
                     self.act.question_monster_weight += QUESTION_MONSTER_BASE_WEIGHT;
                     self.act.question_shop_weight += QUESTION_SHOP_BASE_WEIGHT;
                     self.act.question_treasure_weight = QUESTION_TREASURE_BASE_WEIGHT;
                     self.goto_treasure()
+                } else {
+                    self.goto_event()
                 }
-                self.goto_event()
             },
             RoomType::Shop => {
                 self.goto_shop()

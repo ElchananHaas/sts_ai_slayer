@@ -69,4 +69,20 @@ impl Game {
         }
         Choice::RemoveCardState(res)
     }
+
+    pub(super) fn goto_fight(&mut self) -> Choice {
+        self.goto_map()
+    }
+
+    pub(super) fn goto_shop(&mut self) -> Choice {
+        self.goto_map()
+    }
+
+    pub(super) fn goto_treasure(&mut self) -> Choice {
+        self.goto_map()
+    }
+
+    pub(super) fn goto_event(&mut self) -> Choice {
+        self.goto_map()
+    }
 }
