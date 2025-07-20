@@ -6,6 +6,7 @@ use crate::{
     game::{Choice, Game},
 };
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Encounter {
     Lagavulin,
     GremlinNob,
@@ -14,7 +15,7 @@ pub enum Encounter {
 }
 
 impl Game {
-    pub fn setup_encounter(&mut self, encounter: Encounter) -> Choice {
+    pub(super) fn setup_encounter(&mut self, encounter: Encounter) -> Choice {
         self.setup_fight();
         match encounter {
             Encounter::Lagavulin => {

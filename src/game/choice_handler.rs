@@ -1,15 +1,15 @@
+use smallvec::SmallVec;
+
 use crate::{
     card::{
-        COLORLESS_CARDS, CURSE_CARDS, CardCharachter, CardType, IRONCLAD_CARDS, SelectCardEffect,
-        sample_card,
+        sample_card, CardCharachter, CardType, SelectCardEffect, COLORLESS_CARDS, CURSE_CARDS, IRONCLAD_CARDS
     },
     fight::PlayCardContext,
     game::{
-        Game,
         choice::{
             Choice, ChooseEnemyAction, MapStateAction, PlayCardAction, RemoveCardAction,
             RestSiteAction, SelectCardAction, TransformCardAction, UpgradeCardAction,
-        },
+        }, encounter::{self, Encounter}, Game, QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT, QUESTION_TREASURE_BASE_WEIGHT
     },
     map::RoomType,
 };
@@ -91,6 +91,8 @@ impl Game {
     }
 
     pub(super) fn handle_map_state_action(&mut self, action: MapStateAction) -> Choice {
+        let prior_floor_shop = self.act.prior_floor_shop;
+        self.act.prior_floor_shop = false;
         self.map_y += 1;
         match &action {
             MapStateAction::Forwards => {
@@ -107,12 +109,50 @@ impl Game {
             }
         };
         match self.map.rooms[self.map_y as usize][self.map_x as usize].room_type {
-            RoomType::QuestionMark => (),
-            RoomType::Shop => (),
-            RoomType::Treasure => (),
+            RoomType::QuestionMark => {
+                let roll = self.rng.sample(100) as i32;
+                let monster_weight = self.act.question_monster_weight + self.act.question_mark_visits * 2;
+                let shop_weight = if prior_floor_shop {0} else {self.act.question_shop_weight};
+                if roll < monster_weight {
+                    self.act.question_monster_weight = QUESTION_MONSTER_BASE_WEIGHT;
+                    self.act.question_shop_weight += QUESTION_SHOP_BASE_WEIGHT;
+                    self.act.question_treasure_weight += QUESTION_TREASURE_BASE_WEIGHT;
+                    self.goto_fight()
+                }
+                if roll < monster_weight + shop_weight {
+                    self.act.question_monster_weight += QUESTION_MONSTER_BASE_WEIGHT;
+                    self.act.question_shop_weight = QUESTION_SHOP_BASE_WEIGHT;
+                    self.act.question_treasure_weight += QUESTION_TREASURE_BASE_WEIGHT;
+                    self.goto_shop()
+                }
+                if roll < monster_weight + shop_weight + self.act.question_treasure_weight {
+                    self.act.question_monster_weight += QUESTION_MONSTER_BASE_WEIGHT;
+                    self.act.question_shop_weight += QUESTION_SHOP_BASE_WEIGHT;
+                    self.act.question_treasure_weight = QUESTION_TREASURE_BASE_WEIGHT;
+                    self.goto_treasure()
+                }
+                self.goto_event()
+            },
+            RoomType::Shop => {
+                self.goto_shop()
+            },
+            RoomType::Treasure => {
+                self.goto_treasure()
+            },
             RoomType::Rest => self.goto_rest_site(),
-            RoomType::Monster => (),
-            RoomType::Elite => (),
+            RoomType::Monster => {
+                self.goto_fight()
+            },
+            RoomType::Elite => {
+                let mut elites: SmallVec<[Encounter; 3]> = SmallVec::new();
+                for encounter in &[Encounter::GremlinNob, Encounter::Lagavulin, Encounter::Sentries] {
+                    if self.act.prior_elite != Some(*encounter) {
+                        elites.push(*encounter);
+                    }
+                }
+                let encounter_idx = self.rng.sample(elites.len());
+                self.setup_encounter(elites[encounter_idx])
+            },
             RoomType::Unassigned => {
                 panic!("Somehow reached an unassigned room!")
             }

@@ -1,15 +1,16 @@
 mod buff_debuff;
 pub mod choice;
 mod choice_handler;
-mod encounter;
+pub mod encounter;
 mod event;
 mod perform_action;
+mod goto_state;
 
 use std::{cmp::min, mem, vec};
 
+use crate::act::Act;
 use crate::game::choice::{
-    Choice, ChoiceState, ChooseEnemyAction, MapStateAction, PlayCardAction, RemoveCardAction,
-    RestSiteAction, SelectCardAction, SelectionPile, TransformCardAction, UpgradeCardAction,
+    Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, SelectCardAction, SelectionPile,
 };
 use crate::map::ActMap;
 use crate::{
@@ -25,6 +26,10 @@ use crate::{
     rng::Rng,
     util::insert_sorted,
 };
+
+pub const QUESTION_MONSTER_BASE_WEIGHT: i32= 10;
+pub const QUESTION_SHOP_BASE_WEIGHT: i32= 3;
+pub const QUESTION_TREASURE_BASE_WEIGHT: i32= 2;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Game {
@@ -42,6 +47,7 @@ pub struct Game {
     map_x: i32,
     map_y: i32,
     map: ActMap,
+    act: Act
 }
 
 //Some cards, like Armaments, may require interrupting the execution of a
@@ -89,9 +95,6 @@ impl Game {
             actions.push(ChooseEnemyAction { enemy: i.0 });
         }
         Choice::ChooseEnemyState(actions, chosen_card_idx)
-    }
-    fn goto_rest_site(&mut self) -> Choice {
-        Choice::RestSite(vec![RestSiteAction::Heal, RestSiteAction::Upgrade])
     }
 
     fn damage_player(&mut self, damage: i32, from_card: bool) -> Option<Choice> {
@@ -464,32 +467,6 @@ impl Game {
         self.goto_map()
     }
 
-    fn goto_map(&self) -> Choice {
-        let mut actions = Vec::new();
-        if self.map_y == -1 {
-            let row = &self.map.rooms[0];
-            for i in 0..row.len() {
-                if row[i].reachable {
-                    actions.push(MapStateAction::Jump(i as i32));
-                }
-            }
-        } else if self.map_y as usize == self.map.rooms.len() - 1 {
-            actions.push(MapStateAction::Forwards);
-        } else {
-            let room = &self.map.rooms[self.map_y as usize][self.map_x as usize];
-            if room.has_left_child {
-                actions.push(MapStateAction::Left);
-            }
-            if room.has_front_child {
-                actions.push(MapStateAction::Forwards);
-            }
-            if room.has_right_child {
-                actions.push(MapStateAction::Right);
-            }
-        }
-        Choice::MapState(actions)
-    }
-
     //Used for Shield Gremlin.
     fn defend_ally(&mut self, i: EnemyIdx, amount: i32) {
         let num_enemies = self.fight.enemies.len();
@@ -739,44 +716,6 @@ impl Game {
         self.gold += amount;
     }
 
-    fn goto_remove_card(&mut self) -> Choice {
-        let mut res = Vec::new();
-        for i in 0..self.base_deck.len() {
-            if self.base_deck[i].body.removable() {
-                res.push(RemoveCardAction(i));
-            }
-        }
-        if res.len() == 0 {
-            return self.goto_map();
-        }
-        Choice::RemoveCardState(res)
-    }
-
-    fn goto_transform_card(&mut self) -> Choice {
-        let mut res = Vec::new();
-        for i in 0..self.base_deck.len() {
-            if self.base_deck[i].body.removable() {
-                res.push(TransformCardAction(i));
-            }
-        }
-        if res.len() == 0 {
-            return self.goto_map();
-        }
-        Choice::TransformCardState(res)
-    }
-
-    fn goto_upgrade_card(&mut self) -> Choice {
-        let mut res = Vec::new();
-        for i in 0..self.base_deck.len() {
-            if self.base_deck[i].can_upgrade() {
-                res.push(UpgradeCardAction(i));
-            }
-        }
-        if res.len() == 0 {
-            return self.goto_map();
-        }
-        Choice::UpgradeCardState(res)
-    }
 }
 
 fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
@@ -856,6 +795,7 @@ impl Game {
                 relic_pool: RelicPool::new(),
                 rng,
                 map,
+                act: Act::new(),
                 map_x: 0,
                 map_y: -1,
             },

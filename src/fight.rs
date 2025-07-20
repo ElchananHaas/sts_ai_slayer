@@ -324,9 +324,6 @@ pub struct EnemyBuffs {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
-pub struct EnemyVars {}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct EnemyDebuffs {
     pub vulnerable: i32,
     pub weak: i32,
