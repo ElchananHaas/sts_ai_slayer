@@ -52,6 +52,18 @@ impl Game {
         }
     }
 
+    fn wildlife_1(&mut self) -> Enemy {
+                let sample = self.rng.sample(3);
+        match sample {
+                    0 => self.generate_random_louse(),
+                    1 => generate_med_black_slime(&mut self.rng),
+                    2 => generate_med_green_slime(&mut self.rng),
+                    _ => {
+                        panic!("Unexpected rng result!")
+                    }
+                }
+    }
+
     pub(super) fn setup_encounter(&mut self, encounter: Encounter) -> Choice {
         self.setup_fight();
         match encounter {
@@ -95,15 +107,7 @@ impl Game {
                 self.fight.enemies[0] = Some(generate_blue_slaver(&mut self.rng));
             }
             Encounter::ExordiumThugs => {
-                let sample = self.rng.sample(3);
-                let front_enemy = match sample {
-                    0 => self.generate_random_louse(),
-                    1 => generate_med_black_slime(&mut self.rng),
-                    2 => generate_med_green_slime(&mut self.rng),
-                    _ => {
-                        panic!("Unexpected rng result!")
-                    }
-                };
+                let front_enemy = self.wildlife_1();
                 self.fight.enemies[0] = Some(front_enemy);
                 let sample = self.rng.sample(3);
                 let back_enemy = match sample {
@@ -116,7 +120,16 @@ impl Game {
                 };
                 self.fight.enemies[1] = Some(back_enemy);
             }
-            Encounter::ExordiumWildlife => {}
+            Encounter::ExordiumWildlife => {
+                let front_enemy = self.wildlife_1();
+                self.fight.enemies[0] = Some(front_enemy);
+                let enemy = if self.rng.sample(2) == 0 {
+                    generate_fungi_beast(&mut self.rng)
+                } else {
+                    generate_jaw_worm(&mut self.rng)
+                };
+                self.fight.enemies[1] = Some(enemy);
+            }
         }
         self.play_card_choice()
     }
