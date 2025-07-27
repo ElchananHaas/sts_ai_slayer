@@ -11,6 +11,8 @@ pub struct Act {
     pub question_mark_visits: i32,
     pub prior_floor_shop: bool,
     pub prior_elite: Option<Encounter>,
+    pub number_of_fights: i32,
+    pub prior_fights: [Option<Encounter>; 2],
 }
 
 impl Act {
@@ -22,6 +24,8 @@ impl Act {
             question_mark_visits: 0,
             prior_floor_shop: false,
             prior_elite: None,
+            number_of_fights: 0,
+            prior_fights: [None, None],
         }
     }
 }

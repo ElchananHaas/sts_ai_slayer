@@ -68,7 +68,7 @@ impl Rng {
         self.sample(max as usize) as u32
     }
     //Returns the index of the sampled item.
-    pub fn sample_weighted(&mut self, weights: &'static [u32]) -> usize {
+    pub fn sample_weighted(&mut self, weights: &[u32]) -> usize {
         let total_weight: u32 = weights.into_iter().sum();
         assert!(total_weight > 0);
         let mut sample = self.sample_u32(total_weight);

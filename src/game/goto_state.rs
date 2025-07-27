@@ -1,9 +1,12 @@
+use smallvec::SmallVec;
+
 use crate::game::{
     Game,
     choice::{
         Choice, MapStateAction, RemoveCardAction, RestSiteAction, TransformCardAction,
         UpgradeCardAction,
     },
+    encounter::{self, Encounter},
 };
 
 impl Game {
@@ -76,9 +79,69 @@ impl Game {
         Choice::RemoveCardState(res)
     }
 
+    fn update_act_from_fight(&mut self, encounter: Encounter) {
+        self.act.prior_fights[1] = self.act.prior_fights[0];
+        self.act.prior_fights[0] = Some(encounter);
+        self.act.number_of_fights += 1;
+    }
     pub(super) fn goto_fight(&mut self) -> Choice {
-        //TODO - go to real fight!
-        self.goto_map()
+        if self.act.number_of_fights < 3 {
+            let mut encounters: SmallVec<[Encounter; 4]> = SmallVec::new();
+            for encounter in [
+                Encounter::StarterCultist,
+                Encounter::StarterJawWorm,
+                Encounter::StarterLouse,
+                Encounter::StarterSlimes,
+            ] {
+                if Some(encounter) != self.act.prior_fights[0]
+                    && Some(encounter) != self.act.prior_fights[1]
+                {
+                    encounters.push(encounter);
+                }
+            }
+            let encounter = encounters[self.rng.sample(encounters.len())];
+            self.update_act_from_fight(encounter);
+            self.setup_encounter(encounter)
+        } else {
+            let hard_pool = [
+                Encounter::BlueSlaver,
+                Encounter::GremlinGang,
+                Encounter::Looter,
+                Encounter::LargeSlime,
+                Encounter::FiveSmallSlimes,
+                Encounter::ExordiumThugs,
+                Encounter::ExordiumWildlife,
+                Encounter::RedSlaver,
+                Encounter::ThreeLouse,
+                Encounter::TwoMushrooms,
+            ];
+            let weights = [4, 2, 4, 4, 2, 3, 3, 2, 4, 4];
+            let encounter = loop {
+                let idx = self.rng.sample_weighted(&weights);
+                let encounter = hard_pool[idx];
+                if Some(encounter) == self.act.prior_fights[0]
+                    || Some(encounter) == self.act.prior_fights[1]
+                {
+                    continue;
+                }
+                if self.act.number_of_fights == 3 {
+                    if encounter == Encounter::ThreeLouse
+                        && self.act.prior_fights[0] == Some(Encounter::StarterLouse)
+                    {
+                        continue;
+                    }
+                    if (encounter == Encounter::LargeSlime
+                        || encounter == Encounter::FiveSmallSlimes)
+                        && self.act.prior_fights[0] == Some(Encounter::StarterSlimes)
+                    {
+                        continue;
+                    }
+                }
+                break encounter;
+            };
+            self.update_act_from_fight(encounter);
+            self.setup_encounter(encounter)
+        }
     }
 
     pub(super) fn goto_shop(&mut self) -> Choice {
