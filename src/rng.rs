@@ -82,7 +82,7 @@ impl Rng {
         panic!("A weight wasn't chosen!");
     }
 
-    pub fn shuffle<T>(&mut self, v: &mut Vec<T>) {
+    pub fn shuffle<T>(&mut self, v: &mut [T]) {
         for i in (1..v.len()).rev() {
             //Make sure the element can stay where it is.
             let idx = self.sample(i + 1);

@@ -1,11 +1,16 @@
+use smallvec::SmallVec;
+
 use crate::{
     enemies::{
         blue_slaver::generate_blue_slaver, cultist::generate_cultist,
         fungi_beast::generate_fungi_beast, green_louse::generate_green_louse,
-        gremlin_nob::generate_gremlin_nob, jaw_worm::generate_jaw_worm,
-        lagavulin::generate_lagavulin, large_green_slime::generate_med_green_slime,
-        looter::generate_looter, med_black_slime::generate_med_black_slime,
-        red_louse::generate_red_louse, red_slaver::generate_red_slaver, sentry::generate_sentry,
+        gremlin_fat::generate_fat_gremlin, gremlin_mad::generate_mad_gremlin,
+        gremlin_nob::generate_gremlin_nob, gremlin_shield::generate_shield_gremlin,
+        gremlin_sneaky::generate_sneaky_gremlin, gremlin_wizard::generate_wizard_gremlin,
+        jaw_worm::generate_jaw_worm, lagavulin::generate_lagavulin,
+        large_green_slime::generate_med_green_slime, looter::generate_looter,
+        med_black_slime::generate_med_black_slime, red_louse::generate_red_louse,
+        red_slaver::generate_red_slaver, sentry::generate_sentry,
         small_black_slime::generate_small_black_slime,
         small_green_slime::generate_small_green_slime,
     },
@@ -53,15 +58,15 @@ impl Game {
     }
 
     fn wildlife_1(&mut self) -> Enemy {
-                let sample = self.rng.sample(3);
+        let sample = self.rng.sample(3);
         match sample {
-                    0 => self.generate_random_louse(),
-                    1 => generate_med_black_slime(&mut self.rng),
-                    2 => generate_med_green_slime(&mut self.rng),
-                    _ => {
-                        panic!("Unexpected rng result!")
-                    }
-                }
+            0 => self.generate_random_louse(),
+            1 => generate_med_black_slime(&mut self.rng),
+            2 => generate_med_green_slime(&mut self.rng),
+            _ => {
+                panic!("Unexpected rng result!")
+            }
+        }
     }
 
     pub(super) fn setup_encounter(&mut self, encounter: Encounter) -> Choice {
@@ -136,6 +141,35 @@ impl Game {
                 self.fight.enemies[2] = Some(generate_small_black_slime(&mut self.rng));
                 self.fight.enemies[3] = Some(generate_small_green_slime(&mut self.rng));
                 self.fight.enemies[4] = Some(generate_small_black_slime(&mut self.rng));
+            }
+            Encounter::GremlinGang => {
+                enum GremlinEnemy {
+                    Mad,
+                    Sneaky,
+                    Fat,
+                    Wizard,
+                    Shield,
+                }
+                let mut enemy_pool: [GremlinEnemy; 8] = [
+                    GremlinEnemy::Mad,
+                    GremlinEnemy::Mad,
+                    GremlinEnemy::Sneaky,
+                    GremlinEnemy::Sneaky,
+                    GremlinEnemy::Fat,
+                    GremlinEnemy::Fat,
+                    GremlinEnemy::Wizard,
+                    GremlinEnemy::Shield,
+                ];
+                self.rng.shuffle(&mut enemy_pool);
+                for i in 0..4 {
+                    self.fight.enemies[i] = Some(match enemy_pool[i] {
+                        GremlinEnemy::Mad => generate_mad_gremlin(&mut self.rng),
+                        GremlinEnemy::Sneaky => generate_sneaky_gremlin(&mut self.rng),
+                        GremlinEnemy::Fat => generate_fat_gremlin(&mut self.rng),
+                        GremlinEnemy::Wizard => generate_wizard_gremlin(&mut self.rng),
+                        GremlinEnemy::Shield => generate_shield_gremlin(&mut self.rng),
+                    })
+                }
             }
         }
         self.play_card_choice()
