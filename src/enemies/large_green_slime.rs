@@ -8,7 +8,7 @@ use crate::{
 };
 
 pub const ENEMY_NAME: &'static str = "Green Slime [L]";
-pub fn generate_med_green_slime(rng: &mut Rng) -> Enemy {
+pub fn generate_large_green_slime(rng: &mut Rng) -> Enemy {
     let hp = uniform_inclusive(rng, 65, 69);
     fn ai(rng: &mut Rng, _: &Fight, enemy: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
         // States are

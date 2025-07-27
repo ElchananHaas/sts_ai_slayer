@@ -1,5 +1,3 @@
-use smallvec::SmallVec;
-
 use crate::{
     enemies::{
         blue_slaver::generate_blue_slaver, cultist::generate_cultist,
@@ -8,9 +6,10 @@ use crate::{
         gremlin_nob::generate_gremlin_nob, gremlin_shield::generate_shield_gremlin,
         gremlin_sneaky::generate_sneaky_gremlin, gremlin_wizard::generate_wizard_gremlin,
         jaw_worm::generate_jaw_worm, lagavulin::generate_lagavulin,
-        large_green_slime::generate_med_green_slime, looter::generate_looter,
-        med_black_slime::generate_med_black_slime, red_louse::generate_red_louse,
-        red_slaver::generate_red_slaver, sentry::generate_sentry,
+        large_black_slime::generate_large_black_slime,
+        large_green_slime::generate_large_green_slime, looter::generate_looter,
+        med_black_slime::generate_med_black_slime, med_green_slime::generate_med_green_slime,
+        red_louse::generate_red_louse, red_slaver::generate_red_slaver, sentry::generate_sentry,
         small_black_slime::generate_small_black_slime,
         small_green_slime::generate_small_green_slime,
     },
@@ -169,6 +168,27 @@ impl Game {
                         GremlinEnemy::Wizard => generate_wizard_gremlin(&mut self.rng),
                         GremlinEnemy::Shield => generate_shield_gremlin(&mut self.rng),
                     })
+                }
+            }
+            Encounter::LargeSlime => {
+                self.fight.enemies[0] = Some(if self.rng.sample(2) == 0 {
+                    generate_large_black_slime(&mut self.rng)
+                } else {
+                    generate_large_green_slime(&mut self.rng)
+                })
+            }
+            Encounter::Looter => self.fight.enemies[0] = Some(generate_looter(&mut self.rng)),
+            Encounter::RedSlaver => {
+                self.fight.enemies[0] = Some(generate_red_slaver(&mut self.rng));
+            }
+            Encounter::ThreeLouse => {
+                for i in 0..3 {
+                    self.fight.enemies[i] = Some(self.generate_random_louse())
+                }
+            }
+            Encounter::TwoMushrooms => {
+                for i in 0..2 {
+                    self.fight.enemies[i] = Some(generate_fungi_beast(&mut self.rng))
                 }
             }
         }
