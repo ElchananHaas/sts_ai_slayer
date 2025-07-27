@@ -502,8 +502,7 @@ impl Game {
             med_slime_2.hp = hp;
             self.fight.enemies[(i.0) as usize] = Some(med_slime_1);
             self.fight.enemies[(i.0 + 1) as usize] = Some(med_slime_2);
-        }
-        if name == crate::enemies::large_green_slime::ENEMY_NAME {
+        } else if name == crate::enemies::large_green_slime::ENEMY_NAME {
             let mut med_slime_1 = generate_med_green_slime(&mut self.rng);
             med_slime_1.max_hp = hp;
             med_slime_1.hp = hp;
@@ -512,8 +511,9 @@ impl Game {
             med_slime_2.hp = hp;
             self.fight.enemies[(i.0) as usize] = Some(med_slime_1);
             self.fight.enemies[(i.0 + 1) as usize] = Some(med_slime_2);
+        } else {
+            panic!("Splitting not implemented for {}", name);
         }
-        panic!("Splitting not implemented for {}", name);
     }
 
     fn add_card_to_hand(&mut self, card: Card) {
