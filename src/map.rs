@@ -113,7 +113,7 @@ impl ActMap {
                 siblings[parent_x + 1] = true;
             }
         }
-        if let Some(parent) = parent_row.get(x - 1)
+        if let Some(parent) = parent_row.get(x.wrapping_sub(1))
             && parent.has_right_child
         {
             parent_types.push(parent.room_type);
@@ -153,6 +153,7 @@ impl ActMap {
             //This is inefficient, but it is needed to match the STS code.
             //I will consider improving this later.
             bucket.remove(i);
+            break;
         }
     }
 
@@ -162,7 +163,7 @@ impl ActMap {
     fn room_count_for_buckets(&self) -> usize {
         let mut count = 0;
         for i in 0..NUM_FLOORS - 1 {
-            for j in 0..=ROW_WIDTH {
+            for j in 0..ROW_WIDTH {
                 if self.rooms[i][j].reachable {
                     count += 1;
                 }
@@ -174,7 +175,7 @@ impl ActMap {
     fn unassigned_count(&self) -> usize {
         let mut count = 0;
         for i in 0..NUM_FLOORS - 1 {
-            for j in 0..=ROW_WIDTH {
+            for j in 0..ROW_WIDTH {
                 if self.rooms[i][j].reachable && self.rooms[i][j].room_type == RoomType::Unassigned
                 {
                     count += 1;
