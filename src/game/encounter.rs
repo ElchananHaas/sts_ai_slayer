@@ -130,6 +130,13 @@ impl Game {
                 };
                 self.fight.enemies[1] = Some(enemy);
             }
+            Encounter::FiveSmallSlimes => {
+                self.fight.enemies[0] = Some(generate_small_black_slime(&mut self.rng));
+                self.fight.enemies[1] = Some(generate_small_green_slime(&mut self.rng));
+                self.fight.enemies[2] = Some(generate_small_black_slime(&mut self.rng));
+                self.fight.enemies[3] = Some(generate_small_green_slime(&mut self.rng));
+                self.fight.enemies[4] = Some(generate_small_black_slime(&mut self.rng));
+            }
         }
         self.play_card_choice()
     }
