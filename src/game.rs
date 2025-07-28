@@ -10,7 +10,7 @@ use std::{cmp::min, mem, vec};
 
 use crate::act::Act;
 use crate::game::choice::{
-    Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, SelectCardAction, SelectionPile
+    Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, SelectCardAction, SelectionPile,
 };
 use crate::map::ActMap;
 use crate::{
@@ -527,12 +527,11 @@ impl Game {
     }
 
     fn attack_enemy(&mut self, card: &Card, amount: i32, target: usize) -> AttackResult {
-        let strength = match card.body {
-            CardBody::HeavyBlade => {
-                self.fight.player_buffs.strength * (if card.is_upgraded() { 5 } else { 3 })
-            }
-            _ => 1,
-        };
+        let strength = self.fight.player_buffs.strength
+            * (match card.body {
+                CardBody::HeavyBlade => if card.is_upgraded() { 5 } else { 3 },
+                _ => 1,
+            });
         let mut damage: f32 = (amount + strength) as f32;
         let Some(enemy) = &mut self.fight.enemies[target] else {
             return AttackResult::default();
