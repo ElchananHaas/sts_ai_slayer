@@ -19,11 +19,11 @@ mod rng;
 mod util;
 fn main() {
     let mut game = Game::new(Charachter::IRONCLAD);
-    let mut choice = game.setup_cultist_fight();
     let mut rng = Rng::new();
     let mut agent = SkipSingleChoiceAgent {
         agent: MctsAgent {},
     };
+    let mut choice = game.start();
     while !choice.is_over() {
         println!("{}", &choice);
         agent.take_action(&mut choice, &mut rng);

@@ -10,16 +10,14 @@ use std::{cmp::min, mem, vec};
 
 use crate::act::Act;
 use crate::game::choice::{
-    Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, SelectCardAction, SelectionPile,
+    Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, SelectCardAction, SelectionPile
 };
 use crate::map::ActMap;
 use crate::{
     card::{Buff, Card, CardBody, CardType, Debuff, SelectCardEffect},
     deck::Deck,
     enemies::{
-        cultist::generate_cultist, green_louse::generate_green_louse, jaw_worm::generate_jaw_worm,
         med_black_slime::generate_med_black_slime, med_green_slime::generate_med_green_slime,
-        red_louse::generate_red_louse,
     },
     fight::{Enemy, EnemyAction, EnemyIdx, Fight, PlayCardContext, PostCardItem},
     relic::{RelicPool, Relics},
@@ -715,6 +713,24 @@ impl Game {
     fn gain_gold(&mut self, amount: i32) {
         self.gold += amount;
     }
+
+    fn setup_fight(&mut self) {
+        self.fight = Default::default();
+        let mut deck_cards = Vec::new();
+        for card in self.base_deck.clone() {
+            if card.innate() {
+                self.add_card_to_hand(card);
+            } else {
+                deck_cards.push(card);
+            }
+        }
+        self.fight.deck = Deck::shuffled(deck_cards);
+        self.fight.energy = 3;
+        //TODO handle relics that affect initial hand size.
+        for _ in 0..(5_usize.saturating_sub(self.fight.hand.len())) {
+            self.fight.draw(&mut self.rng);
+        }
+    }
 }
 
 fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
@@ -804,62 +820,9 @@ impl Game {
         }
     }
 
-    fn setup_fight(&mut self) {
-        self.fight = Default::default();
-        let mut deck_cards = Vec::new();
-        for card in self.base_deck.clone() {
-            if card.innate() {
-                self.add_card_to_hand(card);
-            } else {
-                deck_cards.push(card);
-            }
-        }
-        self.fight.deck = Deck::shuffled(deck_cards);
-        self.fight.energy = 3;
-        //TODO handle relics that affect initial hand size.
-        for _ in 0..(5_usize.saturating_sub(self.fight.hand.len())) {
-            self.fight.draw(&mut self.rng);
-        }
-    }
-
-    pub fn setup_jawworm_fight(&mut self) -> ChoiceState<'_> {
-        self.setup_fight();
-        self.fight.enemies[0] = Some(generate_jaw_worm(&mut self.rng));
-        let choice = self.start_fight();
-        ChoiceState {
-            game: self,
-            choice: choice,
-        }
-    }
-
-    pub fn setup_cultist_fight(&mut self) -> ChoiceState<'_> {
-        self.setup_fight();
-        self.fight.enemies[0] = Some(generate_cultist(&mut self.rng));
-        let choice = self.start_fight();
-        ChoiceState {
-            game: self,
-            choice: choice,
-        }
-    }
-
-    pub fn setup_redlouse_fight(&mut self) -> ChoiceState<'_> {
-        self.setup_fight();
-        self.fight.enemies[0] = Some(generate_red_louse(&mut self.rng));
-        let choice = self.start_fight();
-        ChoiceState {
-            game: self,
-            choice: choice,
-        }
-    }
-
-    pub fn setup_greenlouse_fight(&mut self) -> ChoiceState<'_> {
-        self.setup_fight();
-        self.fight.enemies[0] = Some(generate_green_louse(&mut self.rng));
-        let choice = self.start_fight();
-        ChoiceState {
-            game: self,
-            choice: choice,
-        }
+    pub fn start<'a>(&'a mut self) -> ChoiceState<'a> {
+        let choice = self.goto_map();
+        ChoiceState { game: self, choice }
     }
 }
 

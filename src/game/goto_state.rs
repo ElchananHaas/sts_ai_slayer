@@ -50,7 +50,9 @@ impl Game {
                 }
             }
         } else if self.map_y as usize == self.map.rooms.len() - 1 {
-            actions.push(MapStateAction::Forwards);
+            return Choice::Win;
+            //TODO - handle going to the boss room.
+            //actions.push(MapStateAction::Forwards);
         } else {
             let room = &self.map.rooms[self.map_y as usize][self.map_x as usize];
             if room.has_left_child {
