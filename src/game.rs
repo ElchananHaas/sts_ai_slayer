@@ -798,7 +798,6 @@ impl Game {
                     CardBody::Defend.to_card(),
                     CardBody::Defend.to_card(),
                     CardBody::Defend.to_card(),
-                    CardBody::Headbutt.to_card(),
                     CardBody::Strike.to_card(),
                     CardBody::Strike.to_card(),
                     CardBody::Strike.to_card(),

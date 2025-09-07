@@ -1,20 +1,20 @@
 ### Act 1 Enemies
-DONE
+DONE!
 
 ### Ironclad Cards
-DONE
+DONE!
 
 ### Relics/Potions Placeholders
-DONE
+DONE!
 
 ### Act 1 Elites
-DONE
+DONE!
 
 ### Act 1 Events
 IN PROGRESS
 
 ### Map Generation
-IN PROGRESS
+DONE!
 
 ### Combat Rewards
 TODO
@@ -33,3 +33,15 @@ TODO
 
 ### Relics
 TODO
+
+### Treasure Rooms
+TODO
+
+### Act 1 Bosses
+TODO
+
+### Terminal UI
+TODO
+I'm thinking of going with iocraft. I'll need to see how it fits 
+in with the event loop. It should probably be OK, but it could
+still be tricky. UI is hard.
