@@ -13,7 +13,7 @@ use crate::{
             Choice, ChooseEnemyAction, MapStateAction, PlayCardAction, RemoveCardAction,
             RestSiteAction, SelectCardAction, TransformCardAction, UpgradeCardAction,
         },
-        encounter::{self, Encounter},
+        encounter::{Encounter},
     },
     map::RoomType,
 };
@@ -97,23 +97,23 @@ impl Game {
     pub(super) fn handle_map_state_action(&mut self, action: MapStateAction) -> Choice {
         let prior_floor_shop = self.act.prior_floor_shop;
         self.act.prior_floor_shop = false;
-        self.map_y += 1;
+        self.act.map_y += 1;
         self.floor += 1;
         match &action {
             MapStateAction::Forwards => {
                 //Nothing
             }
             MapStateAction::Jump(x) => {
-                self.map_x = *x;
+                self.act.map_x = *x;
             }
             MapStateAction::Left => {
-                self.map_x -= 1;
+                self.act.map_x -= 1;
             }
             MapStateAction::Right => {
-                self.map_x += 1;
+                self.act.map_x += 1;
             }
         };
-        match self.map.rooms[self.map_y as usize][self.map_x as usize].room_type {
+        match self.map.rooms[self.act.map_y as usize][self.act.map_x as usize].room_type {
             RoomType::QuestionMark => {
                 let roll = self.rng.sample(100) as i32;
                 let monster_weight =

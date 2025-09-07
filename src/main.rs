@@ -17,6 +17,7 @@ mod potion;
 mod relic;
 mod rng;
 mod util;
+mod ui;
 fn main() {
     let mut game = Game::new(Charachter::IRONCLAD);
     let mut rng = Rng::new();

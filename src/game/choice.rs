@@ -6,6 +6,12 @@ use crate::{
     game::{Game, event::Event},
 };
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct ChoiceState {
+    pub(super) game: Box<Game>,
+    pub(super) choice: Choice,
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SelectionPile {
     Hand,
@@ -17,12 +23,6 @@ pub enum SelectionPile {
 pub enum SelectCardAction {
     //Choose the i'th card
     ChooseCard(usize),
-}
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct ChoiceState<'a> {
-    pub(super) game: &'a mut Game,
-    pub(super) choice: Choice,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -92,7 +92,7 @@ pub enum Choice {
     RestSite(Vec<RestSiteAction>),
 }
 
-impl<'a> ChoiceState<'a> {
+impl ChoiceState {
     pub fn is_over(&self) -> bool {
         match self.choice {
             Choice::Win | Choice::Loss => true,
@@ -103,12 +103,9 @@ impl<'a> ChoiceState<'a> {
     //This function clones the choice state to another Game. It
     //will still behave differently due to the Rng returning different
     //results. This can be used to simulate different outcomes
-    pub fn clone_to<'b>(&self, game: &'b mut Game) -> ChoiceState<'b> {
-        *game = self.game.clone();
-        return ChoiceState {
-            game: game,
-            choice: self.choice.clone(),
-        };
+    pub fn clone_to(&self, other: &mut ChoiceState) {
+        *other.game = (*self.game).clone();
+        other.choice = self.choice.clone();
     }
 
     //This function handles an action being taken.
@@ -270,7 +267,7 @@ impl<'a> ChoiceState<'a> {
     }
 }
 
-impl<'a> Display for ChoiceState<'a> {
+impl Display for ChoiceState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn dash_line(f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "{:-<80}\n", "")?;

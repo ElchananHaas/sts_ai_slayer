@@ -8,6 +8,8 @@ mod perform_action;
 
 use std::{cmp::min, mem, vec};
 
+use derive_getters::Getters;
+
 use crate::act::Act;
 use crate::game::choice::{
     Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, SelectCardAction, SelectionPile,
@@ -29,7 +31,7 @@ pub const QUESTION_MONSTER_BASE_WEIGHT: i32 = 10;
 pub const QUESTION_SHOP_BASE_WEIGHT: i32 = 3;
 pub const QUESTION_TREASURE_BASE_WEIGHT: i32 = 2;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Getters)]
 pub struct Game {
     player_hp: i32,
     player_max_hp: i32,
@@ -42,8 +44,6 @@ pub struct Game {
     gold: i32,
     rng: Rng,
     floor: i32,
-    map_x: i32,
-    map_y: i32,
     map: ActMap,
     act: Act,
 }
@@ -808,9 +808,7 @@ impl Game {
                 relic_pool: RelicPool::new(),
                 rng,
                 map,
-                act: Act::new(),
-                map_x: 0,
-                map_y: -1,
+                act: Act::new()
             },
             Charachter::SILENT => todo!(),
             Charachter::DEFECT => todo!(),
@@ -818,9 +816,9 @@ impl Game {
         }
     }
 
-    pub fn start<'a>(&'a mut self) -> ChoiceState<'a> {
+    pub fn start(self) -> ChoiceState {
         let choice = self.goto_map();
-        ChoiceState { game: self, choice }
+        ChoiceState { game: Box::new(self), choice }
     }
 }
 

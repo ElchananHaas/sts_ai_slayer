@@ -42,19 +42,19 @@ impl Game {
 
     pub(super) fn goto_map(&self) -> Choice {
         let mut actions = Vec::new();
-        if self.map_y == -1 {
+        if self.act.map_y == -1 {
             let row = &self.map.rooms[0];
             for i in 0..row.len() {
                 if row[i].reachable {
                     actions.push(MapStateAction::Jump(i as i32));
                 }
             }
-        } else if self.map_y as usize == self.map.rooms.len() - 1 {
+        } else if self.act.map_y as usize == self.map.rooms.len() - 1 {
             return Choice::Win;
             //TODO - handle going to the boss room.
             //actions.push(MapStateAction::Forwards);
         } else {
-            let room = &self.map.rooms[self.map_y as usize][self.map_x as usize];
+            let room = &self.map.rooms[self.act.map_y as usize][self.act.map_x as usize];
             if room.has_left_child {
                 actions.push(MapStateAction::Left);
             }

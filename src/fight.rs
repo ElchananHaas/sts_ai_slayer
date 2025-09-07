@@ -5,6 +5,8 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+use iocraft::Props;
+
 use crate::{
     card::{Buff, Card, CardBody, CardType, Cost, Debuff},
     deck::Deck,
@@ -284,7 +286,7 @@ pub enum EnemyAction {
     StealGold(i32),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Props)]
 pub struct Enemy {
     //In order to allow full information to be passed to an AI model,
     //the enemy AI state is encoded as a state machine. This works for most

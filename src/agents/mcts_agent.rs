@@ -14,7 +14,7 @@ use super::agent_helper::Agent;
 pub struct MctsAgent {}
 
 impl Agent for MctsAgent {
-    fn take_action<'a>(&mut self, state: &mut ChoiceState<'a>, rng: &mut Rng) {
+    fn take_action(&mut self, state: &mut ChoiceState, rng: &mut Rng) {
         let choice = mcts(&state, rng);
         println!("{}", state.action_str(choice));
         println!("");
@@ -108,16 +108,16 @@ fn hash_choice_state(state: &ChoiceState) -> u64 {
     s.finish()
 }
 
-fn mcts<'a>(state: &ChoiceState<'a>, rng: &mut Rng) -> usize {
+fn mcts(state: &ChoiceState, rng: &mut Rng) -> usize {
     let mut total_reward = 0.0;
     //This should be changed to an identity hasher.
     let mut value_map: HashMap<u64, MctsEntry> = HashMap::new();
     //This will be overwritten.
-    let mut temp_game = Game::new(crate::game::Charachter::IRONCLAD);
+    let mut temp_game = Game::new(crate::game::Charachter::IRONCLAD).start();
     let state_hash = hash_choice_state(&state);
     for i in 0..MCTS_ITERATIONS {
-        let mut choice_copy = state.clone_to(&mut temp_game);
-        let reward = mcts_rollout(&mut choice_copy, &mut value_map, rng);
+        state.clone_to(&mut temp_game);
+        let reward = mcts_rollout(&mut temp_game, &mut value_map, rng);
         if false && i > 0 && i % REWARD_PRINT_INTERVAL == 0 {
             println!(
                 "Average rewards are {}",

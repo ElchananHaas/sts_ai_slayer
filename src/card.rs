@@ -1293,7 +1293,7 @@ const fn colorless_filter(props: &'static CardProps) -> bool {
         && matches!(props.charachter, CardCharachter::COLORLESS)
 }
 
-pub const COLORLESS_CARDS: &'static [CardBody] = filtered_cards!(curse_filter);
+pub const COLORLESS_CARDS: &'static [CardBody] = filtered_cards!(colorless_filter);
 
 pub fn sample_card(cards: &'static [CardBody], rng: &mut Rng) -> CardBody {
     let idx = rng.sample(cards.len());
