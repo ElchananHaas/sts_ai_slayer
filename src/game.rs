@@ -529,7 +529,13 @@ impl Game {
     fn attack_enemy(&mut self, card: &Card, amount: i32, target: usize) -> AttackResult {
         let strength = self.fight.player_buffs.strength
             * (match card.body {
-                CardBody::HeavyBlade => if card.is_upgraded() { 5 } else { 3 },
+                CardBody::HeavyBlade => {
+                    if card.is_upgraded() {
+                        5
+                    } else {
+                        3
+                    }
+                }
                 _ => 1,
             });
         let mut damage: f32 = (amount + strength) as f32;
@@ -808,7 +814,7 @@ impl Game {
                 relic_pool: RelicPool::new(),
                 rng,
                 map,
-                act: Act::new()
+                act: Act::new(),
             },
             Charachter::SILENT => todo!(),
             Charachter::DEFECT => todo!(),
@@ -818,7 +824,10 @@ impl Game {
 
     pub fn start(self) -> ChoiceState {
         let choice = self.goto_map();
-        ChoiceState { game: Box::new(self), choice }
+        ChoiceState {
+            game: Box::new(self),
+            choice,
+        }
     }
 }
 

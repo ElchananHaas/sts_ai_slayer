@@ -1,17 +1,16 @@
-use iocraft::prelude::*;
+use ratatui::widgets::Widget;
+use ratatui::prelude::*;
 
-use crate::{fight::Enemy};
+use crate::game::choice::ChoiceState;
 
-#[component]
-fn EnemyBox(props: &Enemy) -> impl Into<AnyElement<'static>> {
-    element! {
-        View(
-            flex_grow: 1.0,
-        ) {
-            Text(
-                content: props.name,
-                weight: Weight::Bold,
-            )
-        }
+struct UIState<'a>{
+    choice_state: &'a ChoiceState
+}
+
+
+impl<'a> Widget for UIState<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer){
+        let layout = Layout::vertical([Constraint::Length(8), Constraint::Fill(1), Constraint::Length(12)]);
+        let [top, middle, bottom] = layout.areas(buf.area);
     }
 }

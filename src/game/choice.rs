@@ -327,7 +327,7 @@ impl Display for ChoiceState {
         write!(f, "{:.<80}\n", "")?;
         write!(f, "| ")?;
         for card in &game.fight.hand {
-            let upgraded = if card.is_upgraded() {"+"} else {""};
+            let upgraded = if card.is_upgraded() { "+" } else { "" };
             if let Some(cost) = game.fight.evaluate_cost(card) {
                 write!(f, "{:?}{} [{}] | ", card.body, upgraded, cost)?;
             } else {

@@ -2,16 +2,14 @@ use std::cell::RefCell;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use rand_chacha::rand_core::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rand_chacha::rand_core::RngCore;
-
+use rand_chacha::rand_core::SeedableRng;
 
 thread_local! {
     static RNG: RefCell<ChaCha8Rng> = RefCell::new(ChaCha8Rng::from_os_rng());
 }
-pub struct Rng {
-}
+pub struct Rng {}
 
 impl Debug for Rng {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -21,15 +19,13 @@ impl Debug for Rng {
 
 impl Clone for Rng {
     fn clone(&self) -> Self {
-        Self {
-        }
+        Self {}
     }
 }
 
 impl Rng {
     pub fn new() -> Self {
-        Self {
-        }
+        Self {}
     }
     //The samples is exclusive on max. It utilizes rejection sampling.
     pub fn sample(&mut self, bound: usize) -> usize {
@@ -43,7 +39,7 @@ impl Rng {
         let next_pow_2 = bound.next_power_of_two();
         let mask = next_pow_2 - 1;
         loop {
-            let rand = { RNG.with_borrow_mut(|v|v.next_u64()) };
+            let rand = { RNG.with_borrow_mut(|v| v.next_u64()) };
             let rand = mask & (rand as usize);
             if rand < bound {
                 return rand;

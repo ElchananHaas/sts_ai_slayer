@@ -16,10 +16,16 @@ mod map;
 mod potion;
 mod relic;
 mod rng;
-mod util;
 mod ui;
+mod util;
 fn main() {
-    let mut game = Game::new(Charachter::IRONCLAD);
+    agent_play();
+}
+
+fn human_play() {}
+
+fn agent_play() {
+    let game = Game::new(Charachter::IRONCLAD);
     let mut rng = Rng::new();
     let mut agent = SkipSingleChoiceAgent {
         agent: MctsAgent {},

@@ -29,7 +29,7 @@ impl Act {
             number_of_fights: 0,
             prior_fights: [None, None],
             map_x: 0,
-            map_y: -1
+            map_y: -1,
         }
     }
 }

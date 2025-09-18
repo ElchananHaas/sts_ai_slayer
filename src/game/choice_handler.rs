@@ -13,7 +13,7 @@ use crate::{
             Choice, ChooseEnemyAction, MapStateAction, PlayCardAction, RemoveCardAction,
             RestSiteAction, SelectCardAction, TransformCardAction, UpgradeCardAction,
         },
-        encounter::{Encounter},
+        encounter::Encounter,
     },
     map::RoomType,
 };
