@@ -1,12 +1,14 @@
 use std::fmt::Display;
 
+use derive_getters::Getters;
+
 use crate::{
     card::SelectCardEffect,
     fight::{Enemy, PlayCardContext},
     game::{Game, event::Event},
 };
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Getters)]
 pub struct ChoiceState {
     pub(super) game: Box<Game>,
     pub(super) choice: Choice,
@@ -156,17 +158,7 @@ impl ChoiceState {
             }
         }
     }
-
-    //Outside the game only immutable access should be granted.
-    pub fn get_choice(&self) -> &Choice {
-        &self.choice
-    }
-
-    //Outside the game only immutable access should be granted.
-    pub fn get_game(&self) -> &Game {
-        &self.game
-    }
-
+    
     pub fn action_str(&self, action_idx: usize) -> String {
         match &self.choice {
             Choice::PlayCardState(play_card_actions) => {

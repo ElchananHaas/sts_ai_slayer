@@ -840,7 +840,7 @@ pub enum Charachter {
 }
 
 impl Charachter {
-    fn name(&self) -> &str {
+    pub fn name(&self) -> &'static str {
         match self {
             Charachter::IRONCLAD => "Ironclad",
             Charachter::SILENT => "Silent",

@@ -42,6 +42,4 @@ TODO
 
 ### Terminal UI
 TODO
-I'm thinking of going with iocraft. I'll need to see how it fits 
-in with the event loop. It should probably be OK, but it could
-still be tricky. UI is hard.
+I have decided on Ratatui. The trick is to use the Layout methods.

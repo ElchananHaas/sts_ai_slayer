@@ -5,6 +5,8 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+use derive_getters::Getters;
+
 use crate::{
     card::{Buff, Card, CardBody, CardType, Cost, Debuff},
     deck::Deck,
@@ -13,7 +15,7 @@ use crate::{
     util::insert_sorted,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Getters)]
 pub struct Fight {
     pub enemies: Enemies,
     pub hand: Vec<Card>,
