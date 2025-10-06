@@ -1,1 +1,1 @@
-mod fight_ui;
+pub mod fight_ui;

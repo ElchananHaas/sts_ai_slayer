@@ -16,8 +16,8 @@ pub struct MctsAgent {}
 impl Agent for MctsAgent {
     fn take_action(&mut self, state: &mut ChoiceState, rng: &mut Rng) {
         let choice = mcts(&state, rng);
-        println!("{}", state.action_str(choice));
-        println!("");
+        //println!("{}", state.action_str(choice));
+        //println!("");
         state.take_action(choice);
     }
 }
@@ -98,7 +98,7 @@ impl MctsEntry {
             write!(&mut s, " {},", entry.reward_sum / entry.taken).expect("Write OK");
         }
         write!(&mut s, "]").expect("Write OK");
-        println!("{}", s);
+        //println!("{}", s);
     }
 }
 
@@ -119,10 +119,10 @@ fn mcts(state: &ChoiceState, rng: &mut Rng) -> usize {
         state.clone_to(&mut temp_game);
         let reward = mcts_rollout(&mut temp_game, &mut value_map, rng);
         if false && i > 0 && i % REWARD_PRINT_INTERVAL == 0 {
-            println!(
+            /*println!(
                 "Average rewards are {}",
                 total_reward / (REWARD_PRINT_INTERVAL as f32)
-            );
+            );*/
             value_map
                 .get_mut(&state_hash)
                 .expect("State found")
@@ -150,12 +150,12 @@ fn mcts_rollout(
     let mut in_known = true;
     let reward: i32 = loop {
         //Check if the game is over before computing any hashes
-        let num_actions = match &state.get_choice() {
+        let num_actions = match &state.choice() {
             Choice::Win => {
-                break state.get_game().get_floor();
+                break state.game().get_floor();
             }
             Choice::Loss => {
-                break state.get_game().get_floor();
+                break state.game().get_floor();
             }
             _ => state.num_actions(),
         };

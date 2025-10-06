@@ -3,8 +3,14 @@ use ratatui::prelude::*;
 
 use crate::game::choice::ChoiceState;
 
-struct UIState<'a>{
+pub struct UIState<'a>{
     choice_state: &'a ChoiceState
+}
+
+impl<'a> UIState<'a> {
+    pub fn new(choice_state: &'a ChoiceState) -> Self {
+        Self { choice_state }
+    }
 }
 
 fn render_player(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
