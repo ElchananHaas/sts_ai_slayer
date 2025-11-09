@@ -1,10 +1,18 @@
-use crate::{agents::agent_helper::Agent, card::IRONCLAD_ATTACK_CARDS, ui::fight_ui::UIState};
+use crate::{
+    agents::agent_helper::Agent,
+    card::IRONCLAD_ATTACK_CARDS,
+    ui::{
+        fight_ui::UIState,
+        ui_actor::{UIActor, UIEvent},
+    },
+};
 use agents::agent_helper::SkipSingleChoiceAgent;
 use agents::mcts_agent::MctsAgent;
 use agents::random_agent::RandomAgent;
 use game::{Charachter, Game};
 use ratatui::widgets::Widget;
 use rng::Rng;
+use tokio::sync::mpsc;
 
 mod act;
 mod agents;
@@ -33,13 +41,16 @@ fn agent_play() -> Result<(), Box<dyn std::error::Error>> {
     };
     let mut choice = game.start();
     let mut terminal = ratatui::init();
+    let (sender, receiver) = mpsc::channel(8);
+    let mut ui_actor = UIActor::new(receiver, terminal);
+    tokio::spawn(async move { ui_actor.run().await });
     while !choice.is_over() {
-        terminal.draw(|frame|
-         UIState::new(&choice).render(frame.area(), frame.buffer_mut()))
-         .expect("Successfully drew frame");
+        sender
+            .blocking_send(UIEvent::NewState(choice.clone()))
+            .expect("Send message to UI actor");
         //println!("{}", &choice);
         agent.take_action(&mut choice, &mut rng);
-    }    
+    }
     //print!("{}", &choice);
     ratatui::restore();
     Ok(())

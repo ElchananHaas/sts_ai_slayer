@@ -8,7 +8,7 @@ use crate::{
     game::{Game, event::Event},
 };
 
-#[derive(Debug, PartialEq, Eq, Hash, Getters)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Getters)]
 pub struct ChoiceState {
     pub(super) game: Box<Game>,
     pub(super) choice: Choice,
@@ -158,7 +158,7 @@ impl ChoiceState {
             }
         }
     }
-    
+
     pub fn action_str(&self, action_idx: usize) -> String {
         match &self.choice {
             Choice::PlayCardState(play_card_actions) => {
