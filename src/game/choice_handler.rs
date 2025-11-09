@@ -98,7 +98,6 @@ impl Game {
         let prior_floor_shop = self.act.prior_floor_shop;
         self.act.prior_floor_shop = false;
         self.act.map_y += 1;
-        self.floor += 1;
         match &action {
             MapStateAction::Forwards => {
                 //Nothing

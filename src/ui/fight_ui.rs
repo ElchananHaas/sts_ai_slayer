@@ -1,6 +1,7 @@
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Paragraph, Widget};
 
+use crate::game::Game;
 use crate::game::choice::ChoiceState;
 
 pub struct UIState<'a> {
@@ -20,12 +21,38 @@ fn render_player(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
         format!("{}/{} hp", game.player_hp(), game.player_max_hp()).into(),
         format!("{} energy", game.fight().energy()).into(),
         format!("{} block", game.fight().player_block()).into(),
-        format!("floor {}", game.floor()).into(),
+        format!("floor {}", game.act().map_y).into(),
     ]);
     Paragraph::new(text)
         .block(Block::bordered())
         .render(area, buf);
 }
+
+fn render_card(state: &ChoiceState, card_idx: usize, area: Rect, buf: &mut Buffer) {
+    let game = state.game();
+    let card = game.fight().hand().get(card_idx);
+    if let Some(card) = card {
+        let upgraded = if card.is_upgraded() { "+" } else { "" };
+        let card_contents = if let Some(cost) = game.fight().evaluate_cost(card) {
+            format!("{:?}{} [{}]", card.body, upgraded, cost)
+        } else {
+            format!("{:?}{} [x]", card.body, upgraded)
+        };
+        let text = Text::from(card_contents);
+        Paragraph::new(text)
+            .block(Block::bordered())
+            .render(area, buf);
+    }
+}
+
+fn render_cards(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
+    let areas = Layout::horizontal([Constraint::Fill(1); Game::MAX_CARDS_IN_HAND])
+        .areas::<{ Game::MAX_CARDS_IN_HAND }>(area);
+    for i in 0..Game::MAX_CARDS_IN_HAND {
+        render_card(state, i, areas[i], buf);
+    }
+}
+
 impl<'a> Widget for UIState<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let layout = Layout::vertical([
@@ -35,7 +62,8 @@ impl<'a> Widget for UIState<'a> {
         ]);
         let [top, middle, bottom] = layout.areas(buf.area);
         let [player_box, fight_box] =
-            Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(middle);
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(middle);
         render_player(self.choice_state, player_box, buf);
+        render_cards(self.choice_state, bottom, buf);
     }
 }

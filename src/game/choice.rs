@@ -314,7 +314,6 @@ impl Display for ChoiceState {
         write!(f, "{}/{} hp | ", game.player_hp, game.player_max_hp)?;
         write!(f, "{}⚡︎ | ", game.fight.energy)?;
         write!(f, "{} block | ", game.fight.player_block)?;
-        write!(f, "floor {} | ", game.floor)?;
         write!(f, "\n")?;
         write!(f, "{:.<80}\n", "")?;
         write!(f, "| ")?;

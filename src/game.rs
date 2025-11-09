@@ -43,7 +43,6 @@ pub struct Game {
     relics: Relics,
     gold: i32,
     rng: Rng,
-    floor: i32,
     map: ActMap,
     act: Act,
 }
@@ -67,9 +66,7 @@ pub struct AttackResult {
 }
 
 impl Game {
-    pub fn get_floor(&self) -> i32 {
-        self.floor
-    }
+    pub const MAX_CARDS_IN_HAND: usize = 10;
     //This function starts a fight in the given game. Useful for testing.
     pub fn start_fight(&mut self) -> Choice {
         self.play_card_choice()
@@ -797,7 +794,6 @@ impl Game {
                 charachter,
                 fight: Fight::new(),
                 gold: 99,
-                floor: 0,
                 base_deck: vec![
                     CardBody::Bash.to_card(),
                     CardBody::Defend.to_card(),
