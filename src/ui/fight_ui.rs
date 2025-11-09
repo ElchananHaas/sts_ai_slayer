@@ -53,6 +53,47 @@ fn render_cards(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
     }
 }
 
+fn render_enemy(state: &ChoiceState, enemy_idx: usize, area: Rect, buf: &mut Buffer) {
+    let game = state.game();
+    let enemy = &game.fight().enemies().enemies[enemy_idx];
+    let Some(enemy) = enemy else {return;};
+    let mut text: Vec<Line> = Vec::new();
+    text.push(format!("{}", enemy.name).into());
+    text.push(format!("{}/{} hp", enemy.hp, enemy.max_hp).into());
+    if enemy.block > 0 {
+        text.push(format!("{} block", enemy.block).into());
+    }
+    if enemy.buffs.strength > 0 {
+        text.push(format!("{} str", enemy.buffs.strength).into());
+    }
+    if enemy.buffs.ritual > 0 || enemy.buffs.ritual_skip_first > 0 {
+         text.push(format!("{} ritual", enemy.buffs.ritual + enemy.buffs.ritual_skip_first).into());
+    }
+    if enemy.buffs.curl_up > 0 {
+        text.push(format!("{} curl up", enemy.buffs.curl_up).into());
+    }
+    if enemy.debuffs.vulnerable > 0 {
+        text.push(format!("{} vulnerable", enemy.debuffs.vulnerable).into());
+    }
+    if enemy.debuffs.weak > 0 {
+        text.push(format!("{} weak", enemy.debuffs.weak).into());
+    }
+    Paragraph::new(text)
+        .block(Block::bordered())
+        .render(area, buf);
+
+}
+
+
+fn render_enemies(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
+    //TODO - this should have a more clever layout.
+    let areas = Layout::horizontal([Constraint::Fill(1); Game::MAX_ENEMIES])
+        .areas::<{ Game::MAX_ENEMIES }>(area);
+    for i in 0..Game::MAX_ENEMIES {
+        render_enemy(state, i, areas[i], buf);
+    }
+}
+
 impl<'a> Widget for UIState<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let layout = Layout::vertical([
@@ -65,5 +106,6 @@ impl<'a> Widget for UIState<'a> {
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(middle);
         render_player(self.choice_state, player_box, buf);
         render_cards(self.choice_state, bottom, buf);
+        render_enemies(self.choice_state, fight_box, buf);
     }
 }

@@ -8,11 +8,7 @@ use std::{
 use derive_getters::Getters;
 
 use crate::{
-    card::{Buff, Card, CardBody, CardType, Cost, Debuff},
-    deck::Deck,
-    relic::Relic,
-    rng::Rng,
-    util::insert_sorted,
+    card::{Buff, Card, CardBody, CardType, Cost, Debuff}, deck::Deck, game::Game, relic::Relic, rng::Rng, util::insert_sorted
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Getters)]
@@ -144,7 +140,7 @@ impl Fight {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct Enemies {
     //Fights have at most 5 enemies (Reptomancer + 4 Daggers).
-    pub enemies: [Option<Enemy>; 5],
+    pub enemies: [Option<Enemy>; Game::MAX_ENEMIES],
 }
 
 impl Enemies {

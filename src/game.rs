@@ -67,6 +67,7 @@ pub struct AttackResult {
 
 impl Game {
     pub const MAX_CARDS_IN_HAND: usize = 10;
+    pub const MAX_ENEMIES: usize = 5;
     //This function starts a fight in the given game. Useful for testing.
     pub fn start_fight(&mut self) -> Choice {
         self.play_card_choice()
