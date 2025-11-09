@@ -1,4 +1,5 @@
 use crate::{game::choice::ChoiceState, ui::fight_ui::UIState};
+use crossterm::event;
 use ratatui::widgets::Widget;
 use ratatui::{
     DefaultTerminal, Terminal,
@@ -19,11 +20,11 @@ pub struct UIActor {
 }
 
 impl UIActor {
-    pub fn new(receiver: mpsc::Receiver<UIEvent>, terminal: DefaultTerminal) -> Self {
+    pub fn new(receiver: mpsc::Receiver<UIEvent>) -> Self {
         Self {
             receiver,
             choice_state: None,
-            terminal,
+            terminal: ratatui::init(),
         }
     }
 
@@ -31,9 +32,16 @@ impl UIActor {
         while let Some(msg) = self.receiver.recv().await {
             match msg {
                 UIEvent::NewState(choice_state) => self.choice_state = Some(choice_state),
-                UIEvent::KeyPress(_event) => {
-                    break;
-                }
+                UIEvent::KeyPress(event) => match event {
+                    CrosstermEvent::FocusGained => {}
+                    CrosstermEvent::FocusLost => {}
+                    CrosstermEvent::Key(_key_event) => {
+                        break;
+                    }
+                    CrosstermEvent::Mouse(_mouse_event) => {}
+                    CrosstermEvent::Paste(_) => {}
+                    CrosstermEvent::Resize(_, _) => {}
+                },
             };
 
             self.terminal
@@ -48,5 +56,6 @@ impl UIActor {
                 })
                 .expect("Frame rendered successfully.");
         }
+        ratatui::restore();
     }
 }
