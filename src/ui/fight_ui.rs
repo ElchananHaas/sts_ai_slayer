@@ -102,18 +102,43 @@ fn render_enemies(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
     }
 }
 
+fn render_battlefield(state: &UIState, area: Rect, buf: &mut Buffer) {
+    let layout = Layout::vertical([
+        Constraint::Length(8),
+        Constraint::Fill(1),
+        Constraint::Length(12),
+    ]);
+    let [top, middle, bottom] = layout.areas(buf.area);
+    let [player_box, fight_box] =
+        Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(middle);
+    render_player(state.choice_state, player_box, buf);
+    render_cards(state.choice_state, bottom, buf);
+    render_enemies(state.choice_state, fight_box, buf);
+}
+
 impl<'a> Widget for UIState<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let layout = Layout::vertical([
-            Constraint::Length(8),
-            Constraint::Fill(1),
-            Constraint::Length(12),
-        ]);
-        let [top, middle, bottom] = layout.areas(buf.area);
-        let [player_box, fight_box] =
-            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(middle);
-        render_player(self.choice_state, player_box, buf);
-        render_cards(self.choice_state, bottom, buf);
-        render_enemies(self.choice_state, fight_box, buf);
+        match self.choice_state.choice().clone() {
+            crate::game::choice::Choice::PlayCardState(play_card_actions) => {
+                render_battlefield(&self, area, buf)
+            }
+            crate::game::choice::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
+                render_battlefield(&self, area, buf)
+            }
+            crate::game::choice::Choice::Win => {}
+            crate::game::choice::Choice::Loss => {}
+            crate::game::choice::Choice::MapState(map_state_actions) => todo!(),
+            crate::game::choice::Choice::SelectCardState(
+                play_card_context,
+                select_card_effect,
+                select_card_actions,
+                selection_pile,
+            ) => todo!(),
+            crate::game::choice::Choice::Event(event, event_actions) => todo!(),
+            crate::game::choice::Choice::RemoveCardState(remove_card_actions) => todo!(),
+            crate::game::choice::Choice::TransformCardState(transform_card_actions) => todo!(),
+            crate::game::choice::Choice::UpgradeCardState(upgrade_card_actions) => todo!(),
+            crate::game::choice::Choice::RestSite(rest_site_actions) => todo!(),
+        }
     }
 }
