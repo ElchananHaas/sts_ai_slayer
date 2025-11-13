@@ -1,8 +1,10 @@
+use std::cmp::min;
+
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Paragraph, Widget};
 
 use crate::game::Game;
-use crate::game::choice::ChoiceState;
+use crate::game::choice::{ChoiceState, RestSiteAction};
 
 pub struct UIState<'a> {
     choice_state: &'a ChoiceState,
@@ -103,17 +105,42 @@ fn render_enemies(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
 }
 
 fn render_battlefield(state: &UIState, area: Rect, buf: &mut Buffer) {
-    let layout = Layout::vertical([
-        Constraint::Length(8),
-        Constraint::Fill(1),
-        Constraint::Length(12),
-    ]);
-    let [top, middle, bottom] = layout.areas(buf.area);
+    let [top, middle, bottom] = main_breakdown(area);
     let [player_box, fight_box] =
         Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(middle);
     render_player(state.choice_state, player_box, buf);
     render_cards(state.choice_state, bottom, buf);
     render_enemies(state.choice_state, fight_box, buf);
+}
+
+fn main_breakdown(area: Rect) -> [Rect; 3] {
+    let layout = Layout::vertical([
+        Constraint::Length(8),
+        Constraint::Fill(1),
+        Constraint::Length(12),
+    ]);
+    layout.areas(area)
+}
+
+fn render_rest_site(
+    _state: &UIState,
+    area: Rect,
+    buf: &mut Buffer,
+    rest_site_actions: Vec<RestSiteAction>,
+) {
+    let [_top, middle, _bottom] = main_breakdown(area);
+    const MAX_RESTSITE_ACTIONS: usize = 5;
+    let areas: [Rect; MAX_RESTSITE_ACTIONS] =
+        Layout::horizontal([Constraint::Length(10); MAX_RESTSITE_ACTIONS])
+            .flex(layout::Flex::Center)
+            .areas::<{ MAX_RESTSITE_ACTIONS }>(middle);
+    for i in 0..(min(MAX_RESTSITE_ACTIONS, rest_site_actions.len())) {
+        let area = areas[i];
+        let area = Layout::vertical([Constraint::Length(10); 1]).areas::<1>(area)[0];
+        Paragraph::new(vec![format!("{:?}", rest_site_actions[i]).into()])
+            .block(Block::bordered())
+            .render(area, buf);
+    }
 }
 
 impl<'a> Widget for UIState<'a> {
@@ -127,18 +154,20 @@ impl<'a> Widget for UIState<'a> {
             }
             crate::game::choice::Choice::Win => {}
             crate::game::choice::Choice::Loss => {}
-            crate::game::choice::Choice::MapState(map_state_actions) => todo!(),
+            crate::game::choice::Choice::MapState(map_state_actions) => {}
             crate::game::choice::Choice::SelectCardState(
                 play_card_context,
                 select_card_effect,
                 select_card_actions,
                 selection_pile,
-            ) => todo!(),
-            crate::game::choice::Choice::Event(event, event_actions) => todo!(),
-            crate::game::choice::Choice::RemoveCardState(remove_card_actions) => todo!(),
-            crate::game::choice::Choice::TransformCardState(transform_card_actions) => todo!(),
-            crate::game::choice::Choice::UpgradeCardState(upgrade_card_actions) => todo!(),
-            crate::game::choice::Choice::RestSite(rest_site_actions) => todo!(),
+            ) => {}
+            crate::game::choice::Choice::Event(event, event_actions) => {}
+            crate::game::choice::Choice::RemoveCardState(remove_card_actions) => {}
+            crate::game::choice::Choice::TransformCardState(transform_card_actions) => {}
+            crate::game::choice::Choice::UpgradeCardState(upgrade_card_actions) => {}
+            crate::game::choice::Choice::RestSite(rest_site_actions) => {
+                render_rest_site(&self, area, buf, rest_site_actions);
+            }
         }
     }
 }
