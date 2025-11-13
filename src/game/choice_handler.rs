@@ -99,11 +99,14 @@ impl Game {
         let prior_floor_shop = self.act.prior_floor_shop;
         self.act.prior_floor_shop = false;
 
+        if let Some(position) = &mut self.act.position {
+            position.y += 1;
+        }
+        //If this is the first floor y starts on 0.
         let position = self.act.position.get_or_insert(MapPosition { x: 0, y: 0 });
-        position.y += 1;
         match &action {
             MapStateAction::Forwards => {
-                //Nothing
+                //Nothing but the y move.
             }
             MapStateAction::Jump(x) => {
                 position.x = *x;
