@@ -1,6 +1,7 @@
 use smallvec::SmallVec;
 
 use crate::{
+    act::MapPosition,
     card::{
         COLORLESS_CARDS, CURSE_CARDS, CardCharachter, CardType, IRONCLAD_CARDS, SelectCardEffect,
         sample_card,
@@ -97,22 +98,24 @@ impl Game {
     pub(super) fn handle_map_state_action(&mut self, action: MapStateAction) -> Choice {
         let prior_floor_shop = self.act.prior_floor_shop;
         self.act.prior_floor_shop = false;
-        self.act.map_y += 1;
+
+        let position = self.act.position.get_or_insert(MapPosition { x: 0, y: 0 });
+        position.y += 1;
         match &action {
             MapStateAction::Forwards => {
                 //Nothing
             }
             MapStateAction::Jump(x) => {
-                self.act.map_x = *x;
+                position.x = *x;
             }
             MapStateAction::Left => {
-                self.act.map_x -= 1;
+                position.x -= 1;
             }
             MapStateAction::Right => {
-                self.act.map_x += 1;
+                position.x += 1;
             }
         };
-        match self.map.rooms[self.act.map_y as usize][self.act.map_x as usize].room_type {
+        match self.map.rooms[position.y as usize][position.x as usize].room_type {
             RoomType::QuestionMark => {
                 let roll = self.rng.sample(100) as i32;
                 let monster_weight =

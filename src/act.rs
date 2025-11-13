@@ -13,10 +13,13 @@ pub struct Act {
     pub prior_elite: Option<Encounter>,
     pub number_of_fights: i32,
     pub prior_fights: [Option<Encounter>; 2],
-    pub map_x: i32,
-    pub map_y: i32,
+    pub position: Option<MapPosition>,
 }
-
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct MapPosition {
+    pub x: i32,
+    pub y: i32,
+}
 impl Act {
     pub fn new() -> Act {
         Self {
@@ -28,8 +31,7 @@ impl Act {
             prior_elite: None,
             number_of_fights: 0,
             prior_fights: [None, None],
-            map_x: 0,
-            map_y: -1,
+            position: None,
         }
     }
 }

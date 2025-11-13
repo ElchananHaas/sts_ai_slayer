@@ -152,10 +152,10 @@ fn mcts_rollout(
         //Check if the game is over before computing any hashes
         let num_actions = match &state.choice() {
             Choice::Win => {
-                break state.game().act().map_y;
+                break state.game().act().position.map(|p| p.y).unwrap_or_default();
             }
             Choice::Loss => {
-                break state.game().act().map_y;
+                break state.game().act().position.map(|p| p.y).unwrap_or_default();
             }
             _ => state.num_actions(),
         };

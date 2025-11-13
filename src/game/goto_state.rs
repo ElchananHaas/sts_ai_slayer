@@ -42,27 +42,29 @@ impl Game {
 
     pub(super) fn goto_map(&self) -> Choice {
         let mut actions = Vec::new();
-        if self.act.map_y == -1 {
+        if let Some(position) = self.act.position {
+            if position.y as usize == self.map.rooms.len() - 1 {
+                return Choice::Win;
+            //TODO - handle going to the boss room.
+            //actions.push(MapStateAction::Forwards);
+            } else {
+                let room = &self.map.rooms[position.y as usize][position.x as usize];
+                if room.has_left_child {
+                    actions.push(MapStateAction::Left);
+                }
+                if room.has_front_child {
+                    actions.push(MapStateAction::Forwards);
+                }
+                if room.has_right_child {
+                    actions.push(MapStateAction::Right);
+                }
+            }
+        } else {
             let row = &self.map.rooms[0];
             for i in 0..row.len() {
                 if row[i].reachable {
                     actions.push(MapStateAction::Jump(i as i32));
                 }
-            }
-        } else if self.act.map_y as usize == self.map.rooms.len() - 1 {
-            return Choice::Win;
-            //TODO - handle going to the boss room.
-            //actions.push(MapStateAction::Forwards);
-        } else {
-            let room = &self.map.rooms[self.act.map_y as usize][self.act.map_x as usize];
-            if room.has_left_child {
-                actions.push(MapStateAction::Left);
-            }
-            if room.has_front_child {
-                actions.push(MapStateAction::Forwards);
-            }
-            if room.has_right_child {
-                actions.push(MapStateAction::Right);
             }
         }
         Choice::MapState(actions)

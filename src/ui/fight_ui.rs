@@ -16,14 +16,16 @@ impl<'a> UIState<'a> {
 
 fn render_player(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
     let game = state.game();
-    let text = Text::from(vec![
+    let mut text: Vec<Line> = vec![
         format!("{}", game.charachter().name()).into(),
         format!("{}/{} hp", game.player_hp(), game.player_max_hp()).into(),
         format!("{} energy", game.fight().energy()).into(),
         format!("{} block", game.fight().player_block()).into(),
-        format!("floor {}", game.act().map_y).into(),
-    ]);
-    Paragraph::new(text)
+    ];
+    if let Some(position) = game.act().position {
+        text.push(format!("floor {}", position.y).into())
+    }
+    Paragraph::new(Text::from(text))
         .block(Block::bordered())
         .render(area, buf);
 }
@@ -56,7 +58,9 @@ fn render_cards(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
 fn render_enemy(state: &ChoiceState, enemy_idx: usize, area: Rect, buf: &mut Buffer) {
     let game = state.game();
     let enemy = &game.fight().enemies().enemies[enemy_idx];
-    let Some(enemy) = enemy else {return;};
+    let Some(enemy) = enemy else {
+        return;
+    };
     let mut text: Vec<Line> = Vec::new();
     text.push(format!("{}", enemy.name).into());
     text.push(format!("{}/{} hp", enemy.hp, enemy.max_hp).into());
@@ -67,7 +71,13 @@ fn render_enemy(state: &ChoiceState, enemy_idx: usize, area: Rect, buf: &mut Buf
         text.push(format!("{} str", enemy.buffs.strength).into());
     }
     if enemy.buffs.ritual > 0 || enemy.buffs.ritual_skip_first > 0 {
-         text.push(format!("{} ritual", enemy.buffs.ritual + enemy.buffs.ritual_skip_first).into());
+        text.push(
+            format!(
+                "{} ritual",
+                enemy.buffs.ritual + enemy.buffs.ritual_skip_first
+            )
+            .into(),
+        );
     }
     if enemy.buffs.curl_up > 0 {
         text.push(format!("{} curl up", enemy.buffs.curl_up).into());
@@ -81,9 +91,7 @@ fn render_enemy(state: &ChoiceState, enemy_idx: usize, area: Rect, buf: &mut Buf
     Paragraph::new(text)
         .block(Block::bordered())
         .render(area, buf);
-
 }
-
 
 fn render_enemies(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
     //TODO - this should have a more clever layout.

@@ -8,7 +8,12 @@ use std::{
 use derive_getters::Getters;
 
 use crate::{
-    card::{Buff, Card, CardBody, CardType, Cost, Debuff}, deck::Deck, game::Game, relic::Relic, rng::Rng, util::insert_sorted
+    card::{Buff, Card, CardBody, CardType, Cost, Debuff},
+    deck::Deck,
+    game::Game,
+    relic::Relic,
+    rng::Rng,
+    util::insert_sorted,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Getters)]
