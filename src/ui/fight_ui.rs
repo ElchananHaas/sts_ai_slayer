@@ -136,7 +136,9 @@ fn render_rest_site(
             .areas::<{ MAX_RESTSITE_ACTIONS }>(middle);
     for i in 0..(min(MAX_RESTSITE_ACTIONS, rest_site_actions.len())) {
         let area = areas[i];
-        let area = Layout::vertical([Constraint::Length(10); 1]).areas::<1>(area)[0];
+        let area = Layout::vertical([Constraint::Length(10); 1])
+            .flex(layout::Flex::Center)
+            .areas::<1>(area)[0];
         Paragraph::new(vec![format!("{:?}", rest_site_actions[i]).into()])
             .block(Block::bordered())
             .render(area, buf);
