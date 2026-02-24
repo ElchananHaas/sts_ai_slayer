@@ -1,11 +1,6 @@
 use crate::{game::choice::ChoiceState, ui::fight_ui::UIState};
-use crossterm::event;
-use ratatui::widgets::Widget;
-use ratatui::{
-    DefaultTerminal, Terminal,
-    crossterm::event::Event as CrosstermEvent,
-    widgets::{Block, Paragraph},
-};
+use crossterm::event::Event as CrosstermEvent;
+use fliptui::Window;
 use tokio::sync::mpsc::{self, Receiver};
 
 pub enum UIEvent {
@@ -16,7 +11,7 @@ pub enum UIEvent {
 pub struct UIActor {
     receiver: mpsc::Receiver<UIEvent>,
     choice_state: Option<ChoiceState>,
-    terminal: DefaultTerminal,
+    window: Window,
 }
 
 impl UIActor {
@@ -24,7 +19,7 @@ impl UIActor {
         Self {
             receiver,
             choice_state: None,
-            terminal: ratatui::init(),
+            window: Window::builder().build(),
         }
     }
 
@@ -44,7 +39,7 @@ impl UIActor {
                 },
             };
 
-            self.terminal
+            self.window
                 .draw(|frame| {
                     if let Some(choice_state) = &self.choice_state {
                         UIState::new(&choice_state).render(frame.area(), frame.buffer_mut())

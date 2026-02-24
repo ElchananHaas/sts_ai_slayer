@@ -11,7 +11,7 @@ DONE!
 DONE!
 
 ### Act 1 Events
-IN PROGRESS
+All except Neow
 
 ### Map Generation
 DONE!
@@ -42,4 +42,4 @@ TODO
 
 ### Terminal UI
 TODO
-I have decided on Ratatui. The trick is to use the Layout methods.
+I got sidetracked and I am building my own TUI framework.
