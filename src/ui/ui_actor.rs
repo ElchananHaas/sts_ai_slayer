@@ -1,8 +1,8 @@
-use crate::{game::choice::ChoiceState, ui::fight_ui::{draw_ui}};
+use crate::{game::choice::ChoiceState, ui::fight_ui::draw_ui};
 use crossterm::event::Event as CrosstermEvent;
 use fliptui::{
     Window,
-    widgets::{BorderWidget, line_widget},
+    widgets::{BorderWidget, text_line},
 };
 use tokio::sync::mpsc;
 
@@ -42,15 +42,14 @@ impl UIActor {
                 },
             };
 
-            self.window
-                .draw(|mut frame| {
-                    if let Some(choice_state) = &self.choice_state {
-                        draw_ui(&mut frame, choice_state);
-                    } else {
-                        let mut waiting = BorderWidget::builder(&mut frame).build();
-                        line_widget(&mut waiting.center, "Waiting for game start");
-                    }
-                })
+            self.window.draw(|mut frame| {
+                if let Some(choice_state) = &self.choice_state {
+                    draw_ui(&mut frame, choice_state);
+                } else {
+                    let mut waiting = BorderWidget::builder(&mut frame).build();
+                    text_line(&mut waiting.center, "Waiting for game start");
+                }
+            })
         }
     }
 }

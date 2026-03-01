@@ -1,8 +1,8 @@
-use std::cmp::min;
+use std::array;
 use std::fmt::Write;
-
-use fliptui::Widget;
-use fliptui::widgets::TextRegion;
+ 
+use fliptui::{Widget, taffy};
+use fliptui::widgets::{BorderWidget, TextRegion, text_line};
 
 use crate::game::Game;
 use crate::game::choice::{ChoiceState, RestSiteAction};
@@ -18,131 +18,139 @@ impl<'a> UIState<'a> {
 }
 
 fn render_player(widget: &mut Widget, state: &ChoiceState) {
-
     let game = state.game();
-    let mut text_region = TextRegion::new(widget);
+    let mut widget = BorderWidget::builder(widget).build();
+    text_line(&mut widget.title, "Player");
+    let mut text_region = TextRegion::new(&mut widget.center);
     writeln!(&mut text_region, "{}", game.charachter().name());
-    writeln!(&mut text_region, "{}/{} hp", game.player_hp(), game.player_max_hp());
+    writeln!(
+        &mut text_region,
+        "{}/{} hp",
+        game.player_hp(),
+        game.player_max_hp()
+    );
     writeln!(&mut text_region, "{} energy", game.fight().energy());
-    writeln!(&mut text_region, "{} block", game.fight().player_block()).into();
+    writeln!(&mut text_region, "{} block", game.fight().player_block());
     if let Some(position) = game.act().position {
-        writeln!(&mut text_region, "{} block", game.fight().player_block()).into();
-        text.push(format!("floor {}", position.y).into())
+        writeln!(&mut text_region, "{} block", game.fight().player_block());
+        writeln!(&mut text_region, "floor {}", position.y);
     }
-    Paragraph::new(Text::from(text))
-        .block(Block::bordered())
-        .render(area, buf);
 }
 
-fn render_card(state: &ChoiceState, card_idx: usize, area: Rect, buf: &mut Buffer) {
+fn render_card(widget: &mut Widget, state: &ChoiceState, card_idx: usize) {
     let game = state.game();
     let card = game.fight().hand().get(card_idx);
+    let mut widget = BorderWidget::builder(widget).build();
+    let mut text_region = TextRegion::new(&mut widget.center);
     if let Some(card) = card {
         let upgraded = if card.is_upgraded() { "+" } else { "" };
-        let card_contents = if let Some(cost) = game.fight().evaluate_cost(card) {
-            format!("{:?}{} [{}]", card.body, upgraded, cost)
+        if let Some(cost) = game.fight().evaluate_cost(card) {
+            write!(&mut text_region, "{:?}{} [{}]", card.body, upgraded, cost);
         } else {
-            format!("{:?}{} [x]", card.body, upgraded)
+            write!(&mut text_region, "{:?}{}", card.body, upgraded);
         };
-        let text = Text::from(card_contents);
-        Paragraph::new(text)
-            .block(Block::bordered())
-            .render(area, buf);
     }
 }
 
-fn render_cards(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
-    let areas = Layout::horizontal([Constraint::Fill(1); Game::MAX_CARDS_IN_HAND])
-        .areas::<{ Game::MAX_CARDS_IN_HAND }>(area);
+fn render_cards(widget: &mut Widget, state: &ChoiceState) {
+    widget.layout().push_grid_template_row_fr(1.0);
     for i in 0..Game::MAX_CARDS_IN_HAND {
-        render_card(state, i, areas[i], buf);
+        widget.layout().push_grid_template_column_fr(1.0);
+        let mut child = widget.child();
+        child.layout().grid_col(i).grid_row(0);
+        render_card(&mut child, state, i);
     }
 }
 
-fn render_enemy(state: &ChoiceState, enemy_idx: usize, area: Rect, buf: &mut Buffer) {
+fn render_enemy(widget: &mut Widget, state: &ChoiceState, enemy_idx: usize) {
     let game = state.game();
     let enemy = &game.fight().enemies().enemies[enemy_idx];
     let Some(enemy) = enemy else {
         return;
     };
-    let mut text: Vec<Line> = Vec::new();
-    text.push(format!("{}", enemy.name).into());
-    text.push(format!("{}/{} hp", enemy.hp, enemy.max_hp).into());
+    let mut widget = BorderWidget::builder(widget).build();
+    let mut text_region = TextRegion::new(&mut widget.center);
+    writeln!(&mut text_region, "{}", enemy.name);
+    writeln!(&mut text_region, "{}/{} hp", enemy.hp, enemy.max_hp);
     if enemy.block > 0 {
-        text.push(format!("{} block", enemy.block).into());
+        writeln!(&mut text_region, "{} block", enemy.block);
     }
     if enemy.buffs.strength > 0 {
-        text.push(format!("{} str", enemy.buffs.strength).into());
+        writeln!(&mut text_region, "{} str", enemy.buffs.strength);
     }
     if enemy.buffs.ritual > 0 || enemy.buffs.ritual_skip_first > 0 {
-        text.push(
-            format!(
-                "{} ritual",
-                enemy.buffs.ritual + enemy.buffs.ritual_skip_first
-            )
-            .into(),
+        writeln!(
+            &mut text_region,
+            "{} ritual",
+            enemy.buffs.ritual + enemy.buffs.ritual_skip_first
         );
     }
     if enemy.buffs.curl_up > 0 {
-        text.push(format!("{} curl up", enemy.buffs.curl_up).into());
+        writeln!(&mut text_region, "{} curl up", enemy.buffs.curl_up);
     }
     if enemy.debuffs.vulnerable > 0 {
-        text.push(format!("{} vulnerable", enemy.debuffs.vulnerable).into());
+        writeln!(&mut text_region, "{} vulnerable", enemy.debuffs.vulnerable);
     }
     if enemy.debuffs.weak > 0 {
-        text.push(format!("{} weak", enemy.debuffs.weak).into());
+        writeln!(&mut text_region, "{} weak", enemy.debuffs.weak);
     }
-    Paragraph::new(text)
-        .block(Block::bordered())
-        .render(area, buf);
 }
 
-fn render_enemies(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
+fn render_enemies(widget: &mut Widget, state: &ChoiceState) {
     //TODO - this should have a more clever layout.
-    let areas = Layout::horizontal([Constraint::Fill(1); Game::MAX_ENEMIES])
-        .areas::<{ Game::MAX_ENEMIES }>(area);
+    widget.layout().push_grid_template_row_fr(1.0);
     for i in 0..Game::MAX_ENEMIES {
-        render_enemy(state, i, areas[i], buf);
+        widget.layout().push_grid_template_column_fr(1.0);
+        let mut child = widget.child();
+        child.layout().grid_col(i).grid_row(0);
+        render_enemy(&mut child, state, i);
     }
 }
 
-fn main_breakdown(area: Rect) -> [Rect; 3] {
-    let layout = Layout::vertical([
-        Constraint::Length(8),
-        Constraint::Fill(1),
-        Constraint::Length(12),
-    ]);
-    layout.areas(area)
+fn vertical_breakdown<'a>(widget: &mut Widget<'a>) -> [Widget<'a>; 3] {
+    widget
+        .layout()
+        .push_grid_template_column_fr(1.0)
+        .push_grid_template_row_px(8)
+        .push_grid_template_row_fr(1.0)
+        .push_grid_template_row_px(12);
+    array::from_fn(|i| {
+        widget.child().apply(|w| {
+            w.layout().grid_col(0).grid_row(i);
+        })
+    })
 }
 
 fn render_rest_site(
-    widget: &mut Widget, choice_state: &ChoiceState,
+    widget: &mut Widget,
+    _choice_state: &ChoiceState,
     rest_site_actions: Vec<RestSiteAction>,
 ) {
-    let [_top, middle, _bottom] = main_breakdown(area);
+    let [_top, mut middle, _bottom] = vertical_breakdown(widget);
+    middle.layout().flex_direction(taffy::FlexDirection::Row)
+                   .justify_content(taffy::AlignContent::Center)
+                   .align_items(taffy::AlignItems::Center);
     const MAX_RESTSITE_ACTIONS: usize = 5;
-    let areas: [Rect; MAX_RESTSITE_ACTIONS] =
-        Layout::horizontal([Constraint::Length(10); MAX_RESTSITE_ACTIONS])
-            .flex(layout::Flex::Center)
-            .areas::<{ MAX_RESTSITE_ACTIONS }>(middle);
-    for i in 0..(min(MAX_RESTSITE_ACTIONS, rest_site_actions.len())) {
-        let area = areas[i];
-        let area = Layout::vertical([Constraint::Length(10); 1])
-            .flex(layout::Flex::Center)
-            .areas::<1>(area)[0];
-        Paragraph::new(vec![format!("{:?}", rest_site_actions[i]).into()])
-            .block(Block::bordered())
-            .render(area, buf);
+    for i in 0..rest_site_actions.len() {
+        let mut child = widget.child();
+        child.layout().border_left_px(1).border_top_px(1).border_right_px(1).border_bottom_px(1);
+        let mut text_region = TextRegion::new(&mut child);
+        writeln!(&mut text_region, "{:?}", rest_site_actions[i]);
     }
 }
 
 fn render_battlefield(widget: &mut Widget, choice_state: &ChoiceState) {
-    let [top, middle, bottom] = main_breakdown(area);
-    let [player_box, fight_box] =
-        Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(middle);
-    render_player(state.choice_state, player_box, buf);
-    render_cards(state.choice_state, bottom, buf);
-    render_enemies(state.choice_state, fight_box, buf);
+    let [_top, mut middle, mut bottom] = vertical_breakdown(widget);
+    middle.layout().push_grid_template_row_fr(1.0);
+    let [mut player_box, mut fight_box] = array::from_fn(|i| {
+        widget.child().apply(|w| {
+            middle.layout().push_grid_template_column_fr(1.0);
+            w.layout().grid_col(i).grid_row(0);
+        })
+    });
+    render_player(&mut player_box, choice_state);
+    render_cards(&mut bottom, choice_state);
+    render_enemies(&mut fight_box, choice_state);
 }
 
 pub fn draw_ui(widget: &mut Widget, choice_state: &ChoiceState) {
