@@ -1,7 +1,8 @@
 use std::cmp::min;
+use std::fmt::Write;
 
-use ratatui::prelude::*;
-use ratatui::widgets::{Block, Paragraph, Widget};
+use fliptui::Widget;
+use fliptui::widgets::TextRegion;
 
 use crate::game::Game;
 use crate::game::choice::{ChoiceState, RestSiteAction};
@@ -16,15 +17,16 @@ impl<'a> UIState<'a> {
     }
 }
 
-fn render_player(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
+fn render_player(widget: &mut Widget, state: &ChoiceState) {
+
     let game = state.game();
-    let mut text: Vec<Line> = vec![
-        format!("{}", game.charachter().name()).into(),
-        format!("{}/{} hp", game.player_hp(), game.player_max_hp()).into(),
-        format!("{} energy", game.fight().energy()).into(),
-        format!("{} block", game.fight().player_block()).into(),
-    ];
+    let mut text_region = TextRegion::new(widget);
+    writeln!(&mut text_region, "{}", game.charachter().name());
+    writeln!(&mut text_region, "{}/{} hp", game.player_hp(), game.player_max_hp());
+    writeln!(&mut text_region, "{} energy", game.fight().energy());
+    writeln!(&mut text_region, "{} block", game.fight().player_block()).into();
     if let Some(position) = game.act().position {
+        writeln!(&mut text_region, "{} block", game.fight().player_block()).into();
         text.push(format!("floor {}", position.y).into())
     }
     Paragraph::new(Text::from(text))
@@ -104,15 +106,6 @@ fn render_enemies(state: &ChoiceState, area: Rect, buf: &mut Buffer) {
     }
 }
 
-fn render_battlefield(state: &UIState, area: Rect, buf: &mut Buffer) {
-    let [top, middle, bottom] = main_breakdown(area);
-    let [player_box, fight_box] =
-        Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(middle);
-    render_player(state.choice_state, player_box, buf);
-    render_cards(state.choice_state, bottom, buf);
-    render_enemies(state.choice_state, fight_box, buf);
-}
-
 fn main_breakdown(area: Rect) -> [Rect; 3] {
     let layout = Layout::vertical([
         Constraint::Length(8),
@@ -123,9 +116,7 @@ fn main_breakdown(area: Rect) -> [Rect; 3] {
 }
 
 fn render_rest_site(
-    _state: &UIState,
-    area: Rect,
-    buf: &mut Buffer,
+    widget: &mut Widget, choice_state: &ChoiceState,
     rest_site_actions: Vec<RestSiteAction>,
 ) {
     let [_top, middle, _bottom] = main_breakdown(area);
@@ -145,31 +136,38 @@ fn render_rest_site(
     }
 }
 
-impl<'a> Widget for UIState<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        match self.choice_state.choice().clone() {
-            crate::game::choice::Choice::PlayCardState(play_card_actions) => {
-                render_battlefield(&self, area, buf)
-            }
-            crate::game::choice::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
-                render_battlefield(&self, area, buf)
-            }
-            crate::game::choice::Choice::Win => {}
-            crate::game::choice::Choice::Loss => {}
-            crate::game::choice::Choice::MapState(map_state_actions) => {}
-            crate::game::choice::Choice::SelectCardState(
-                play_card_context,
-                select_card_effect,
-                select_card_actions,
-                selection_pile,
-            ) => {}
-            crate::game::choice::Choice::Event(event, event_actions) => {}
-            crate::game::choice::Choice::RemoveCardState(remove_card_actions) => {}
-            crate::game::choice::Choice::TransformCardState(transform_card_actions) => {}
-            crate::game::choice::Choice::UpgradeCardState(upgrade_card_actions) => {}
-            crate::game::choice::Choice::RestSite(rest_site_actions) => {
-                render_rest_site(&self, area, buf, rest_site_actions);
-            }
+fn render_battlefield(widget: &mut Widget, choice_state: &ChoiceState) {
+    let [top, middle, bottom] = main_breakdown(area);
+    let [player_box, fight_box] =
+        Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(middle);
+    render_player(state.choice_state, player_box, buf);
+    render_cards(state.choice_state, bottom, buf);
+    render_enemies(state.choice_state, fight_box, buf);
+}
+
+pub fn draw_ui(widget: &mut Widget, choice_state: &ChoiceState) {
+    match choice_state.choice().clone() {
+        crate::game::choice::Choice::PlayCardState(play_card_actions) => {
+            render_battlefield(widget, choice_state)
+        }
+        crate::game::choice::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
+            render_battlefield(widget, choice_state)
+        }
+        crate::game::choice::Choice::Win => {}
+        crate::game::choice::Choice::Loss => {}
+        crate::game::choice::Choice::MapState(map_state_actions) => {}
+        crate::game::choice::Choice::SelectCardState(
+            play_card_context,
+            select_card_effect,
+            select_card_actions,
+            selection_pile,
+        ) => {}
+        crate::game::choice::Choice::Event(event, event_actions) => {}
+        crate::game::choice::Choice::RemoveCardState(remove_card_actions) => {}
+        crate::game::choice::Choice::TransformCardState(transform_card_actions) => {}
+        crate::game::choice::Choice::UpgradeCardState(upgrade_card_actions) => {}
+        crate::game::choice::Choice::RestSite(rest_site_actions) => {
+            render_rest_site(widget, choice_state, rest_site_actions);
         }
     }
 }

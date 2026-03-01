@@ -1,7 +1,10 @@
-use crate::{game::choice::ChoiceState, ui::fight_ui::UIState};
+use crate::{game::choice::ChoiceState, ui::fight_ui::{draw_ui}};
 use crossterm::event::Event as CrosstermEvent;
-use fliptui::Window;
-use tokio::sync::mpsc::{self, Receiver};
+use fliptui::{
+    Window,
+    widgets::{BorderWidget, line_widget},
+};
+use tokio::sync::mpsc;
 
 pub enum UIEvent {
     NewState(ChoiceState),
@@ -40,17 +43,14 @@ impl UIActor {
             };
 
             self.window
-                .draw(|frame| {
+                .draw(|mut frame| {
                     if let Some(choice_state) = &self.choice_state {
-                        UIState::new(&choice_state).render(frame.area(), frame.buffer_mut())
+                        draw_ui(&mut frame, choice_state);
                     } else {
-                        Paragraph::new("Waiting for game start")
-                            .block(Block::bordered())
-                            .render(frame.area(), frame.buffer_mut());
+                        let mut waiting = BorderWidget::builder(&mut frame).build();
+                        line_widget(&mut waiting.center, "Waiting for game start");
                     }
                 })
-                .expect("Frame rendered successfully.");
         }
-        ratatui::restore();
     }
 }
