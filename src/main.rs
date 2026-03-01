@@ -50,14 +50,17 @@ async fn agent_play() -> Result<(), Box<dyn std::error::Error>> {
     let (sender, receiver) = mpsc::channel(8);
     setup_keystream(sender.clone());
     let mut ui_actor = UIActor::new(receiver);
+    println!("Spawning UI");
     let ui_handle = spawn_local(async move { ui_actor.run().await });
     while !choice.is_over() {
+        println!("Choicing UI");
         //This returns Err if the display is closed. In this case, exit the program.
         let Ok(_) = sender.send(UIEvent::NewState(choice.clone())).await else {
             break;
         };
         agent.take_action(&mut choice, &mut rng);
     }
+    println!("Exiting..");
     //The UI actor has some code to restore terminal settings on drop. This 
     //join ensures it will be run. It already has a panic hook by default.
     ui_handle.await.expect("UI exited");
