@@ -1,3 +1,5 @@
+use std::fs::File;
+
 use crate::{game::choice::ChoiceState, ui::fight_ui::draw_ui};
 use crossterm::event::Event as CrosstermEvent;
 use fliptui::{
@@ -19,10 +21,11 @@ pub struct UIActor {
 
 impl UIActor {
     pub fn new(receiver: mpsc::Receiver<UIEvent>) -> Self {
+        let file = File::create("uilog.txt").unwrap();
         Self {
             receiver,
             choice_state: None,
-            window: Window::builder().build(),
+            window: Window::builder().log_file(file).build(),
         }
     }
 
@@ -49,7 +52,9 @@ impl UIActor {
                     let mut waiting = BorderWidget::builder(&mut frame).build();
                     text_line(&mut waiting.center, "Waiting for game start");
                 }
-            })
+            });
+
+            self.window.debug_log_cached_tree();
         }
     }
 }

@@ -35,8 +35,8 @@ struct MctsEntry {
 }
 
 const EXPLORE_FACTOR: f32 = 10.0;
-const MCTS_ITERATIONS: usize = 4000;
-const REWARD_PRINT_INTERVAL: usize = 1000;
+const MCTS_ITERATIONS: usize = 2000;
+const REWARD_PRINT_INTERVAL: usize = 500;
 impl MctsEntry {
     fn ucb(&self, rng: &mut Rng) -> usize {
         let mut zero_taken = 0;

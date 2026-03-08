@@ -6,7 +6,7 @@ use crate::{
 
 const ENEMY_NAME: &'static str = "Looter";
 pub fn generate_looter(rng: &mut Rng) -> Enemy {
-    let hp = uniform_inclusive(rng, 8, 12);
+    let hp = uniform_inclusive(rng, 44, 48);
     fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
         // States are
         // 0) Playing Attack
