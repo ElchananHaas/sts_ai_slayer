@@ -53,8 +53,6 @@ impl UIActor {
                     text_line(&mut waiting.center, "Waiting for game start");
                 }
             });
-
-            self.window.debug_log_cached_tree();
         }
     }
 }
