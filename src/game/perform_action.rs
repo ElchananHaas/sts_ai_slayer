@@ -14,7 +14,7 @@ use crate::{
 impl Game {
     pub(super) fn perform_selected_action(
         &mut self,
-        context: &mut PlayCardContext,
+        _context: &mut PlayCardContext,
         effect: SelectCardEffect,
         action: SelectCardAction,
     ) {

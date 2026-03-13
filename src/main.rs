@@ -1,7 +1,11 @@
-use std::{error::Error, thread::{self, JoinHandle}};
+use std::{
+    error::Error,
+    thread::{self, JoinHandle},
+};
 
 use crate::{
-    agents::agent_helper::Agent, ui::ui_actor::{UIActor, UIEvent}
+    agents::agent_helper::Agent,
+    ui::ui_actor::{UIActor, UIEvent},
 };
 use agents::agent_helper::SkipSingleChoiceAgent;
 use agents::mcts_agent::MctsAgent;
@@ -10,7 +14,10 @@ use crossterm::event::EventStream;
 use futures::StreamExt;
 use game::{Character, Game};
 use rng::Rng;
-use tokio::{sync::mpsc::{self, Sender}, task::{LocalSet, spawn_local}};
+use tokio::{
+    sync::mpsc::{self, Sender},
+    task::{LocalSet, spawn_local},
+};
 
 mod act;
 mod agents;
@@ -46,10 +53,16 @@ fn spawn_game_thread(sender: Sender<UIEvent>) -> JoinHandle<()> {
             agent: MctsAgent {},
         };
         let mut choice = game.start();
-        while !choice.is_over() {
-            if sender.blocking_send(UIEvent::NewState(choice.clone())).is_err() {
+        loop {
+            if sender
+                .blocking_send(UIEvent::NewState(choice.clone()))
+                .is_err()
+            {
                 // If the main thread isn't listening for messages anymore, return.
                 // This can happen if the UI is shut down.
+                return;
+            }
+            if choice.is_over() {
                 return;
             }
             agent.take_action(&mut choice, &mut rng);
@@ -63,7 +76,7 @@ async fn agent_play() -> Result<(), Box<dyn Error>> {
     spawn_game_thread(sender.clone());
     let mut ui_actor = UIActor::new(receiver);
     let ui_handle = spawn_local(async move { ui_actor.run().await });
-    //The UI actor has some code to restore terminal settings on drop. This 
+    //The UI actor has some code to restore terminal settings on drop. This
     //join ensures it will be run. It already has a panic hook by default.
     ui_handle.await.expect("UI exited");
     Ok(())

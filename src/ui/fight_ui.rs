@@ -1,8 +1,8 @@
 use std::array;
 use std::fmt::Write;
- 
-use fliptui::{Widget, taffy};
+
 use fliptui::widgets::{BorderWidget, TextRegion, text_line};
+use fliptui::{Widget, taffy};
 
 use crate::game::Game;
 use crate::game::choice::{ChoiceState, RestSiteAction};
@@ -20,7 +20,7 @@ macro_rules! write {
     };
 }
 
-fn render_player(widget: &mut Widget, state: &ChoiceState)  {
+fn render_player(widget: &mut Widget, state: &ChoiceState) {
     let game = state.game();
     let mut widget = BorderWidget::builder(widget).build();
     text_line(&mut widget.title, "Player");
@@ -38,10 +38,9 @@ fn render_player(widget: &mut Widget, state: &ChoiceState)  {
         writeln!(&mut text_region, "{} block", game.fight().player_block());
         writeln!(&mut text_region, "floor {}", position.y);
     }
-    
 }
 
-fn render_card(widget: &mut Widget, state: &ChoiceState, card_idx: usize)  {
+fn render_card(widget: &mut Widget, state: &ChoiceState, card_idx: usize) {
     let game = state.game();
     let card = game.fight().hand().get(card_idx);
     let mut widget = BorderWidget::builder(widget).build();
@@ -54,10 +53,9 @@ fn render_card(widget: &mut Widget, state: &ChoiceState, card_idx: usize)  {
             write!(&mut text_region, "{:?}{}", card.body, upgraded);
         };
     }
-    
 }
 
-fn render_cards(widget: &mut Widget, state: &ChoiceState)  {
+fn render_cards(widget: &mut Widget, state: &ChoiceState) {
     widget.layout().push_grid_template_row_fr(1.0);
     for i in 0..Game::MAX_CARDS_IN_HAND {
         widget.layout().push_grid_template_column_fr(1.0);
@@ -65,14 +63,13 @@ fn render_cards(widget: &mut Widget, state: &ChoiceState)  {
         child.layout().grid_col(i).grid_row(0);
         render_card(&mut child, state, i);
     }
-    
 }
 
-fn render_enemy(widget: &mut Widget, state: &ChoiceState, enemy_idx: usize)  {
+fn render_enemy(widget: &mut Widget, state: &ChoiceState, enemy_idx: usize) {
     let game = state.game();
     let enemy = &game.fight().enemies().enemies[enemy_idx];
     let Some(enemy) = enemy else {
-        return ;
+        return;
     };
     let mut widget = BorderWidget::builder(widget).build();
     let mut text_region = TextRegion::new(&mut widget.center);
@@ -100,10 +97,9 @@ fn render_enemy(widget: &mut Widget, state: &ChoiceState, enemy_idx: usize)  {
     if enemy.debuffs.weak > 0 {
         writeln!(&mut text_region, "{} weak", enemy.debuffs.weak);
     }
-    
 }
 
-fn render_enemies(widget: &mut Widget, state: &ChoiceState)  {
+fn render_enemies(widget: &mut Widget, state: &ChoiceState) {
     //TODO - this should have a more clever layout.
     widget.layout().push_grid_template_row_fr(1.0);
     for i in 0..Game::MAX_ENEMIES {
@@ -112,12 +108,10 @@ fn render_enemies(widget: &mut Widget, state: &ChoiceState)  {
         child.layout().grid_col(i).grid_row(0);
         render_enemy(&mut child, state, i);
     }
-    
 }
 
 fn vertical_breakdown<'a>(widget: &mut Widget<'a>) -> [Widget<'a>; 3] {
-    widget.layout().height_percent(1.0)
-                   .width_percent(1.0);
+    widget.layout().height_percent(1.0).width_percent(1.0);
     widget
         .layout()
         .push_grid_template_column_fr(1.0)
@@ -136,21 +130,51 @@ fn render_rest_site(
     widget: &mut Widget,
     _choice_state: &ChoiceState,
     rest_site_actions: Vec<RestSiteAction>,
-)  {
+) {
     let [_top, mut middle, _bottom] = vertical_breakdown(widget);
-    middle.layout().flex_direction(taffy::FlexDirection::Row)
-                   .justify_content(taffy::AlignContent::Center)
-                   .align_items(taffy::AlignItems::Center);
+    middle
+        .layout()
+        .flex_direction(taffy::FlexDirection::Row)
+        .justify_content(taffy::AlignContent::Center)
+        .align_items(taffy::AlignItems::Center);
     for i in 0..rest_site_actions.len() {
-        let mut child = widget.child();
-        child.layout().border_left_px(1).border_top_px(1).border_right_px(1).border_bottom_px(1);
-        let mut text_region = TextRegion::new(&mut child);
+        let mut child = middle.child();
+        let mut child = BorderWidget::builder(&mut child).build();
+        child
+            .center
+            .layout()
+            .border_left_px(1)
+            .border_top_px(1)
+            .border_right_px(1)
+            .border_bottom_px(1);
+        let mut text_region = TextRegion::new(&mut child.center);
         writeln!(&mut text_region, "{:?}", rest_site_actions[i]);
     }
-    
 }
 
-fn render_battlefield(widget: &mut Widget, choice_state: &ChoiceState)  {
+fn render_game_over(widget: &mut Widget, choice_state: &ChoiceState) {
+    let [_top, mut middle, _bottom] = vertical_breakdown(widget);
+    middle
+        .layout()
+        .justify_content(taffy::AlignContent::Center)
+        .align_items(taffy::AlignItems::Center);
+    render_game_over_box(&mut middle.child(), choice_state);
+}
+
+fn render_game_over_box(widget: &mut Widget, choice_state: &ChoiceState) {
+    let mut widget = BorderWidget::builder(widget).build();
+    let mut text_region = TextRegion::new(&mut widget.center);
+    match &choice_state.choice() {
+        crate::game::choice::Choice::Win => {
+            writeln!(&mut text_region, "Victory!");
+        }
+        crate::game::choice::Choice::Loss => {
+            writeln!(&mut text_region, "Loss");
+        }
+        _ => panic!("render_game_over_box called in a non game over state"),
+    }
+}
+fn render_battlefield(widget: &mut Widget, choice_state: &ChoiceState) {
     let [_top, mut middle, mut bottom] = vertical_breakdown(widget);
     middle.layout().push_grid_template_row_fr(1.0);
     let [mut player_box, mut fight_box] = array::from_fn(|i| {
@@ -162,19 +186,22 @@ fn render_battlefield(widget: &mut Widget, choice_state: &ChoiceState)  {
     render_player(&mut player_box, choice_state);
     render_cards(&mut bottom, choice_state);
     render_enemies(&mut fight_box, choice_state);
-    
 }
 
 pub fn draw_ui(widget: &mut Widget, choice_state: &ChoiceState) {
     match choice_state.choice().clone() {
         crate::game::choice::Choice::PlayCardState(play_card_actions) => {
-            let _ = render_battlefield(widget, choice_state);
+            render_battlefield(widget, choice_state);
         }
         crate::game::choice::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
-            let _ = render_battlefield(widget, choice_state);
+            render_battlefield(widget, choice_state);
         }
-        crate::game::choice::Choice::Win => {}
-        crate::game::choice::Choice::Loss => {}
+        crate::game::choice::Choice::Win => {
+            render_game_over(widget, choice_state);
+        }
+        crate::game::choice::Choice::Loss => {
+            render_game_over(widget, choice_state);
+        }
         crate::game::choice::Choice::MapState(map_state_actions) => {}
         crate::game::choice::Choice::SelectCardState(
             play_card_context,
@@ -187,7 +214,7 @@ pub fn draw_ui(widget: &mut Widget, choice_state: &ChoiceState) {
         crate::game::choice::Choice::TransformCardState(transform_card_actions) => {}
         crate::game::choice::Choice::UpgradeCardState(upgrade_card_actions) => {}
         crate::game::choice::Choice::RestSite(rest_site_actions) => {
-            let _ = render_rest_site(widget, choice_state, rest_site_actions);
+            render_rest_site(widget, choice_state, rest_site_actions);
         }
     }
 }

@@ -28,7 +28,7 @@ impl Game {
     pub(super) fn handle_rest_site_action(&mut self, action: RestSiteAction) -> Choice {
         match action {
             RestSiteAction::Heal => {
-                self.heal((self.player_max_hp * 10) / 3);
+                self.heal((self.player_max_hp * 3) / 10);
                 self.goto_map()
             }
             RestSiteAction::Upgrade => self.goto_upgrade_card(),
