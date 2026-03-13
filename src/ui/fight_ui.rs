@@ -105,14 +105,12 @@ fn render_enemy(widget: &mut Widget, state: &ChoiceState, enemy_idx: usize)  {
 
 fn render_enemies(widget: &mut Widget, state: &ChoiceState)  {
     //TODO - this should have a more clever layout.
-    writeln!(widget.log(), "Enemy container pos: {:?}, {:?}",widget.get_coordinates(), widget.get_size());
     widget.layout().push_grid_template_row_fr(1.0);
     for i in 0..Game::MAX_ENEMIES {
         widget.layout().push_grid_template_column_fr(1.0);
         let mut child = widget.child();
         child.layout().grid_col(i).grid_row(0);
         render_enemy(&mut child, state, i);
-        writeln!(child.log(), "Enemy pos: {:?}, {:?}",child.get_coordinates(), child.get_size());
     }
     
 }
@@ -120,7 +118,6 @@ fn render_enemies(widget: &mut Widget, state: &ChoiceState)  {
 fn vertical_breakdown<'a>(widget: &mut Widget<'a>) -> [Widget<'a>; 3] {
     widget.layout().height_percent(1.0)
                    .width_percent(1.0);
-    writeln!(widget.log(), "{:?}, {:?}",widget.get_coordinates(), widget.get_size());
     widget
         .layout()
         .push_grid_template_column_fr(1.0)
@@ -132,9 +129,6 @@ fn vertical_breakdown<'a>(widget: &mut Widget<'a>) -> [Widget<'a>; 3] {
             w.layout().grid_col(0).grid_row(i);
         })
     });
-    for w in &res {
-        writeln!(widget.log(), "{:?}, {:?}",w.get_coordinates(), w.get_size());
-    }
     res
 }
 
@@ -165,10 +159,6 @@ fn render_battlefield(widget: &mut Widget, choice_state: &ChoiceState)  {
             w.layout().grid_col(i).grid_row(0);
         })
     });
-    writeln!(player_box.log(), "middle: {:?}, {:?}",middle.get_coordinates(), middle.get_size());
-    writeln!(player_box.log(), "player_box: {:?}, {:?}",player_box.get_coordinates(), player_box.get_size());
-    writeln!(fight_box.log(), "fight_box: {:?}, {:?}",fight_box.get_coordinates(), fight_box.get_size());
-    writeln!(bottom.log(), "bottom: {:?}, {:?}",bottom.get_coordinates(), bottom.get_size());
     render_player(&mut player_box, choice_state);
     render_cards(&mut bottom, choice_state);
     render_enemies(&mut fight_box, choice_state);

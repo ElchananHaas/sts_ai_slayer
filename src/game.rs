@@ -36,7 +36,7 @@ pub struct Game {
     player_hp: i32,
     player_max_hp: i32,
     max_potion_slots: i32,
-    charachter: Charachter,
+    charachter: Character,
     fight: Fight,
     base_deck: Vec<Card>,
     relic_pool: RelicPool,
@@ -784,15 +784,15 @@ fn debuff_player_turn_wind_down(x: &mut i32, amount: i32) {
 }
 
 impl Game {
-    pub fn new(charachter: Charachter) -> Self {
+    pub fn new(character: Character) -> Self {
         let mut rng = Rng::new();
         let map = ActMap::standard(&mut rng);
-        match charachter {
-            Charachter::IRONCLAD => Game {
+        match character {
+            Character::IRONCLAD => Game {
                 player_hp: 80,
                 player_max_hp: 80,
                 max_potion_slots: 3,
-                charachter,
+                charachter: character,
                 fight: Fight::new(),
                 gold: 99,
                 base_deck: vec![
@@ -813,9 +813,9 @@ impl Game {
                 map,
                 act: Act::new(),
             },
-            Charachter::SILENT => todo!(),
-            Charachter::DEFECT => todo!(),
-            Charachter::WATCHER => todo!(),
+            Character::SILENT => todo!(),
+            Character::DEFECT => todo!(),
+            Character::WATCHER => todo!(),
         }
     }
 
@@ -829,20 +829,20 @@ impl Game {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum Charachter {
+pub enum Character {
     IRONCLAD,
     SILENT,
     DEFECT,
     WATCHER,
 }
 
-impl Charachter {
+impl Character {
     pub fn name(&self) -> &'static str {
         match self {
-            Charachter::IRONCLAD => "Ironclad",
-            Charachter::SILENT => "Silent",
-            Charachter::DEFECT => "Defect",
-            Charachter::WATCHER => "Watcher",
+            Character::IRONCLAD => "Ironclad",
+            Character::SILENT => "Silent",
+            Character::DEFECT => "Defect",
+            Character::WATCHER => "Watcher",
         }
     }
 }

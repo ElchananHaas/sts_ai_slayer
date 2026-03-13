@@ -113,7 +113,7 @@ fn mcts(state: &ChoiceState, rng: &mut Rng) -> usize {
     //This should be changed to an identity hasher.
     let mut value_map: HashMap<u64, MctsEntry> = HashMap::new();
     //This will be overwritten.
-    let mut temp_game = Game::new(crate::game::Charachter::IRONCLAD).start();
+    let mut temp_game = Game::new(crate::game::Character::IRONCLAD).start();
     let state_hash = hash_choice_state(&state);
     for i in 0..MCTS_ITERATIONS {
         state.clone_to(&mut temp_game);
