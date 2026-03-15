@@ -2,17 +2,21 @@ use std::array;
 use std::fmt::Write;
 
 use fliptui::taffy::{FlexDirection, FlexWrap};
-use fliptui::widgets::{BorderWidget, TextRegion};
+use fliptui::widgets::{BorderWidget, TextRegion, text_line};
 use fliptui::{Widget, taffy};
 
+use crate::card::Card;
 use crate::game::Game;
 use crate::game::choice::{ChoiceState, RestSiteAction, SelectDeckCardAction};
+use crate::map::{self, NUM_FLOORS, ROW_WIDTH};
 
 //This forwards all input to the standard writeln/write macro, but ignores the result. This
 //is useful for writing ot the TextRegion because those write calls will never error.
 macro_rules! writeln {
     ($($arg:tt)*) => {
-        let _ = std::writeln!($($arg)*);
+        {
+            let _ = std::writeln!($($arg)*);
+        }
     };
 }
 macro_rules! write {
@@ -50,19 +54,21 @@ fn render_player(widget: &mut Widget, state: &ChoiceState) {
     .build();
 }
 
-fn render_card(widget: &mut Widget, state: &ChoiceState, card_idx: usize) {
+fn render_card(widget: &mut Widget, state: &ChoiceState, card: &Card) {
+    simple_boxed_text(widget, |text_region| {
+        let upgraded = if card.is_upgraded() { "+" } else { "" };
+        if let Some(cost) = state.game().fight().evaluate_cost(card) {
+            write!(text_region, "{:?}{} [{}]", card.body, upgraded, cost);
+        } else {
+            write!(text_region, "{:?}{}", card.body, upgraded);
+        };
+    });
+}
+
+fn render_hand_card(widget: &mut Widget, state: &ChoiceState, card_idx: usize) {
     let game = state.game();
     let card = game.fight().hand().get(card_idx);
-    simple_boxed_text(widget, |text_region| {
-        if let Some(card) = card {
-            let upgraded = if card.is_upgraded() { "+" } else { "" };
-            if let Some(cost) = game.fight().evaluate_cost(card) {
-                write!(text_region, "{:?}{} [{}]", card.body, upgraded, cost);
-            } else {
-                write!(text_region, "{:?}{}", card.body, upgraded);
-            };
-        }
-    });
+    card.map(|card| render_card(widget, state, card));
 }
 
 fn render_cards(widget: &mut Widget, state: &ChoiceState) {
@@ -71,7 +77,7 @@ fn render_cards(widget: &mut Widget, state: &ChoiceState) {
         widget.layout().push_grid_template_column_fr(1.0);
         let mut child = widget.child();
         child.layout().grid_col(i).grid_row(0);
-        child.apply(|child| render_card(child, state, i));
+        child.apply(|child| render_hand_card(child, state, i));
     }
 }
 
@@ -230,9 +236,48 @@ pub fn render_card_view_inner(
         .flex_direction(FlexDirection::Row)
         .flex_wrap(FlexWrap::Wrap);
     for action in &actions {
-        widget
-            .child()
-            .apply(|child| render_card(child, choice_state, action.0));
+        choice_state.game().base_deck().get(action.0).map(|card| {
+            widget
+                .child()
+                .apply(|child| render_card(child, choice_state, card));
+        });
+    }
+}
+
+pub fn render_map_state(widget: &mut Widget, choice_state: &ChoiceState) {
+    let game = &**choice_state.game();
+    let position = game.act().position;
+    for _ in 0..ROW_WIDTH {
+        widget.layout().push_grid_template_row_fr(1.0);
+    }
+    for _ in 0..NUM_FLOORS {
+        widget.layout().push_grid_template_column_fr(1.0);
+    }
+    for i in 0..map::NUM_FLOORS {
+        for j in 0..map::ROW_WIDTH {
+            widget.child().apply(|child| {
+                child
+                    .layout()
+                    .grid_row(j)
+                    .grid_col(i)
+                    .align_self(taffy::AlignItems::Center)
+                    .justify_self(taffy::AlignItems::Center);
+                let room = game.map().rooms[i][j];
+                let text = match room.room_type {
+                    map::RoomType::QuestionMark => "?",
+                    map::RoomType::Shop => "Shop",
+                    map::RoomType::Treasure => "Chest",
+                    map::RoomType::Rest => "Rest",
+                    map::RoomType::Monster => "Fight",
+                    map::RoomType::Elite => "Elite",
+                    map::RoomType::Unassigned => "",
+                };
+                if position.is_some_and(|pos| pos.x as usize == j && pos.y as usize == i) {
+                    simple_boxed_text(child, |writer| writeln!(writer, "{text}"));
+                }
+                text_line(child, text);
+            });
+        }
     }
 }
 
@@ -250,7 +295,9 @@ pub fn draw_ui(widget: &mut Widget, choice_state: &ChoiceState) {
         crate::game::choice::Choice::Loss => {
             render_game_over(widget, choice_state);
         }
-        crate::game::choice::Choice::MapState(map_state_actions) => {}
+        crate::game::choice::Choice::MapState(map_state_actions) => {
+            render_map_state(widget, choice_state);
+        }
         crate::game::choice::Choice::SelectCardState(
             play_card_context,
             select_card_effect,

@@ -2,8 +2,8 @@ use smallvec::SmallVec;
 
 use crate::rng::Rng;
 
-const ROW_WIDTH: usize = 7;
-const NUM_FLOORS: usize = 15;
+pub const ROW_WIDTH: usize = 7;
+pub const NUM_FLOORS: usize = 15;
 const SHOP_CHANCE: f32 = 0.05;
 const QUESTION_CHANCE: f32 = 0.22;
 const ELITE_CHANCE: f32 = 0.08;
