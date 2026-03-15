@@ -2,11 +2,8 @@ use smallvec::SmallVec;
 
 use crate::game::{
     Game,
-    choice::{
-        Choice, MapStateAction, RemoveCardAction, RestSiteAction, TransformCardAction,
-        UpgradeCardAction,
-    },
-    encounter::{self, Encounter},
+    choice::{Choice, MapStateAction, RestSiteAction, SelectDeckCardAction, SelectDeckCardReason},
+    encounter::Encounter,
 };
 
 impl Game {
@@ -14,26 +11,26 @@ impl Game {
         let mut res = Vec::new();
         for i in 0..self.base_deck.len() {
             if self.base_deck[i].body.removable() {
-                res.push(TransformCardAction(i));
+                res.push(SelectDeckCardAction(i));
             }
         }
         if res.len() == 0 {
             return self.goto_map();
         }
-        Choice::TransformCardState(res)
+        Choice::SelectDeckCardState(SelectDeckCardReason::Transform, res)
     }
 
     pub(super) fn goto_upgrade_card(&mut self) -> Choice {
         let mut res = Vec::new();
         for i in 0..self.base_deck.len() {
             if self.base_deck[i].can_upgrade() {
-                res.push(UpgradeCardAction(i));
+                res.push(SelectDeckCardAction(i));
             }
         }
         if res.len() == 0 {
             return self.goto_map();
         }
-        Choice::UpgradeCardState(res)
+        Choice::SelectDeckCardState(SelectDeckCardReason::Upgrade, res)
     }
 
     pub(super) fn goto_rest_site(&mut self) -> Choice {
@@ -74,13 +71,13 @@ impl Game {
         let mut res = Vec::new();
         for i in 0..self.base_deck.len() {
             if self.base_deck[i].body.removable() {
-                res.push(RemoveCardAction(i));
+                res.push(SelectDeckCardAction(i));
             }
         }
         if res.len() == 0 {
             return self.goto_map();
         }
-        Choice::RemoveCardState(res)
+        Choice::SelectDeckCardState(SelectDeckCardReason::Remove, res)
     }
 
     fn update_act_from_fight(&mut self, encounter: Encounter) {

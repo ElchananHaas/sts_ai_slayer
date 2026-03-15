@@ -53,24 +53,24 @@ pub enum MapStateAction {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct EventAction(pub usize);
 
-//Remove the i'th card in the deck.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct RemoveCardAction(pub usize);
-
-//Transform the i'th card in the deck.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct TransformCardAction(pub usize);
-
-//Upgrade the i'th card in the deck.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct UpgradeCardAction(pub usize);
-
 //Rest Site Actions
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum RestSiteAction {
     Heal,
     Upgrade,
 }
+
+//Rest Site Actions
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum SelectDeckCardReason {
+    Remove,
+    Transform,
+    Upgrade,
+}
+
+//Select the i'th card in the deck.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct SelectDeckCardAction(pub usize);
 
 #[must_use]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -88,9 +88,7 @@ pub enum Choice {
         SelectionPile,
     ),
     Event(Event, Vec<EventAction>),
-    RemoveCardState(Vec<RemoveCardAction>),
-    TransformCardState(Vec<TransformCardAction>),
-    UpgradeCardState(Vec<UpgradeCardAction>),
+    SelectDeckCardState(SelectDeckCardReason, Vec<SelectDeckCardAction>),
     RestSite(Vec<RestSiteAction>),
 }
 
@@ -146,12 +144,13 @@ impl ChoiceState {
             Choice::Event(event, actions) => {
                 event.handle_action(&mut self.game, actions[action_idx])
             }
-            Choice::RemoveCardState(actions) => game.handle_remove_card_action(actions[action_idx]),
-            Choice::TransformCardState(actions) => {
-                game.handle_transform_card_action(actions[action_idx])
-            }
-            Choice::UpgradeCardState(actions) => {
-                game.handle_upgrade_card_action(actions[action_idx])
+            Choice::SelectDeckCardState(reason, actions) => {
+                let action = actions[action_idx];
+                match reason {
+                    SelectDeckCardReason::Remove => game.handle_remove_card_action(action.0),
+                    SelectDeckCardReason::Transform => game.handle_transform_card_action(action.0),
+                    SelectDeckCardReason::Upgrade => game.handle_upgrade_card_action(action.0),
+                }
             }
             Choice::RestSite(rest_site_actions) => {
                 game.handle_rest_site_action(rest_site_actions[action_idx])
@@ -218,17 +217,9 @@ impl ChoiceState {
             Choice::Event(event, event_actions) => {
                 event.action_str(&self.game, event_actions[action_idx])
             }
-            Choice::RemoveCardState(remove_card_actions) => {
-                let card = &self.game.base_deck[remove_card_actions[action_idx].0];
-                format!("Remove {:?}", card.body)
-            }
-            Choice::TransformCardState(transform_card_actions) => {
-                let card = &self.game.base_deck[transform_card_actions[action_idx].0];
-                format!("Transform {:?}", card.body)
-            }
-            Choice::UpgradeCardState(transform_card_actions) => {
-                let card = &self.game.base_deck[transform_card_actions[action_idx].0];
-                format!("Upgrade {:?}", card.body)
+            Choice::SelectDeckCardState(reason, actions) => {
+                let card = &self.game.base_deck[actions[action_idx].0];
+                format!("{:?} {:?}", reason, card.body)
             }
             Choice::RestSite(actions) => {
                 let action = actions[action_idx];
@@ -251,9 +242,7 @@ impl ChoiceState {
                 _selection_type,
             ) => select_card_actions.len(),
             Choice::Event(_event, event_actions) => event_actions.len(),
-            Choice::RemoveCardState(actions) => actions.len(),
-            Choice::TransformCardState(actions) => actions.len(),
-            Choice::UpgradeCardState(actions) => actions.len(),
+            Choice::SelectDeckCardState(reason, actions) => actions.len(),
             Choice::RestSite(actions) => actions.len(),
         }
     }
@@ -302,9 +291,11 @@ impl Display for ChoiceState {
             Choice::MapState(_) => "MapState",
             Choice::SelectCardState(_ctx, __effect, _actions, _type) => "SelectCard",
             Choice::Event(event, _actions) => event.name(),
-            Choice::RemoveCardState(_) => "RemoveCard",
-            Choice::TransformCardState(_) => "TransformCard",
-            Choice::UpgradeCardState(_) => "UpgradeCard",
+            Choice::SelectDeckCardState(reason, _) => match reason {
+                SelectDeckCardReason::Remove => "RemoveCard",
+                SelectDeckCardReason::Transform => "TransformCard",
+                SelectDeckCardReason::Upgrade => "UpgradeCard",
+            },
             Choice::RestSite(_) => "RestSite",
         };
         dash_line(f)?;

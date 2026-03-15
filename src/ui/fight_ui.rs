@@ -1,11 +1,12 @@
 use std::array;
 use std::fmt::Write;
 
+use fliptui::taffy::{FlexDirection, FlexWrap};
 use fliptui::widgets::{BorderWidget, TextRegion};
 use fliptui::{Widget, taffy};
 
 use crate::game::Game;
-use crate::game::choice::{ChoiceState, RestSiteAction};
+use crate::game::choice::{ChoiceState, RestSiteAction, SelectDeckCardAction};
 
 //This forwards all input to the standard writeln/write macro, but ignores the result. This
 //is useful for writing ot the TextRegion because those write calls will never error.
@@ -200,6 +201,41 @@ fn render_battlefield(widget: &mut Widget, choice_state: &ChoiceState) {
     render_enemies(&mut fight_box, choice_state);
 }
 
+pub fn render_card_view(
+    widget: &mut Widget,
+    choice_state: &ChoiceState,
+    actions: Vec<SelectDeckCardAction>,
+) {
+    widget.layout().height_percent(1.0).width_percent(1.0);
+    widget
+        .layout()
+        .push_grid_template_column_fr(1.0)
+        .push_grid_template_row_px(6)
+        .push_grid_template_row_fr(1.0);
+    let [_top, mut middle] = array::from_fn(|i| {
+        widget.child().apply(|w| {
+            w.layout().grid_col(0).grid_row(i);
+        })
+    });
+    render_card_view_inner(&mut middle, choice_state, actions);
+}
+
+pub fn render_card_view_inner(
+    widget: &mut Widget,
+    choice_state: &ChoiceState,
+    actions: Vec<SelectDeckCardAction>,
+) {
+    widget
+        .layout()
+        .flex_direction(FlexDirection::Row)
+        .flex_wrap(FlexWrap::Wrap);
+    for action in &actions {
+        widget
+            .child()
+            .apply(|child| render_card(child, choice_state, action.0));
+    }
+}
+
 pub fn draw_ui(widget: &mut Widget, choice_state: &ChoiceState) {
     match choice_state.choice().clone() {
         crate::game::choice::Choice::PlayCardState(play_card_actions) => {
@@ -222,9 +258,9 @@ pub fn draw_ui(widget: &mut Widget, choice_state: &ChoiceState) {
             selection_pile,
         ) => {}
         crate::game::choice::Choice::Event(event, event_actions) => {}
-        crate::game::choice::Choice::RemoveCardState(remove_card_actions) => {}
-        crate::game::choice::Choice::TransformCardState(transform_card_actions) => {}
-        crate::game::choice::Choice::UpgradeCardState(upgrade_card_actions) => {}
+        crate::game::choice::Choice::SelectDeckCardState(reason, actions) => {
+            render_card_view(widget, choice_state, actions);
+        }
         crate::game::choice::Choice::RestSite(rest_site_actions) => {
             render_rest_site(widget, choice_state, rest_site_actions);
         }

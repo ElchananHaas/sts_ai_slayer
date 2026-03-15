@@ -11,8 +11,8 @@ use crate::{
         Game, QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT,
         QUESTION_TREASURE_BASE_WEIGHT,
         choice::{
-            Choice, ChooseEnemyAction, MapStateAction, PlayCardAction, RemoveCardAction,
-            RestSiteAction, SelectCardAction, TransformCardAction, UpgradeCardAction,
+            Choice, ChooseEnemyAction, MapStateAction, PlayCardAction, RestSiteAction,
+            SelectCardAction,
         },
         encounter::Encounter,
     },
@@ -20,8 +20,8 @@ use crate::{
 };
 
 impl Game {
-    pub(super) fn handle_remove_card_action(&mut self, removal: RemoveCardAction) -> Choice {
-        self.base_deck.remove(removal.0);
+    pub(super) fn handle_remove_card_action(&mut self, idx: usize) -> Choice {
+        self.base_deck.remove(idx);
         self.goto_map()
     }
 
@@ -35,11 +35,8 @@ impl Game {
         }
     }
 
-    pub(super) fn handle_transform_card_action(
-        &mut self,
-        transform: TransformCardAction,
-    ) -> Choice {
-        let card = self.base_deck.remove(transform.0);
+    pub(super) fn handle_transform_card_action(&mut self, idx: usize) -> Choice {
+        let card = self.base_deck.remove(idx);
         let transformed = if card.body.card_type() == CardType::Curse {
             sample_card(CURSE_CARDS, &mut self.rng)
         } else {
@@ -55,8 +52,8 @@ impl Game {
         self.goto_map()
     }
 
-    pub(super) fn handle_upgrade_card_action(&mut self, upgrade: UpgradeCardAction) -> Choice {
-        self.base_deck[upgrade.0].upgrade();
+    pub(super) fn handle_upgrade_card_action(&mut self, idx: usize) -> Choice {
+        self.base_deck[idx].upgrade();
         self.goto_map()
     }
 
