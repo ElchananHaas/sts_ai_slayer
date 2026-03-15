@@ -20,6 +20,13 @@ macro_rules! write {
     };
 }
 
+fn simple_boxed_text(widget: &mut Widget, f: impl FnOnce(&mut TextRegion)) {
+    BorderWidget::builder(widget, |center| {
+        let mut text_region = TextRegion::new(center);
+        (f)(&mut text_region)
+    })
+    .build();
+}
 fn render_player(widget: &mut Widget, state: &ChoiceState) {
     let game = state.game();
     BorderWidget::builder(widget, |center| {
@@ -45,18 +52,16 @@ fn render_player(widget: &mut Widget, state: &ChoiceState) {
 fn render_card(widget: &mut Widget, state: &ChoiceState, card_idx: usize) {
     let game = state.game();
     let card = game.fight().hand().get(card_idx);
-    BorderWidget::builder(widget, |center| {
-        let mut text_region = TextRegion::new(center);
+    simple_boxed_text(widget, |text_region| {
         if let Some(card) = card {
             let upgraded = if card.is_upgraded() { "+" } else { "" };
             if let Some(cost) = game.fight().evaluate_cost(card) {
-                write!(&mut text_region, "{:?}{} [{}]", card.body, upgraded, cost);
+                write!(text_region, "{:?}{} [{}]", card.body, upgraded, cost);
             } else {
-                write!(&mut text_region, "{:?}{}", card.body, upgraded);
+                write!(text_region, "{:?}{}", card.body, upgraded);
             };
         }
-    })
-    .build();
+    });
 }
 
 fn render_cards(widget: &mut Widget, state: &ChoiceState) {
@@ -65,7 +70,7 @@ fn render_cards(widget: &mut Widget, state: &ChoiceState) {
         widget.layout().push_grid_template_column_fr(1.0);
         let mut child = widget.child();
         child.layout().grid_col(i).grid_row(0);
-        render_card(&mut child, state, i);
+        child.apply(|child| render_card(child, state, i));
     }
 }
 
@@ -75,34 +80,32 @@ fn render_enemy(widget: &mut Widget, state: &ChoiceState, enemy_idx: usize) {
     let Some(enemy) = enemy else {
         return;
     };
-    BorderWidget::builder(widget, |center| {
-        let mut text_region = TextRegion::new(center);
-        writeln!(&mut text_region, "{}", enemy.name);
-        writeln!(&mut text_region, "{}/{} hp", enemy.hp, enemy.max_hp);
+    simple_boxed_text(widget, |text_region| {
+        writeln!(text_region, "{}", enemy.name);
+        writeln!(text_region, "{}/{} hp", enemy.hp, enemy.max_hp);
         if enemy.block > 0 {
-            writeln!(&mut text_region, "{} block", enemy.block);
+            writeln!(text_region, "{} block", enemy.block);
         }
         if enemy.buffs.strength > 0 {
-            writeln!(&mut text_region, "{} str", enemy.buffs.strength);
+            writeln!(text_region, "{} str", enemy.buffs.strength);
         }
         if enemy.buffs.ritual > 0 || enemy.buffs.ritual_skip_first > 0 {
             writeln!(
-                &mut text_region,
+                text_region,
                 "{} ritual",
                 enemy.buffs.ritual + enemy.buffs.ritual_skip_first
             );
         }
         if enemy.buffs.curl_up > 0 {
-            writeln!(&mut text_region, "{} curl up", enemy.buffs.curl_up);
+            writeln!(text_region, "{} curl up", enemy.buffs.curl_up);
         }
         if enemy.debuffs.vulnerable > 0 {
-            writeln!(&mut text_region, "{} vulnerable", enemy.debuffs.vulnerable);
+            writeln!(text_region, "{} vulnerable", enemy.debuffs.vulnerable);
         }
         if enemy.debuffs.weak > 0 {
-            writeln!(&mut text_region, "{} weak", enemy.debuffs.weak);
+            writeln!(text_region, "{} weak", enemy.debuffs.weak);
         }
-    })
-    .build();
+    });
 }
 
 fn render_enemies(widget: &mut Widget, state: &ChoiceState) {
@@ -180,7 +183,8 @@ fn render_game_over_box(widget: &mut Widget, choice_state: &ChoiceState) {
             }
             _ => panic!("render_game_over_box called in a non game over state"),
         }
-    }).build();
+    })
+    .build();
 }
 fn render_battlefield(widget: &mut Widget, choice_state: &ChoiceState) {
     let [_top, mut middle, mut bottom] = vertical_breakdown(widget);

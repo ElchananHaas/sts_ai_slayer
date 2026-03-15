@@ -51,7 +51,8 @@ impl UIActor {
                 } else {
                     BorderWidget::builder(&mut frame, |center| {
                         text_line(center, "Waiting for game start")
-                    }).build();
+                    })
+                    .build();
                 }
             });
         }
