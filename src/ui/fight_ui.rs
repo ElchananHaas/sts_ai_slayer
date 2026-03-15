@@ -1,7 +1,7 @@
 use std::array;
 use std::fmt::Write;
 
-use fliptui::widgets::{BorderWidget, TextRegion, text_line};
+use fliptui::widgets::{BorderWidget, TextRegion};
 use fliptui::{Widget, taffy};
 
 use crate::game::Game;
@@ -22,37 +22,41 @@ macro_rules! write {
 
 fn render_player(widget: &mut Widget, state: &ChoiceState) {
     let game = state.game();
-    let mut widget = BorderWidget::builder(widget).build();
-    text_line(&mut widget.title, "Player");
-    let mut text_region = TextRegion::new(&mut widget.center);
-    writeln!(&mut text_region, "{}", game.charachter().name());
-    writeln!(
-        &mut text_region,
-        "{}/{} hp",
-        game.player_hp(),
-        game.player_max_hp()
-    );
-    writeln!(&mut text_region, "{} energy", game.fight().energy());
-    writeln!(&mut text_region, "{} block", game.fight().player_block());
-    if let Some(position) = game.act().position {
+    BorderWidget::builder(widget, |center| {
+        let mut text_region = TextRegion::new(center);
+        writeln!(&mut text_region, "{}", game.charachter().name());
+        writeln!(
+            &mut text_region,
+            "{}/{} hp",
+            game.player_hp(),
+            game.player_max_hp()
+        );
+        writeln!(&mut text_region, "{} energy", game.fight().energy());
         writeln!(&mut text_region, "{} block", game.fight().player_block());
-        writeln!(&mut text_region, "floor {}", position.y);
-    }
+        if let Some(position) = game.act().position {
+            writeln!(&mut text_region, "{} block", game.fight().player_block());
+            writeln!(&mut text_region, "floor {}", position.y);
+        }
+    })
+    .title("Player")
+    .build();
 }
 
 fn render_card(widget: &mut Widget, state: &ChoiceState, card_idx: usize) {
     let game = state.game();
     let card = game.fight().hand().get(card_idx);
-    let mut widget = BorderWidget::builder(widget).build();
-    let mut text_region = TextRegion::new(&mut widget.center);
-    if let Some(card) = card {
-        let upgraded = if card.is_upgraded() { "+" } else { "" };
-        if let Some(cost) = game.fight().evaluate_cost(card) {
-            write!(&mut text_region, "{:?}{} [{}]", card.body, upgraded, cost);
-        } else {
-            write!(&mut text_region, "{:?}{}", card.body, upgraded);
-        };
-    }
+    BorderWidget::builder(widget, |center| {
+        let mut text_region = TextRegion::new(center);
+        if let Some(card) = card {
+            let upgraded = if card.is_upgraded() { "+" } else { "" };
+            if let Some(cost) = game.fight().evaluate_cost(card) {
+                write!(&mut text_region, "{:?}{} [{}]", card.body, upgraded, cost);
+            } else {
+                write!(&mut text_region, "{:?}{}", card.body, upgraded);
+            };
+        }
+    })
+    .build();
 }
 
 fn render_cards(widget: &mut Widget, state: &ChoiceState) {
@@ -71,32 +75,34 @@ fn render_enemy(widget: &mut Widget, state: &ChoiceState, enemy_idx: usize) {
     let Some(enemy) = enemy else {
         return;
     };
-    let mut widget = BorderWidget::builder(widget).build();
-    let mut text_region = TextRegion::new(&mut widget.center);
-    writeln!(&mut text_region, "{}", enemy.name);
-    writeln!(&mut text_region, "{}/{} hp", enemy.hp, enemy.max_hp);
-    if enemy.block > 0 {
-        writeln!(&mut text_region, "{} block", enemy.block);
-    }
-    if enemy.buffs.strength > 0 {
-        writeln!(&mut text_region, "{} str", enemy.buffs.strength);
-    }
-    if enemy.buffs.ritual > 0 || enemy.buffs.ritual_skip_first > 0 {
-        writeln!(
-            &mut text_region,
-            "{} ritual",
-            enemy.buffs.ritual + enemy.buffs.ritual_skip_first
-        );
-    }
-    if enemy.buffs.curl_up > 0 {
-        writeln!(&mut text_region, "{} curl up", enemy.buffs.curl_up);
-    }
-    if enemy.debuffs.vulnerable > 0 {
-        writeln!(&mut text_region, "{} vulnerable", enemy.debuffs.vulnerable);
-    }
-    if enemy.debuffs.weak > 0 {
-        writeln!(&mut text_region, "{} weak", enemy.debuffs.weak);
-    }
+    BorderWidget::builder(widget, |center| {
+        let mut text_region = TextRegion::new(center);
+        writeln!(&mut text_region, "{}", enemy.name);
+        writeln!(&mut text_region, "{}/{} hp", enemy.hp, enemy.max_hp);
+        if enemy.block > 0 {
+            writeln!(&mut text_region, "{} block", enemy.block);
+        }
+        if enemy.buffs.strength > 0 {
+            writeln!(&mut text_region, "{} str", enemy.buffs.strength);
+        }
+        if enemy.buffs.ritual > 0 || enemy.buffs.ritual_skip_first > 0 {
+            writeln!(
+                &mut text_region,
+                "{} ritual",
+                enemy.buffs.ritual + enemy.buffs.ritual_skip_first
+            );
+        }
+        if enemy.buffs.curl_up > 0 {
+            writeln!(&mut text_region, "{} curl up", enemy.buffs.curl_up);
+        }
+        if enemy.debuffs.vulnerable > 0 {
+            writeln!(&mut text_region, "{} vulnerable", enemy.debuffs.vulnerable);
+        }
+        if enemy.debuffs.weak > 0 {
+            writeln!(&mut text_region, "{} weak", enemy.debuffs.weak);
+        }
+    })
+    .build();
 }
 
 fn render_enemies(widget: &mut Widget, state: &ChoiceState) {
@@ -139,16 +145,17 @@ fn render_rest_site(
         .align_items(taffy::AlignItems::Center);
     for i in 0..rest_site_actions.len() {
         let mut child = middle.child();
-        let mut child = BorderWidget::builder(&mut child).build();
-        child
-            .center
-            .layout()
-            .border_left_px(1)
-            .border_top_px(1)
-            .border_right_px(1)
-            .border_bottom_px(1);
-        let mut text_region = TextRegion::new(&mut child.center);
-        writeln!(&mut text_region, "{:?}", rest_site_actions[i]);
+        BorderWidget::builder(&mut child, |center| {
+            center
+                .layout()
+                .border_left_px(1)
+                .border_top_px(1)
+                .border_right_px(1)
+                .border_bottom_px(1);
+            let mut text_region = TextRegion::new(center);
+            writeln!(&mut text_region, "{:?}", rest_site_actions[i]);
+        })
+        .build();
     }
 }
 
@@ -162,17 +169,18 @@ fn render_game_over(widget: &mut Widget, choice_state: &ChoiceState) {
 }
 
 fn render_game_over_box(widget: &mut Widget, choice_state: &ChoiceState) {
-    let mut widget = BorderWidget::builder(widget).build();
-    let mut text_region = TextRegion::new(&mut widget.center);
-    match &choice_state.choice() {
-        crate::game::choice::Choice::Win => {
-            writeln!(&mut text_region, "Victory!");
+    BorderWidget::builder(widget, |center| {
+        let mut text_region = TextRegion::new(center);
+        match &choice_state.choice() {
+            crate::game::choice::Choice::Win => {
+                writeln!(&mut text_region, "Victory!");
+            }
+            crate::game::choice::Choice::Loss => {
+                writeln!(&mut text_region, "Loss");
+            }
+            _ => panic!("render_game_over_box called in a non game over state"),
         }
-        crate::game::choice::Choice::Loss => {
-            writeln!(&mut text_region, "Loss");
-        }
-        _ => panic!("render_game_over_box called in a non game over state"),
-    }
+    }).build();
 }
 fn render_battlefield(widget: &mut Widget, choice_state: &ChoiceState) {
     let [_top, mut middle, mut bottom] = vertical_breakdown(widget);

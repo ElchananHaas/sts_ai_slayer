@@ -49,8 +49,9 @@ impl UIActor {
                 if let Some(choice_state) = &self.choice_state {
                     draw_ui(&mut frame, choice_state);
                 } else {
-                    let mut waiting = BorderWidget::builder(&mut frame).build();
-                    text_line(&mut waiting.center, "Waiting for game start");
+                    BorderWidget::builder(&mut frame, |center| {
+                        text_line(center, "Waiting for game start")
+                    }).build();
                 }
             });
         }
