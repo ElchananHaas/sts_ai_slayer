@@ -1,7 +1,7 @@
 use crate::{
-    card::{Card, CardBody, Debuff},
+    card::{CardBody, Debuff},
     enemies::{StateEntry, uniform_inclusive, weighted_transition},
-    fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight},
+    fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, EnemyName, Fight},
     rng::Rng,
 };
 macro_rules! make_black_slime_table {
@@ -38,19 +38,18 @@ macro_rules! make_black_slime_table {
 }
 pub(crate) use make_black_slime_table;
 
-const ENEMY_NAME: &'static str = "Black Slime [M]";
+pub fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
+    const SLIMEDS: &'static [CardBody] = &[CardBody::Slimed];
+    const ENEMY_TABLE: &'static [StateEntry] = make_black_slime_table!(8, 1, SLIMEDS);
+    return weighted_transition(rng, state, ENEMY_TABLE);
+}
 pub fn generate_med_black_slime(rng: &mut Rng) -> Enemy {
     let hp = uniform_inclusive(rng, 28, 32);
-    fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
-        const SLIMEDS: &'static [CardBody] = &[CardBody::Slimed];
-        const ENEMY_TABLE: &'static [StateEntry] = make_black_slime_table!(8, 1, SLIMEDS);
-        return weighted_transition(rng, state, ENEMY_TABLE);
-    }
+
     let starting_state = rng.sample_weighted(&[3, 0, 7, 0]);
     Enemy {
-        name: ENEMY_NAME,
+        name: EnemyName::MedBlackSlime,
         ai_state: starting_state as u32,
-        behavior: ai,
         hp,
         max_hp: hp,
         buffs: EnemyBuffs::default(),

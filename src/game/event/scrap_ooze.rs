@@ -6,8 +6,9 @@ use crate::{
     },
     rng::Rng,
 };
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ScrapOoze {
     pub click_count: i32,
 }

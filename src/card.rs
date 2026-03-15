@@ -1,10 +1,11 @@
 use std::cmp::max;
 
+use serde::{Deserialize, Serialize};
 use strum::VariantArray;
 
 use crate::rng::Rng;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Card {
     pub body: CardBody,
     pub cost: Cost,
@@ -17,7 +18,7 @@ pub struct Card {
 //extra data associated with a card is stored in a different enum.
 //This stores effects like Searing Blow's unlimited upgrades
 //or Genetic Algorithm scaling.
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum CardAssoc {
     None,
     UnlimitedUpgrade(i32), //Used for Searing Blow
@@ -38,14 +39,16 @@ impl CardAssoc {
         *amount
     }
 }
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Cost {
     Unplayable,
     Fixed(i32),
     X,
     NumMinusHpLoss(i32), //This is for Blood for Blood
 }
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, VariantArray)]
+#[derive(
+    Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, VariantArray, Serialize, Deserialize,
+)]
 pub enum CardBody {
     Strike,
     Bash,
@@ -177,7 +180,7 @@ pub enum LethalEffect {
     Gain4MaxHP,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SelectCardEffect {
     UpgradeCardInHand,
     DiscardToTop,

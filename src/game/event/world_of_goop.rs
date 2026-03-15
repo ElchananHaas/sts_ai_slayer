@@ -4,8 +4,9 @@ use crate::{
     game::{Choice, Game, choice::EventAction, event::EventRoom},
     rng::Rng,
 };
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct WorldOfGoop {
     loss: i32,
 }

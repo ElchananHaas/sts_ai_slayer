@@ -10,9 +10,6 @@ mod the_ssserpent;
 mod wing_statue;
 mod world_of_goop;
 
-use paste::paste;
-use strum::VariantArray;
-
 use crate::{
     game::{
         Choice, Game,
@@ -26,6 +23,9 @@ use crate::{
     },
     rng::Rng,
 };
+use paste::paste;
+use serde::{Deserialize, Serialize};
+use strum::VariantArray;
 /*
 Event Generation works as follows:
 
@@ -90,7 +90,7 @@ macro_rules! event_array {
                 )*
             }
 
-            #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+            #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
             pub enum Event {
                 $(
                     $x($x),

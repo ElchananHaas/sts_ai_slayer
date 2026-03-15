@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     enemies::{
         blue_slaver::generate_blue_slaver, cultist::generate_cultist,
@@ -17,7 +19,7 @@ use crate::{
     game::{Choice, Game},
 };
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Encounter {
     Lagavulin,
     GremlinNob,

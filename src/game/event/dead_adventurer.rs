@@ -9,21 +9,22 @@ use crate::{
     },
     rng::Rng,
 };
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct DeadAdventurer {
     pub elite: DeadAdventurerElite,
     pub loots: SmallVec<[DeadAdventurerLoot; 3]>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum DeadAdventurerElite {
     Lagavulin,
     GremlinNob,
     Sentries,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum DeadAdventurerLoot {
     Nothing,
     Gold,

@@ -4,8 +4,9 @@ use crate::{
     relic::Relic,
     rng::Rng,
 };
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct GoldenIdol;
 
 fn damage_amount(game: &Game) -> i32 {

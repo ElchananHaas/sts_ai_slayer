@@ -1,7 +1,7 @@
 use crate::{
-    card::{Card, CardBody, Debuff},
+    card::{CardBody, Debuff},
     enemies::{StateEntry, uniform_inclusive, weighted_transition},
-    fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, Fight},
+    fight::{Enemy, EnemyAction, EnemyBuffs, EnemyDebuffs, EnemyName, Fight},
     rng::Rng,
 };
 
@@ -44,25 +44,23 @@ macro_rules! make_green_slime_table {
 }
 pub(crate) use make_green_slime_table;
 
-const ENEMY_NAME: &'static str = "Green Slime [M]";
+pub fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
+    // States are
+    // 0) Attack + Slimed inserted
+    // 1) Attack + Slimed inserted (second)
+    // 2) Attack
+    // 3) Debuff
+    // 4) Debuff (second)
+    const SLIMEDS: &'static [CardBody] = &[CardBody::Slimed];
+    const ENEMY_TABLE: &'static [StateEntry] = make_green_slime_table!(7, 10, 1, SLIMEDS);
+    return weighted_transition(rng, state, ENEMY_TABLE);
+}
 pub fn generate_med_green_slime(rng: &mut Rng) -> Enemy {
     let hp = uniform_inclusive(rng, 28, 32);
-    fn ai(rng: &mut Rng, _: &Fight, _: &Enemy, state: u32) -> (u32, &'static [EnemyAction]) {
-        // States are
-        // 0) Attack + Slimed inserted
-        // 1) Attack + Slimed inserted (second)
-        // 2) Attack
-        // 3) Debuff
-        // 4) Debuff (second)
-        const SLIMEDS: &'static [CardBody] = &[CardBody::Slimed];
-        const ENEMY_TABLE: &'static [StateEntry] = make_green_slime_table!(7, 10, 1, SLIMEDS);
-        return weighted_transition(rng, state, ENEMY_TABLE);
-    }
     let starting_state = rng.sample_weighted(&[3, 0, 4, 3, 0]);
     Enemy {
-        name: ENEMY_NAME,
+        name: EnemyName::MedGreenSlime,
         ai_state: starting_state as u32,
-        behavior: ai,
         hp,
         max_hp: hp,
         buffs: EnemyBuffs::default(),

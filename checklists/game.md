@@ -41,5 +41,8 @@ TODO
 TODO
 
 ### Terminal UI
+IN PROGRESS
+
+### Reviewable Game Logs
 TODO
-I got sidetracked and I am building my own TUI framework.
+

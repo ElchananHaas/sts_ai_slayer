@@ -9,8 +9,11 @@ mod perform_action;
 use std::{cmp::min, mem, vec};
 
 use derive_getters::Getters;
+use serde::{Deserialize, Serialize};
 
 use crate::act::Act;
+use crate::enemies::behavior;
+use crate::fight::EnemyName;
 use crate::game::choice::{
     Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, SelectCardAction, SelectionPile,
 };
@@ -31,7 +34,7 @@ pub const QUESTION_MONSTER_BASE_WEIGHT: i32 = 10;
 pub const QUESTION_SHOP_BASE_WEIGHT: i32 = 3;
 pub const QUESTION_TREASURE_BASE_WEIGHT: i32 = 2;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Getters)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Getters, Serialize, Deserialize)]
 pub struct Game {
     player_hp: i32,
     player_max_hp: i32,
@@ -113,7 +116,7 @@ impl Game {
             let enemy_actions;
             {
                 let enemy = &self.fight.enemies[i];
-                enemy_actions = (enemy.behavior)(&mut self.rng, &self.fight, enemy, enemy.ai_state);
+                enemy_actions = behavior(&mut self.rng, &self.fight, enemy, enemy.ai_state);
                 self.fight.enemies[i].ai_state = enemy_actions.0;
             }
 
@@ -489,7 +492,7 @@ impl Game {
     fn split(&mut self, i: EnemyIdx) {
         let hp = self.fight.enemies[i].hp;
         let name = self.fight.enemies[i].name;
-        if name == crate::enemies::large_black_slime::ENEMY_NAME {
+        if name == EnemyName::LargeBlackSlime {
             let mut med_slime_1 = generate_med_black_slime(&mut self.rng);
             med_slime_1.max_hp = hp;
             med_slime_1.hp = hp;
@@ -498,7 +501,7 @@ impl Game {
             med_slime_2.hp = hp;
             self.fight.enemies[(i.0) as usize] = Some(med_slime_1);
             self.fight.enemies[(i.0 + 1) as usize] = Some(med_slime_2);
-        } else if name == crate::enemies::large_green_slime::ENEMY_NAME {
+        } else if name == EnemyName::LargeGreenSlime {
             let mut med_slime_1 = generate_med_green_slime(&mut self.rng);
             med_slime_1.max_hp = hp;
             med_slime_1.hp = hp;
@@ -508,7 +511,7 @@ impl Game {
             self.fight.enemies[(i.0) as usize] = Some(med_slime_1);
             self.fight.enemies[(i.0 + 1) as usize] = Some(med_slime_2);
         } else {
-            panic!("Splitting not implemented for {}", name);
+            panic!("Splitting not implemented for {:?}", name);
         }
     }
 
@@ -638,7 +641,7 @@ impl Game {
 
     fn intends_to_attack(&mut self, target: usize) -> bool {
         if let Some(enemy) = &self.fight.enemies[target] {
-            let behavior = (enemy.behavior)(&mut self.rng, &self.fight, &enemy, enemy.ai_state);
+            let behavior = behavior(&mut self.rng, &self.fight, &enemy, enemy.ai_state);
             for behave in behavior.1 {
                 if let EnemyAction::Attack(_) = *behave {
                     return true;
@@ -828,7 +831,7 @@ impl Game {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Character {
     IRONCLAD,
     SILENT,

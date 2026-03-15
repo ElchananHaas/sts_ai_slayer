@@ -88,7 +88,7 @@ fn render_enemy(widget: &mut Widget, state: &ChoiceState, enemy_idx: usize) {
         return;
     };
     simple_boxed_text(widget, |text_region| {
-        writeln!(text_region, "{}", enemy.name);
+        writeln!(text_region, "{:?}", enemy.name);
         writeln!(text_region, "{}/{} hp", enemy.hp, enemy.max_hp);
         if enemy.block > 0 {
             writeln!(text_region, "{} block", enemy.block);

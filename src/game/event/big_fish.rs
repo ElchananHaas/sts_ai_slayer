@@ -1,9 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     card::CardBody,
     game::{Choice, Game, choice::EventAction, event::EventRoom},
     rng::Rng,
 };
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct BigFish;
 
 fn heal_amount(game: &Game) -> i32 {

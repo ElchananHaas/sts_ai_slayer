@@ -5,10 +5,14 @@ use std::hash::Hash;
 use rand_chacha::ChaCha8Rng;
 use rand_chacha::rand_core::RngCore;
 use rand_chacha::rand_core::SeedableRng;
+use serde::Deserialize;
+use serde::Serialize;
 
 thread_local! {
     static RNG: RefCell<ChaCha8Rng> = RefCell::new(ChaCha8Rng::from_os_rng());
 }
+
+#[derive(Serialize, Deserialize)]
 pub struct Rng {}
 
 impl Debug for Rng {

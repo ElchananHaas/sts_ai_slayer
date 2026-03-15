@@ -6,6 +6,7 @@ use std::{
 };
 
 use derive_getters::Getters;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     card::{Buff, Card, CardBody, CardType, Cost, Debuff},
@@ -16,7 +17,7 @@ use crate::{
     util::insert_sorted,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Getters)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Getters, Serialize, Deserialize)]
 pub struct Fight {
     pub enemies: Enemies,
     pub hand: Vec<Card>,
@@ -33,7 +34,7 @@ pub struct Fight {
     pub rewards: FightRewards,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct FightRewards {
     pub gold_min: i32,
     pub gold_max: i32,
@@ -41,7 +42,7 @@ pub struct FightRewards {
     pub fixed_relic: Option<Relic>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PlayerDebuffs {
     pub weak: i32,
     pub vulnerable: i32,
@@ -53,7 +54,7 @@ pub struct PlayerDebuffs {
     pub no_draw: bool,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PlayerBuffs {
     pub strength: i32,
     pub num_times_lost_hp: i32,
@@ -79,7 +80,7 @@ pub struct PlayerBuffs {
 
 //This holds effects that happen after a card finishes resolving.
 //This includes some powers, relics, and cards that play other cards.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PostCardItem {
     PlayCard(PlayCardContext),
     Draw(i32),
@@ -89,7 +90,7 @@ pub enum PostCardItem {
     DamageRandomEnemy(i32),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct PlayCardContext {
     pub card: Card,
     pub target: usize,
@@ -142,7 +143,7 @@ impl Fight {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct Enemies {
     //Fights have at most 5 enemies (Reptomancer + 4 Daggers).
     pub enemies: [Option<Enemy>; Game::MAX_ENEMIES],
@@ -287,7 +288,33 @@ pub enum EnemyAction {
     StealGold(i32),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum EnemyName {
+    BlueSlaver,
+    Cultist,
+    FungiBeast,
+    GreenLouse,
+    GremlinFat,
+    GremlinMad,
+    GremlinNob,
+    GremlinShield,
+    GremlinSneaky,
+    GremlinWizard,
+    JawWorm,
+    Lagavulin,
+    LargeBlackSlime,
+    LargeGreenSlime,
+    Looter,
+    MedBlackSlime,
+    MedGreenSlime,
+    RedLouse,
+    RedSlaver,
+    Sentry,
+    SmallBlackSlime,
+    SmallGreenSlime,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Enemy {
     //In order to allow full information to be passed to an AI model,
     //the enemy AI state is encoded as a state machine. This works for most
@@ -296,10 +323,9 @@ pub struct Enemy {
 
     //The odd cases are - The Guardian. It has a intent change based on an HP threshold being met
     //which is raised on Mode shift.
-    pub name: &'static str,
+    pub name: EnemyName,
     pub ai_state: u32,
     //A function from the current state to the new ai state and the actions to take.
-    pub behavior: fn(&mut Rng, &Fight, &Enemy, u32) -> (u32, &'static [EnemyAction]),
     pub hp: i32,
     pub max_hp: i32,
     //Being a minion is a buff.
@@ -308,7 +334,7 @@ pub struct Enemy {
     pub block: i32,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct EnemyBuffs {
     pub strength: i32,
     pub ritual: i32,
@@ -326,7 +352,7 @@ pub struct EnemyBuffs {
     pub asleep: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct EnemyDebuffs {
     pub vulnerable: i32,
     pub weak: i32,

@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::rng::Rng;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Relic {
     Placeholder1,
     Placeholder2,
@@ -14,7 +16,7 @@ pub enum Relic {
     GoldenIdol,
     OddMushroom,
 }
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RelicPool {}
 
 impl RelicPool {
@@ -23,7 +25,7 @@ impl RelicPool {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Relics {}
 
 impl Relics {

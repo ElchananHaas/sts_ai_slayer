@@ -1,4 +1,7 @@
-use crate::{fight::EnemyAction, rng::Rng};
+use crate::{
+    fight::{Enemy, EnemyAction, EnemyName, Fight},
+    rng::Rng,
+};
 
 pub mod blue_slaver;
 pub mod cultist;
@@ -42,4 +45,36 @@ fn weighted_transition(
 
 fn uniform_inclusive(rng: &mut Rng, min: i32, max: i32) -> i32 {
     min + rng.sample_i32(max - min + 1)
+}
+
+pub fn behavior(
+    rng: &mut Rng,
+    fight: &Fight,
+    enemy: &Enemy,
+    state: u32,
+) -> (u32, &'static [EnemyAction]) {
+    match enemy.name {
+        EnemyName::BlueSlaver => blue_slaver::ai(rng, fight, enemy, state),
+        EnemyName::Cultist => cultist::ai(rng, fight, enemy, state),
+        EnemyName::FungiBeast => fungi_beast::ai(rng, fight, enemy, state),
+        EnemyName::GreenLouse => green_louse::ai(rng, fight, enemy, state),
+        EnemyName::GremlinFat => gremlin_fat::ai(rng, fight, enemy, state),
+        EnemyName::GremlinMad => gremlin_mad::ai(rng, fight, enemy, state),
+        EnemyName::GremlinNob => gremlin_nob::ai(rng, fight, enemy, state),
+        EnemyName::GremlinShield => gremlin_shield::ai(rng, fight, enemy, state),
+        EnemyName::GremlinSneaky => gremlin_sneaky::ai(rng, fight, enemy, state),
+        EnemyName::GremlinWizard => gremlin_wizard::ai(rng, fight, enemy, state),
+        EnemyName::JawWorm => jaw_worm::ai(rng, fight, enemy, state),
+        EnemyName::Lagavulin => lagavulin::ai(rng, fight, enemy, state),
+        EnemyName::LargeBlackSlime => large_black_slime::ai(rng, fight, enemy, state),
+        EnemyName::LargeGreenSlime => large_green_slime::ai(rng, fight, enemy, state),
+        EnemyName::Looter => looter::ai(rng, fight, enemy, state),
+        EnemyName::MedBlackSlime => med_black_slime::ai(rng, fight, enemy, state),
+        EnemyName::MedGreenSlime => med_green_slime::ai(rng, fight, enemy, state),
+        EnemyName::RedLouse => red_louse::ai(rng, fight, enemy, state),
+        EnemyName::RedSlaver => red_slaver::ai(rng, fight, enemy, state),
+        EnemyName::Sentry => sentry::ai(rng, fight, enemy, state),
+        EnemyName::SmallBlackSlime => small_black_slime::ai(rng, fight, enemy, state),
+        EnemyName::SmallGreenSlime => small_green_slime::ai(rng, fight, enemy, state),
+    }
 }

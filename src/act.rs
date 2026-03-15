@@ -1,9 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::game::{
     QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT, QUESTION_TREASURE_BASE_WEIGHT,
     encounter::Encounter,
 };
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Act {
     pub question_monster_weight: i32,
     pub question_shop_weight: i32,
@@ -15,7 +17,7 @@ pub struct Act {
     pub prior_fights: [Option<Encounter>; 2],
     pub position: Option<MapPosition>,
 }
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct MapPosition {
     pub x: i32,
     pub y: i32,

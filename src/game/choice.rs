@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use derive_getters::Getters;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     card::SelectCardEffect,
@@ -8,39 +9,39 @@ use crate::{
     game::{Game, event::Event},
 };
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Getters)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Getters, Serialize, Deserialize)]
 pub struct ChoiceState {
     pub(super) game: Box<Game>,
     pub(super) choice: Choice,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SelectionPile {
     Hand,
     Discard,
     Exhaust,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SelectCardAction {
     //Choose the i'th card
     ChooseCard(usize),
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PlayCardAction {
     //Play the i'th card in hand
     PlayCard(u8),
     //End the turn
     EndTurn,
 }
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ChooseEnemyAction {
     //Target the i'th enemy
     pub enemy: u8,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum MapStateAction {
     Jump(i32),
     Left,
@@ -50,18 +51,18 @@ pub enum MapStateAction {
 
 //Choose the i'th choice in the event. The interpretation
 //of this is event dependent.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct EventAction(pub usize);
 
 //Rest Site Actions
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum RestSiteAction {
     Heal,
     Upgrade,
 }
 
 //Rest Site Actions
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum SelectDeckCardReason {
     Remove,
     Transform,
@@ -69,11 +70,11 @@ pub enum SelectDeckCardReason {
 }
 
 //Select the i'th card in the deck.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SelectDeckCardAction(pub usize);
 
 #[must_use]
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub enum Choice {
     //See if this can be improved for more allocation reuse.
     PlayCardState(Vec<PlayCardAction>),
@@ -174,7 +175,6 @@ impl ChoiceState {
                     "Target {:?}",
                     self.game.fight.enemies[choose_enemy_actions[action_idx].enemy as usize]
                         .as_ref()
-                        .map_or("", |enemy| enemy.name)
                 )
             }
             Choice::Win => {
@@ -256,7 +256,7 @@ impl Display for ChoiceState {
         }
         fn fmt_enemy(enemy: &Enemy, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "| ")?;
-            write!(f, "{} | ", enemy.name)?;
+            write!(f, "{:?} | ", enemy.name)?;
             write!(f, "AI {} | ", enemy.ai_state)?;
             write!(f, "{}/{} hp | ", enemy.hp, enemy.max_hp)?;
             if enemy.block > 0 {

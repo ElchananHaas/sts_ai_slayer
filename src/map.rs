@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
 use crate::rng::Rng;
@@ -9,7 +10,7 @@ const QUESTION_CHANCE: f32 = 0.22;
 const ELITE_CHANCE: f32 = 0.08;
 const REST_CHANCE: f32 = 0.12;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ActMap {
     pub rooms: [[Room; ROW_WIDTH]; NUM_FLOORS],
 }
@@ -19,7 +20,7 @@ enum Direction {
     Forward,
     Right,
 }
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Copy)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Copy, Serialize, Deserialize)]
 pub enum RoomType {
     QuestionMark,
     Shop,
@@ -237,7 +238,7 @@ impl ActMap {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Copy)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Copy, Serialize, Deserialize)]
 pub struct Room {
     pub has_left_child: bool,
     pub has_front_child: bool,
