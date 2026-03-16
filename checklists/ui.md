@@ -5,8 +5,10 @@ DONE!
 IN PROGRESS
 
 ### Reviewable Game Logs
-(Save the full logs of the game, and allow them to be rewinded and viewed)
-TODO
+IN PROGRESS
+- [x] Serde Log Saving
+- [] Increase efficiency
+- [] Load for viewing
 
 ### Human Playability
 TODO

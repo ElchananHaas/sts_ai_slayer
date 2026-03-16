@@ -1,7 +1,7 @@
 use crate::{game::choice::ChoiceState, rng::Rng};
 
 pub trait Agent {
-    fn take_action(&mut self, state: &mut ChoiceState, rng: &mut Rng);
+    fn action(&mut self, state: &mut ChoiceState, rng: &mut Rng) -> usize;
 }
 
 pub struct SkipSingleChoiceAgent<T> {
@@ -12,11 +12,11 @@ impl<T> Agent for SkipSingleChoiceAgent<T>
 where
     T: Agent,
 {
-    fn take_action<'a>(&mut self, state: &mut ChoiceState, rng: &mut Rng) {
+    fn action(&mut self, state: &mut ChoiceState, rng: &mut Rng) -> usize {
         if state.num_actions() == 1 {
-            state.take_action(0);
+            0
         } else {
-            self.agent.take_action(state, rng);
+            self.agent.action(state, rng)
         }
     }
 }

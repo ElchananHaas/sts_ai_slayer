@@ -53,7 +53,8 @@ impl Deck {
             }
             DeckSegment::Composite(decks) => {
                 debug_assert!(
-                    self.num_cards + 1 == decks.into_iter().map(|deck| deck.num_cards).sum()
+                    self.num_cards + 1
+                        == decks.into_iter().map(|deck| deck.num_cards).sum::<usize>()
                 );
                 while let Some(_) = decks.pop_if(|deck| deck.num_cards == 0) {}
                 decks

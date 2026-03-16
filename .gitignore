@@ -3,3 +3,5 @@ log.txt
 uilog.txt
 perf.data
 flamegraph.svg
+logs/*
+.DS_Store

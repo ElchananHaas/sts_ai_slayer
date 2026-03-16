@@ -1,11 +1,16 @@
 use std::{
     error::Error,
+    fmt::format,
+    fs::File,
+    io::{BufWriter, Write},
     thread::{self, JoinHandle},
+    time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
 use crate::{
     agents::agent_helper::Agent,
     ui::ui_actor::{UIActor, UIEvent},
+    util::GameLog,
 };
 use agents::agent_helper::SkipSingleChoiceAgent;
 use agents::mcts_agent::MctsAgent;
@@ -53,6 +58,7 @@ fn spawn_game_thread(sender: Sender<UIEvent>) -> JoinHandle<()> {
             agent: MctsAgent {},
         };
         let mut choice = game.start();
+        let mut log = GameLog::new(choice.clone());
         loop {
             if sender
                 .blocking_send(UIEvent::NewState(choice.clone()))
@@ -60,25 +66,41 @@ fn spawn_game_thread(sender: Sender<UIEvent>) -> JoinHandle<()> {
             {
                 // If the main thread isn't listening for messages anymore, return.
                 // This can happen if the UI is shut down.
-                return;
+                break;
             }
             if choice.is_over() {
-                return;
+                break;
             }
-            agent.take_action(&mut choice, &mut rng);
+            let action = agent.action(&mut choice, &mut rng);
+            choice.take_action(action);
+            log.push(action, choice.clone());
         }
+        let file = File::create(format!(
+            "logs/{:?}.json",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Got time")
+                .as_millis()
+        ))
+        .expect("Created log file");
+        let mut writer = BufWriter::new(file);
+        serde_json::to_writer_pretty(&mut writer, &log).expect("Wrote to file");
+        writer.flush().expect("Flushed file");
     })
 }
 
 async fn agent_play() -> Result<(), Box<dyn Error>> {
     let (sender, receiver) = mpsc::channel(8);
     setup_keystream(sender.clone());
-    spawn_game_thread(sender.clone());
+    let thread = spawn_game_thread(sender.clone());
     let mut ui_actor = UIActor::new(receiver);
     let ui_handle = spawn_local(async move { ui_actor.run().await });
     //The UI actor has some code to restore terminal settings on drop. This
     //join ensures it will be run. It already has a panic hook by default.
     ui_handle.await.expect("UI exited");
+    //This is waiting for the thread to join in an async context. This isn't great,
+    //but I want to let the thread write its log before the program exits.
+    thread.join();
     Ok(())
 }
 
