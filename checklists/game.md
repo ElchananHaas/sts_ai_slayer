@@ -39,10 +39,3 @@ TODO
 
 ### Act 1 Bosses
 TODO
-
-### Terminal UI
-IN PROGRESS
-
-### Reviewable Game Logs
-TODO
-
