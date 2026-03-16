@@ -7,6 +7,7 @@ use crate::{
     card::SelectCardEffect,
     fight::{Enemy, PlayCardContext},
     game::{Game, event::Event},
+    rng::Rng,
 };
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Getters, Serialize, Deserialize)]
@@ -104,8 +105,9 @@ impl ChoiceState {
     //This function clones the choice state to another Game. It
     //will still behave differently due to the Rng returning different
     //results. This can be used to simulate different outcomes
-    pub fn clone_to(&self, other: &mut ChoiceState) {
+    pub fn clone_to_reseeded(&self, other: &mut ChoiceState) {
         *other.game = (*self.game).clone();
+        other.game.rng = Rng::new();
         other.choice = self.choice.clone();
     }
 

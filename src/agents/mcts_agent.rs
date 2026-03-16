@@ -113,7 +113,7 @@ fn mcts(state: &ChoiceState, rng: &mut Rng) -> usize {
     let mut temp_game = Game::new(crate::game::Character::IRONCLAD).start();
     let state_hash = hash_choice_state(&state);
     for i in 0..MCTS_ITERATIONS {
-        state.clone_to(&mut temp_game);
+        state.clone_to_reseeded(&mut temp_game);
         let reward = mcts_rollout(&mut temp_game, &mut value_map, rng);
         if false && i > 0 && i % REWARD_PRINT_INTERVAL == 0 {
             /*println!(
