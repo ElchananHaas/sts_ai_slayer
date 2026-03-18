@@ -14,6 +14,7 @@ const REST_CHANCE: f32 = 0.12;
 pub struct ActMap {
     pub rooms: [[Room; ROW_WIDTH]; NUM_FLOORS],
 }
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Direction {
     Left,

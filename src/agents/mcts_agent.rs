@@ -14,7 +14,7 @@ use super::agent_helper::Agent;
 pub struct MctsAgent {}
 
 impl Agent for MctsAgent {
-    fn action(&mut self, state: &mut ChoiceState, rng: &mut Rng) -> usize {
+    fn action(&mut self, state: &ChoiceState, rng: &mut Rng) -> usize {
         mcts(&state, rng)
     }
 }

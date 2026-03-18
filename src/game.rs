@@ -822,6 +822,14 @@ impl Game {
         }
     }
 
+    pub fn get_seed(&self) -> [u8; 32] {
+        self.rng.get_seed()
+    }
+
+    pub fn set_seed(&mut self, seed: [u8; 32]) {
+        self.rng.set_seed(seed);
+    }
+
     pub fn start(self) -> ChoiceState {
         let choice = self.goto_map();
         ChoiceState {

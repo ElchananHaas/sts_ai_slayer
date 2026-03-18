@@ -25,6 +25,15 @@ impl Rng {
             rng: RefCell::new(ChaCha8Rng::from_os_rng()),
         }
     }
+
+    pub fn get_seed(&self) -> [u8; 32] {
+        self.rng.borrow().get_seed()
+    }
+
+    pub fn set_seed(&mut self, seed: [u8; 32]) {
+        *self.rng.borrow_mut() = ChaCha8Rng::from_seed(seed);
+    }
+
     //The samples is exclusive on max. It utilizes rejection sampling.
     pub fn sample(&mut self, bound: usize) -> usize {
         if bound == 0 {

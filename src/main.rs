@@ -1,10 +1,9 @@
 use std::{
     error::Error,
-    fmt::format,
     fs::File,
     io::{BufWriter, Write},
     thread::{self, JoinHandle},
-    time::{Instant, SystemTime, UNIX_EPOCH},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use crate::{
@@ -53,12 +52,13 @@ fn human_play() {
 fn spawn_game_thread(sender: Sender<UIEvent>) -> JoinHandle<()> {
     thread::spawn(move || {
         let game = Game::new(Character::IRONCLAD);
+        let game_seed = game.get_seed();
         let mut rng = Rng::new();
         let mut agent = SkipSingleChoiceAgent {
             agent: MctsAgent {},
         };
         let mut choice = game.start();
-        let mut log = GameLog::new(choice.clone());
+        let mut log = GameLog::new(game_seed);
         loop {
             if sender
                 .blocking_send(UIEvent::NewState(choice.clone()))
@@ -72,8 +72,8 @@ fn spawn_game_thread(sender: Sender<UIEvent>) -> JoinHandle<()> {
                 break;
             }
             let action = agent.action(&mut choice, &mut rng);
+            log.push(action);
             choice.take_action(action);
-            log.push(action, choice.clone());
         }
         let file = File::create(format!(
             "logs/{:?}.json",
@@ -100,7 +100,7 @@ async fn agent_play() -> Result<(), Box<dyn Error>> {
     ui_handle.await.expect("UI exited");
     //This is waiting for the thread to join in an async context. This isn't great,
     //but I want to let the thread write its log before the program exits.
-    thread.join();
+    thread.join().expect("Joined game thread");
     Ok(())
 }
 
