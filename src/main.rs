@@ -118,6 +118,9 @@ async fn agent_play() -> Result<(), Box<dyn Error>> {
     loop {
         let Some(()) = async {
             let state = game_state_receiver.recv().await?;
+            if state.is_over() {
+                return Some(());
+            }
             ui_sender
                 .send(UIEvent::NewState(Arc::clone(&state)))
                 .await
