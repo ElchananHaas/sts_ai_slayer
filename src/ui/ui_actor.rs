@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::{fs::File, sync::Arc};
 
 use crate::{game::choice::ChoiceState, ui::fight_ui::draw_ui};
 use crossterm::event::Event as CrosstermEvent;
@@ -9,13 +9,13 @@ use fliptui::{
 use tokio::sync::mpsc;
 
 pub enum UIEvent {
-    NewState(ChoiceState),
+    NewState(Arc<ChoiceState>),
     KeyPress(CrosstermEvent),
 }
 
 pub struct UIActor {
     receiver: mpsc::Receiver<UIEvent>,
-    choice_state: Option<ChoiceState>,
+    choice_state: Option<Arc<ChoiceState>>,
     window: Window,
 }
 

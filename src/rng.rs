@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -10,7 +9,7 @@ use serde::Serialize;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Rng {
-    rng: RefCell<ChaCha8Rng>,
+    rng: ChaCha8Rng,
 }
 
 impl Debug for Rng {
@@ -22,16 +21,16 @@ impl Debug for Rng {
 impl Rng {
     pub fn new() -> Self {
         Self {
-            rng: RefCell::new(ChaCha8Rng::from_os_rng()),
+            rng: ChaCha8Rng::from_os_rng(),
         }
     }
 
     pub fn get_seed(&self) -> [u8; 32] {
-        self.rng.borrow().get_seed()
+        self.rng.get_seed()
     }
 
     pub fn set_seed(&mut self, seed: [u8; 32]) {
-        *self.rng.borrow_mut() = ChaCha8Rng::from_seed(seed);
+        self.rng = ChaCha8Rng::from_seed(seed);
     }
 
     //The samples is exclusive on max. It utilizes rejection sampling.
@@ -46,7 +45,7 @@ impl Rng {
         let next_pow_2 = bound.next_power_of_two();
         let mask = next_pow_2 - 1;
         loop {
-            let rand = { self.rng.borrow_mut().next_u64() };
+            let rand = { self.rng.next_u64() };
             let rand = mask & (rand as usize);
             if rand < bound {
                 return rand;
