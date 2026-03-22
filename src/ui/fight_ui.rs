@@ -274,8 +274,9 @@ pub fn render_map_state(widget: &mut Widget, choice_state: &ChoiceState) {
                 };
                 if position.is_some_and(|pos| pos.x as usize == j && pos.y as usize == i) {
                     simple_boxed_text(child, |writer| writeln!(writer, "{text}"));
+                } else {
+                    text_line(child, text);
                 }
-                text_line(child, text);
             });
         }
     }

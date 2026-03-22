@@ -1,7 +1,7 @@
 use std::{fs::File, sync::Arc};
 
 use crate::{BrokerEvent, game::choice::ChoiceState, ui::fight_ui::draw_ui};
-use crossterm::event::Event as CrosstermEvent;
+use crossterm::event::{Event as CrosstermEvent, KeyCode};
 use fliptui::{
     Window,
     widgets::{BorderWidget, text_line},
@@ -10,7 +10,7 @@ use tokio::sync::mpsc::{self, Sender};
 
 pub enum UIEvent {
     NewState(Arc<ChoiceState>),
-    KeyPress(CrosstermEvent),
+    Crossterm(CrosstermEvent),
 }
 
 pub struct UIActor {
@@ -35,13 +35,25 @@ impl UIActor {
         while let Some(msg) = self.receiver.recv().await {
             match msg {
                 UIEvent::NewState(choice_state) => self.choice_state = Some(choice_state),
-                UIEvent::KeyPress(event) => match event {
+                UIEvent::Crossterm(event) => match event {
                     CrosstermEvent::FocusGained => {}
                     CrosstermEvent::FocusLost => {}
-                    CrosstermEvent::Key(_key_event) => {
-                        // If the broker can't receive the event, ignore it and shut down anyways.
-                        let _ = self.sender.send(BrokerEvent::Exit).await;
-                        return;
+                    CrosstermEvent::Key(key_event) => {
+                        if key_event.code == KeyCode::Esc {
+                            // If the broker can't receive the event, ignore it and shut down anyways.
+                            let _ = self.sender.send(BrokerEvent::Exit).await;
+                            return;
+                        }
+                        if key_event.code == KeyCode::Char(' ') {
+                            if self.sender.send(BrokerEvent::AdvanceAI).await.is_err() {
+                                return;
+                            }
+                        }
+                        if key_event.code == KeyCode::Char('p') {
+                            if self.sender.send(BrokerEvent::PauseAI).await.is_err() {
+                                return;
+                            }
+                        }
                     }
                     CrosstermEvent::Mouse(_mouse_event) => {}
                     CrosstermEvent::Paste(_) => {}

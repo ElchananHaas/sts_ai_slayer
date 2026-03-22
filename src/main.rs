@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum ActionClient {
     Human,
     Computer,
@@ -63,6 +63,8 @@ struct GameAction {
 enum BrokerEvent {
     NewState(Arc<ChoiceState>),
     ActionTaken(GameAction),
+    PauseAI,
+    AdvanceAI,
     Exit,
 }
 
@@ -122,10 +124,6 @@ async fn run_game<T: From<Arc<ChoiceState>>>(
     writer.flush().expect("Flushed file");
 }
 
-fn human_play() {
-    todo!()
-}
-
 fn spawn_agent_thread<T: From<GameAction> + Send + 'static>(
     mut reciever: Receiver<Arc<ChoiceState>>,
     sender: Sender<T>,
@@ -163,6 +161,8 @@ async fn broker_loop(
     ui_sender: Sender<UIEvent>,
     game_action_sender: Sender<GameAction>,
 ) -> Option<()> {
+    let mut ai_auto = false;
+    let mut queued_action = None;
     loop {
         let event = broker_receiver.recv().await?;
         match event {
@@ -176,7 +176,24 @@ async fn broker_loop(
                 ui_sender.send(UIEvent::NewState(choice_state)).await.ok()?;
             }
             BrokerEvent::ActionTaken(game_action) => {
-                game_action_sender.send(game_action).await.ok()?;
+                if ai_auto || game_action.client == ActionClient::Human {
+                    game_action_sender.send(game_action).await.ok()?;
+                } else {
+                    queued_action = Some(game_action);
+                }
+            }
+            BrokerEvent::PauseAI => {
+                ai_auto = !ai_auto;
+                if ai_auto && let Some(action) = queued_action {
+                    game_action_sender.send(action).await.ok()?;
+                    queued_action = None;
+                }
+            }
+            BrokerEvent::AdvanceAI => {
+                if let Some(action) = queued_action {
+                    game_action_sender.send(action).await.ok()?;
+                    queued_action = None;
+                }
             }
             BrokerEvent::Exit => return Some(()),
         }
@@ -215,7 +232,7 @@ fn setup_keystream(sender: Sender<UIEvent>) {
     spawn_local(async move {
         while let Some(x) = StreamExt::next(&mut reader).await {
             let event = x.expect("The crossterm event stream isn't broken.");
-            let Ok(_) = sender.send(UIEvent::KeyPress(event)).await else {
+            let Ok(_) = sender.send(UIEvent::Crossterm(event)).await else {
                 //If the UI is dead, shut down the keystream.
                 return;
             };
