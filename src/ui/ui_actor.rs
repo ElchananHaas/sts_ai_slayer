@@ -1,12 +1,12 @@
 use std::{fs::File, sync::Arc};
 
-use crate::{game::choice::ChoiceState, ui::fight_ui::draw_ui};
+use crate::{BrokerEvent, game::choice::ChoiceState, ui::fight_ui::draw_ui};
 use crossterm::event::Event as CrosstermEvent;
 use fliptui::{
     Window,
     widgets::{BorderWidget, text_line},
 };
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, Sender};
 
 pub enum UIEvent {
     NewState(Arc<ChoiceState>),
@@ -15,15 +15,17 @@ pub enum UIEvent {
 
 pub struct UIActor {
     receiver: mpsc::Receiver<UIEvent>,
+    sender: Sender<BrokerEvent>,
     choice_state: Option<Arc<ChoiceState>>,
     window: Window,
 }
 
 impl UIActor {
-    pub fn new(receiver: mpsc::Receiver<UIEvent>) -> Self {
+    pub fn new(receiver: mpsc::Receiver<UIEvent>, sender: Sender<BrokerEvent>) -> Self {
         let file = File::create("uilog.txt").unwrap();
         Self {
             receiver,
+            sender,
             choice_state: None,
             window: Window::builder().log_file(file).build(),
         }
@@ -37,7 +39,9 @@ impl UIActor {
                     CrosstermEvent::FocusGained => {}
                     CrosstermEvent::FocusLost => {}
                     CrosstermEvent::Key(_key_event) => {
-                        break;
+                        // If the broker can't receive the event, ignore it and shut down anyways.
+                        let _ = self.sender.send(BrokerEvent::Exit).await;
+                        return;
                     }
                     CrosstermEvent::Mouse(_mouse_event) => {}
                     CrosstermEvent::Paste(_) => {}

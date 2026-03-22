@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, mem};
 
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
@@ -114,12 +114,11 @@ impl ChoiceState {
     //This function handles an action being taken.
     pub fn take_action(&mut self, action_idx: usize) {
         let game = &mut *self.game;
+        game.state_counter += 1;
         //The choice is set on the next line in the match statement.
         //The issue is that Rust won't let the program consume choice by value
         //even though it is overwritten. This is solved by swapping in a temporary value.
-        let mut choice = Choice::Loss;
-        std::mem::swap(&mut choice, &mut self.choice);
-        self.choice = match choice {
+        self.choice = match mem::replace(&mut self.choice, Choice::Loss) {
             Choice::PlayCardState(play_card_actions) => {
                 game.handle_play_card_action(play_card_actions[action_idx])
             }
@@ -158,7 +157,7 @@ impl ChoiceState {
             Choice::RestSite(rest_site_actions) => {
                 game.handle_rest_site_action(rest_site_actions[action_idx])
             }
-        }
+        };
     }
 
     pub fn action_str(&self, action_idx: usize) -> String {

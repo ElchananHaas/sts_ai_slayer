@@ -48,6 +48,7 @@ pub struct Game {
     rng: Rng,
     map: ActMap,
     act: Act,
+    state_counter: u32,
 }
 
 //Some cards, like Armaments, may require interrupting the execution of a
@@ -815,6 +816,7 @@ impl Game {
                 rng,
                 map,
                 act: Act::new(),
+                state_counter: 0,
             },
             Character::SILENT => todo!(),
             Character::DEFECT => todo!(),

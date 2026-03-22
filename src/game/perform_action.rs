@@ -48,7 +48,6 @@ impl Game {
                     SelectCardAction::ChooseCard(idx) => &self.fight.hand[idx].clone(),
                 };
                 for _ in 0..amount {
-                    //TODO - consider interactions with Genetic Algorithm.
                     self.add_card_to_hand(card.clone());
                 }
             }

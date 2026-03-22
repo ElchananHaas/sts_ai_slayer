@@ -17,7 +17,7 @@ use agents::agent_helper::SkipSingleChoiceAgent;
 use agents::mcts_agent::MctsAgent;
 use agents::random_agent::RandomAgent;
 use crossterm::event::EventStream;
-use futures::{StreamExt, channel::oneshot};
+use futures::StreamExt;
 use game::{Character, Game};
 use rng::Rng;
 use tokio::{
@@ -47,13 +47,47 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn run_game(mut reciever: Receiver<usize>, sender: Sender<Arc<ChoiceState>>) {
+#[derive(Clone, Copy)]
+enum ActionClient {
+    Human,
+    Computer,
+}
+
+#[derive(Clone, Copy)]
+struct GameAction {
+    action: usize,
+    state_counter: u32,
+    client: ActionClient,
+}
+
+enum BrokerEvent {
+    NewState(Arc<ChoiceState>),
+    ActionTaken(GameAction),
+    Exit,
+}
+
+impl From<Arc<ChoiceState>> for BrokerEvent {
+    fn from(value: Arc<ChoiceState>) -> Self {
+        Self::NewState(value)
+    }
+}
+
+impl From<GameAction> for BrokerEvent {
+    fn from(value: GameAction) -> Self {
+        Self::ActionTaken(value)
+    }
+}
+
+async fn run_game<T: From<Arc<ChoiceState>>>(
+    mut reciever: Receiver<GameAction>,
+    sender: Sender<T>,
+) {
     let game = Game::new(Character::IRONCLAD);
     let game_seed = game.get_seed();
     let mut choice = Arc::new(game.start());
     let mut log = GameLog::new(game_seed);
     loop {
-        if sender.send(Arc::clone(&choice)).await.is_err() {
+        if sender.send(Arc::clone(&choice).into()).await.is_err() {
             // If the main thread isn't listening for messages anymore, return.
             // This can happen if the UI is shut down.
             break;
@@ -64,8 +98,16 @@ async fn run_game(mut reciever: Receiver<usize>, sender: Sender<Arc<ChoiceState>
         let Some(action) = reciever.recv().await else {
             break;
         };
-        log.push(action);
-        Arc::make_mut(&mut choice).take_action(action);
+        // If the game AI is computing an action and the user takes an action
+        // while the AI running, it could end up sending a stale state.
+        // This check skips messages sent with an out-of-date state counter.
+        // The game still sends the current state whenever it gets
+        // an action to help the clients recover.
+        if action.state_counter != *choice.game().state_counter() {
+            continue;
+        }
+        log.push(action.action);
+        Arc::make_mut(&mut choice).take_action(action.action);
     }
     let file = File::create(format!(
         "logs/{:?}.json",
@@ -84,8 +126,9 @@ fn human_play() {
     todo!()
 }
 
-fn spawn_agent_thread(
-    mut reciever: Receiver<(Arc<ChoiceState>, oneshot::Sender<usize>)>,
+fn spawn_agent_thread<T: From<GameAction> + Send + 'static>(
+    mut reciever: Receiver<Arc<ChoiceState>>,
+    sender: Sender<T>,
 ) -> JoinHandle<()> {
     thread::spawn(move || {
         let mut rng = Rng::new();
@@ -93,54 +136,72 @@ fn spawn_agent_thread(
             agent: MctsAgent {},
         };
         loop {
-            let Some((state, sender)) = reciever.blocking_recv() else {
+            let Some(state) = reciever.blocking_recv() else {
                 return;
             };
             let action = agent.action(&*state, &mut rng);
-            if sender.send(action).is_err() {
+            if sender
+                .blocking_send(
+                    GameAction {
+                        action,
+                        state_counter: *state.game().state_counter(),
+                        client: ActionClient::Computer,
+                    }
+                    .into(),
+                )
+                .is_err()
+            {
                 return;
             }
         }
     })
 }
 
-async fn agent_play() -> Result<(), Box<dyn Error>> {
-    let (game_action_sender, game_action_receiver) = mpsc::channel(1);
-    let (game_state_sender, mut game_state_receiver) = mpsc::channel(1);
-    let (ui_sender, ui_receiver) = mpsc::channel(1);
-    let (agent_state_sender, agent_state_receiver) = mpsc::channel(1);
-    spawn_agent_thread(agent_state_receiver);
-    setup_keystream(ui_sender.clone());
-    let mut ui_actor = UIActor::new(ui_receiver);
-    let ui_handle = spawn_local(async move { ui_actor.run().await });
-    let game_handle =
-        spawn_local(async move { run_game(game_action_receiver, game_state_sender).await });
+async fn broker_loop(
+    mut broker_receiver: Receiver<BrokerEvent>,
+    agent_state_sender: Sender<Arc<ChoiceState>>,
+    ui_sender: Sender<UIEvent>,
+    game_action_sender: Sender<GameAction>,
+) -> Option<()> {
     loop {
-        let Some(()) = async {
-            let state = game_state_receiver.recv().await?;
-            if state.is_over() {
-                return Some(());
+        let event = broker_receiver.recv().await?;
+        match event {
+            BrokerEvent::NewState(choice_state) => {
+                if !choice_state.is_over() {
+                    agent_state_sender
+                        .send(Arc::clone(&choice_state))
+                        .await
+                        .ok()?;
+                }
+                ui_sender.send(UIEvent::NewState(choice_state)).await.ok()?;
             }
-            ui_sender
-                .send(UIEvent::NewState(Arc::clone(&state)))
-                .await
-                .ok()?;
-            let (send, recv) = oneshot::channel();
-            agent_state_sender.send((state, send)).await.ok()?;
-            let action = recv.await.ok()?;
-            game_action_sender.send(action).await.ok()?;
-            Some(())
+            BrokerEvent::ActionTaken(game_action) => {
+                game_action_sender.send(game_action).await.ok()?;
+            }
+            BrokerEvent::Exit => return Some(()),
         }
-        .await
-        else {
-            break;
-        };
     }
-    //Drop all the queues to prevent deadlocks.
-    drop(game_state_receiver);
-    drop(game_action_sender);
-    drop(ui_sender);
-    drop(agent_state_sender);
+}
+async fn agent_play() -> Result<(), Box<dyn Error>> {
+    let (broker_sender, broker_receiver) = mpsc::channel::<BrokerEvent>(2);
+    let (game_action_sender, game_action_receiver) = mpsc::channel(2);
+    let (ui_sender, ui_receiver) = mpsc::channel(2);
+    let (agent_state_sender, agent_state_receiver) = mpsc::channel(2);
+    spawn_agent_thread(agent_state_receiver, broker_sender.clone());
+    setup_keystream(ui_sender.clone());
+    let ui_handle = spawn_local({
+        let broker_sender = broker_sender.clone();
+        async move { UIActor::new(ui_receiver, broker_sender).run().await }
+    });
+    let game_handle =
+        spawn_local(async move { run_game(game_action_receiver, broker_sender).await });
+    broker_loop(
+        broker_receiver,
+        agent_state_sender,
+        ui_sender,
+        game_action_sender,
+    )
+    .await;
     //The UI actor has some code to restore terminal settings on drop. This
     //join ensures it will be run. It already has a panic hook by default.
     ui_handle.await.expect("UI exited");
