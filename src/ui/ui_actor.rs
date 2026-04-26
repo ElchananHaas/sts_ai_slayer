@@ -1,9 +1,9 @@
 use std::{fs::File, sync::Arc};
 
-use crate::{BrokerEvent, game::choice::ChoiceState, ui::fight_ui::draw_ui};
+use crate::{BrokerEvent, game::choice::ChoiceState, ui::fight_ui::draw_game};
 use crossterm::event::{Event as CrosstermEvent, KeyCode};
 use fliptui::{
-    Window,
+    WidgetRoot, Window,
     widgets::{BorderWidget, text_line},
 };
 use tokio::sync::mpsc::{self, Sender};
@@ -20,6 +20,20 @@ pub struct UIActor {
     window: Window,
 }
 
+struct RootState<'a> {
+    state: Option<&'a Arc<ChoiceState>>,
+}
+
+impl<'a> WidgetRoot for RootState<'a> {
+    fn ui<T: fliptui::Element>(&mut self, root: &mut T) {
+        if let Some(choice_state) = self.state {
+            draw_game(root, &*choice_state);
+        } else {
+            BorderWidget::builder(root, |center| text_line(center, "Waiting for game start"))
+                .build();
+        }
+    }
+}
 impl UIActor {
     pub fn new(receiver: mpsc::Receiver<UIEvent>, sender: Sender<BrokerEvent>) -> Self {
         let file = File::create("uilog.txt").unwrap();
@@ -61,15 +75,8 @@ impl UIActor {
                 },
             };
 
-            self.window.draw(|mut frame| {
-                if let Some(choice_state) = &self.choice_state {
-                    draw_ui(&mut frame, choice_state);
-                } else {
-                    BorderWidget::builder(&mut frame, |center| {
-                        text_line(center, "Waiting for game start")
-                    })
-                    .build();
-                }
+            self.window.draw(RootState {
+                state: self.choice_state.as_ref(),
             });
         }
     }
