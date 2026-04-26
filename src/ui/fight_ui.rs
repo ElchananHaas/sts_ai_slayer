@@ -128,6 +128,16 @@ fn render_enemies(widget: &mut impl Element, state: &ChoiceState) {
     }
 }
 
+fn style_vertical_breakdown(parent: &mut impl Node, children : &mut [impl Node; 3]) {
+    parent.layout().height_percent(1.0).width_percent(1.0);
+    parent.layout().push_grid_template_column_fr(1.0)
+        .push_grid_template_row_px(6)
+        .push_grid_template_row_fr(1.0)
+        .push_grid_template_row_px(8);
+    for i in 0..children.len() {
+        children[i].layout().grid_col(0).grid_row(i);
+    }
+}
 fn vertical_breakdown<T: Element>(
     widget: &mut T,
     top: impl FnOnce(&mut T),
@@ -156,17 +166,15 @@ fn render_rest_site(
     _choice_state: &ChoiceState,
     rest_site_actions: Vec<RestSiteAction>,
 ) {
-    vertical_breakdown(
-        widget,
-        |_top| {},
-        |middle| {
-            middle
+    let top = widget.child(|_child|{});
+    let middle = widget.child(|child|{
+            child
                 .layout()
                 .flex_direction(taffy::FlexDirection::Row)
                 .justify_content(taffy::AlignContent::Center)
                 .align_items(taffy::AlignItems::Center);
             for i in 0..rest_site_actions.len() {
-                middle.child(|child| {
+                child.child(|child| {
                     BorderWidget::builder(child, |center| {
                         center
                             .layout()
@@ -180,24 +188,23 @@ fn render_rest_site(
                     .build();
                 });
             }
-        },
-        |_bottom| {},
-    );
+    });
+    let bottom = widget.child(|_child|{});
+    style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
 
 fn render_game_over(widget: &mut impl Element, choice_state: &ChoiceState) {
-    vertical_breakdown(
-        widget,
-        |_top| {},
-        |middle| {
-            middle
+    let top = widget.child(|_child|{});
+    let middle = widget.child(|child|{
+            child
                 .layout()
                 .justify_content(taffy::AlignContent::Center)
                 .align_items(taffy::AlignItems::Center);
-            middle.child(|child| render_game_over_box(child, choice_state));
-        },
-        |_bottom| {},
-    );
+            child.child(|child| render_game_over_box(child, choice_state));
+    });
+    let bottom = widget.child(|_child|{});
+    style_vertical_breakdown(widget, &mut [top, middle, bottom]);
+
 }
 
 fn render_game_over_box(widget: &mut impl Element, choice_state: &ChoiceState) {
@@ -216,17 +223,24 @@ fn render_game_over_box(widget: &mut impl Element, choice_state: &ChoiceState) {
     .build();
 }
 fn render_battlefield(widget: &mut impl Element, choice_state: &ChoiceState) {
-    let [_top, mut middle, mut bottom] = vertical_breakdown(widget);
-    middle.layout().push_grid_template_row_fr(1.0);
-    let [mut player_box, mut fight_box] = array::from_fn(|i| {
-        middle.child().apply(|w| {
-            middle.layout().push_grid_template_column_fr(1.0);
-            w.layout().grid_col(i).grid_row(0);
-        })
+    let top = widget.child(|_child|{});
+    let middle = widget.child(|child|{
+        child.layout().push_grid_template_row_fr(1.0);
+        let player_box = child.child(|child| {
+            render_player(child, choice_state);
+        });
+        let fight_box = child.child(|child| {
+            render_enemies(child, choice_state);
+        });
+        for elem in (&mut [player_box, fight_box]).iter_mut().enumerate() {
+            child.layout().push_grid_template_column_fr(1.0);
+            elem.1.layout().grid_col(elem.0).grid_row(0);
+        }
     });
-    render_player(&mut player_box, choice_state);
-    render_cards(&mut bottom, choice_state);
-    render_enemies(&mut fight_box, choice_state);
+    let bottom = widget.child(|child|{
+        render_cards(child, choice_state);
+    });
+    style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
 
 pub fn render_card_view(
@@ -234,19 +248,12 @@ pub fn render_card_view(
     choice_state: &ChoiceState,
     actions: Vec<SelectDeckCardAction>,
 ) {
-    widget.layout().height_percent(1.0).width_percent(1.0);
-    widget
-        .layout()
-        .push_grid_template_column_fr(1.0)
-        .push_grid_template_row_px(6)
-        .push_grid_template_row_fr(1.0);
-    array::from_fn(|i| {
-        widget.child(|w| {
-            w.layout().grid_col(0).grid_row(i);
-            //TODO - Fix layout!
-            render_card_view_inner(&mut middle, choice_state, actions);
-        })
+    let top = widget.child(|_child|{});
+    let middle = widget.child(|child|{
+            render_card_view_inner(child, choice_state, actions);
     });
+    let bottom = widget.child(|_child|{});
+    style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
 
 pub fn render_card_view_inner(
