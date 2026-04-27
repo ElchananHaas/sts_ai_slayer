@@ -34,43 +34,27 @@ If shrine if flipped and there are no more shrines left a standard event is gene
 Otherwise, a standard event is generated with a shrine as backup.
 */
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, VariantArray)]
-pub enum EventNameOld {
-    //Act 1 exclusive.
-    //Neow,
-    BigFish,
-    Cleric,
-    DeadAdventurer,
-    GoldenIdol,
-    HypnotizingShrooms,
-    LivingWall,
-    ScrapOoze,
-    ShiningLight,
-    TheSsserpent,
-    WorldOfGoop,
-    WingStatue,
-    //Shrines
-    //BonfireSpirits,
-    //GoldenShrine,
-    //Lab,
-    //MatchAndKeep,
-    //OminousForge,
-    //Purifier,
-    //Transmogifier,
-    //UpgradeShrine,
-    //WeMeetAgain,
-    //WheelOfChange,
-    //Conditional Shrines
-    //TheDivineFountain,
-    //Duplicator,
-    //Designer,
-    //FaceTrader,
-    //KnowingSkull,
-    //Nloth,
-    //Joust,
-    //WomanInBlue,
-    //I'm not including Secret Portal.
-}
+//Shrines
+//BonfireSpirits,
+//GoldenShrine,
+//Lab,
+//MatchAndKeep,
+//OminousForge,
+//Purifier,
+//Transmogifier,
+//UpgradeShrine,
+//WeMeetAgain,
+//WheelOfChange,
+//Conditional Shrines
+//TheDivineFountain,
+//Duplicator,
+//Designer,
+//FaceTrader,
+//KnowingSkull,
+//Nloth,
+//Joust,
+//WomanInBlue,
+//I'm not including Secret Portal.
 
 pub trait EventRoom {
     fn new(rng: &mut Rng) -> Self;

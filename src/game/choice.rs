@@ -243,7 +243,7 @@ impl ChoiceState {
                 _selection_type,
             ) => select_card_actions.len(),
             Choice::Event(_event, event_actions) => event_actions.len(),
-            Choice::SelectDeckCardState(reason, actions) => actions.len(),
+            Choice::SelectDeckCardState(_reason, actions) => actions.len(),
             Choice::RestSite(actions) => actions.len(),
         }
     }

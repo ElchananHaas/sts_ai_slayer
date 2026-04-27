@@ -87,7 +87,7 @@ impl EventRoom for WingStatue {
         "Wing Statue"
     }
 
-    fn new(rng: &mut Rng) -> Self {
+    fn new(_rng: &mut Rng) -> Self {
         WingStatue
     }
 }

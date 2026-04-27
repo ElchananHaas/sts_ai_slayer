@@ -11,4 +11,5 @@ IN PROGRESS
 - [] Load for viewing
 
 ### Human Playability
-TODO
+- [] Show key controls
+- [] Respond to key controls

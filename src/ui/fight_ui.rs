@@ -1,13 +1,13 @@
-use std::array;
 use std::fmt::Write;
 
+use crossterm::event::KeyCode;
 use fliptui::taffy::{FlexDirection, FlexWrap};
 use fliptui::widgets::{BorderWidget, TextRegion, text_line};
-use fliptui::{Element, Node, WidgetRoot, taffy};
+use fliptui::{Element, Node, taffy};
 
 use crate::card::Card;
 use crate::game::Game;
-use crate::game::choice::{ChoiceState, RestSiteAction, SelectDeckCardAction};
+use crate::game::choice::{ChoiceState, PlayCardAction, RestSiteAction, SelectDeckCardAction};
 use crate::map::{self, NUM_FLOORS, ROW_WIDTH};
 
 //This forwards all input to the standard writeln/write macro, but ignores the result. This
@@ -54,30 +54,68 @@ fn render_player(widget: &mut impl Element, state: &ChoiceState) {
     .build();
 }
 
-fn render_card(widget: &mut impl Element, state: &ChoiceState, card: &Card) {
+fn render_card(
+    widget: &mut impl Element,
+    state: &ChoiceState,
+    card: &Card,
+    card_idx: usize,
+    action_idx: Option<usize>,
+) {
     simple_boxed_text(widget, |text_region| {
         let upgraded = if card.is_upgraded() { "+" } else { "" };
         if let Some(cost) = state.game().fight().evaluate_cost(card) {
-            write!(text_region, "{:?}{} [{}]", card.body, upgraded, cost);
+            writeln!(text_region, "{:?}{} [{}]", card.body, upgraded, cost);
         } else {
-            write!(text_region, "{:?}{}", card.body, upgraded);
+            writeln!(text_region, "{:?}{}", card.body, upgraded);
         };
+        if action_idx.is_some() {
+            writeln!(text_region, "{:?}", card_idx);
+        } else {
+            writeln!(text_region, "");
+        }
     });
+    if let Some(action_idx) = action_idx {
+        widget.key_press(|event| {
+            if event.code
+                == KeyCode::Char(
+                    char::from_digit(((action_idx + 1) as u32) % 10, 10)
+                        .expect("Number is in-bounds"),
+                )
+            {
+                todo!("Properly implement keypress event handling");
+            }
+        });
+    }
 }
 
-fn render_hand_card(widget: &mut impl Element, state: &ChoiceState, card_idx: usize) {
+fn render_hand_card(
+    widget: &mut impl Element,
+    state: &ChoiceState,
+    card_idx: usize,
+    action_idx: Option<usize>,
+) {
     let game = state.game();
     let card = game.fight().hand().get(card_idx);
-    card.map(|card| render_card(widget, state, card));
+    card.map(|card| render_card(widget, state, card, card_idx, action_idx));
 }
 
-fn render_cards(widget: &mut impl Element, state: &ChoiceState) {
+fn render_cards(
+    widget: &mut impl Element,
+    state: &ChoiceState,
+    play_card_actions: Vec<PlayCardAction>,
+) {
     widget.layout().push_grid_template_row_fr(1.0);
+    let mut hand_to_action = vec![None; state.game().fight().hand().len()];
+    for (i, action) in play_card_actions.iter().enumerate() {
+        if let PlayCardAction::PlayCard(idx) = action {
+            hand_to_action[*idx as usize] = Some(i);
+        }
+    }
     for i in 0..Game::MAX_CARDS_IN_HAND {
         widget.layout().push_grid_template_column_fr(1.0);
         widget.child(|child| {
             child.layout().grid_col(i).grid_row(0);
-            render_hand_card(child, state, i);
+            render_hand_card(child, state, i, hand_to_action.get(i).copied().flatten());
         });
     }
 }
@@ -140,29 +178,6 @@ fn style_vertical_breakdown(parent: &mut impl Node, children: &mut [impl Node; 3
         children[i].layout().grid_col(0).grid_row(i);
     }
 }
-fn vertical_breakdown<T: Element>(
-    widget: &mut T,
-    top: impl FnOnce(&mut T),
-    middle: impl FnOnce(&mut T),
-    bottom: impl FnOnce(&mut T),
-) {
-    widget.layout().height_percent(1.0).width_percent(1.0);
-    widget
-        .layout()
-        .push_grid_template_column_fr(1.0)
-        .push_grid_template_row_px(6)
-        .push_grid_template_row_fr(1.0)
-        .push_grid_template_row_px(8);
-    let mut children = [
-        widget.child(top),
-        widget.child(middle),
-        widget.child(bottom),
-    ];
-    for i in 0..children.len() {
-        children[i].layout().grid_col(0).grid_row(i);
-    }
-}
-
 fn render_rest_site(
     widget: &mut impl Element,
     _choice_state: &ChoiceState,
@@ -223,7 +238,11 @@ fn render_game_over_box(widget: &mut impl Element, choice_state: &ChoiceState) {
     })
     .build();
 }
-fn render_battlefield(widget: &mut impl Element, choice_state: &ChoiceState) {
+fn render_battlefield(
+    widget: &mut impl Element,
+    choice_state: &ChoiceState,
+    play_card_actions: Vec<PlayCardAction>,
+) {
     let top = widget.child(|_child| {});
     let middle = widget.child(|child| {
         child.layout().push_grid_template_row_fr(1.0);
@@ -239,7 +258,7 @@ fn render_battlefield(widget: &mut impl Element, choice_state: &ChoiceState) {
         }
     });
     let bottom = widget.child(|child| {
-        render_cards(child, choice_state);
+        render_cards(child, choice_state, play_card_actions);
     });
     style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
@@ -315,12 +334,12 @@ pub fn draw_game(widget: &mut impl Element, choice_state: &ChoiceState) {
     match choice_state.choice().clone() {
         crate::game::choice::Choice::PlayCardState(play_card_actions) => {
             widget.child(|elem| {
-                render_battlefield(elem, choice_state);
+                render_battlefield(elem, choice_state, play_card_actions);
             });
         }
         crate::game::choice::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
             widget.child(|elem| {
-                render_battlefield(elem, choice_state);
+                render_battlefield(elem, choice_state, vec![]);
             });
         }
         crate::game::choice::Choice::Win => {

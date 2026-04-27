@@ -163,7 +163,7 @@ impl Game {
                         );
                     }
                 }
-                SelectCardEffect::DuplicatePowerOrAttack(x) => {
+                SelectCardEffect::DuplicatePowerOrAttack(_x) => {
                     let targets = choose_card_filter(&self.fight.hand, |card| {
                         let t = card.body.card_type();
                         t == CardType::Power || t == CardType::Attack
