@@ -7,8 +7,9 @@ use fliptui::{Element, Node, taffy};
 
 use crate::card::Card;
 use crate::game::Game;
-use crate::game::choice::{ChoiceState, PlayCardAction, RestSiteAction, SelectDeckCardAction};
+use crate::game::choice::{PlayCardAction, RestSiteAction, SelectDeckCardAction};
 use crate::map::{self, NUM_FLOORS, ROW_WIDTH};
+use crate::ui::ui_actor::UICtx;
 
 //This forwards all input to the standard writeln/write macro, but ignores the result. This
 //is useful for writing ot the TextRegion because those write calls will never error.
@@ -32,7 +33,7 @@ fn simple_boxed_text<T: Element>(widget: &mut T, f: impl FnOnce(&mut TextRegion<
     })
     .build();
 }
-fn render_player(widget: &mut impl Element, state: &ChoiceState) {
+fn render_player(widget: &mut impl Element, state: &UICtx) {
     let game = state.game();
     BorderWidget::builder(widget, |center| {
         let mut text_region = TextRegion::new(center);
@@ -56,7 +57,7 @@ fn render_player(widget: &mut impl Element, state: &ChoiceState) {
 
 fn render_card(
     widget: &mut impl Element,
-    state: &ChoiceState,
+    state: &UICtx,
     card: &Card,
     card_idx: usize,
     action_idx: Option<usize>,
@@ -69,41 +70,42 @@ fn render_card(
             writeln!(text_region, "{:?}{}", card.body, upgraded);
         };
         if action_idx.is_some() {
-            writeln!(text_region, "{:?}", card_idx);
+            writeln!(text_region, "{:?}", (card_idx + 1) % 10);
         } else {
             writeln!(text_region, "");
         }
     });
+    let mut key_event = None;
     if let Some(action_idx) = action_idx {
         widget.key_press(|event| {
+            key_event = Some(event.clone());
             if event.code
                 == KeyCode::Char(
                     char::from_digit(((action_idx + 1) as u32) % 10, 10)
                         .expect("Number is in-bounds"),
                 )
             {
-                todo!("Properly implement keypress event handling");
+                state.set_action(action_idx);
             }
         });
     }
+    key_event.map(|event| {
+        writeln!(widget.log(), "{:?}", event);
+    });
 }
 
 fn render_hand_card(
     widget: &mut impl Element,
-    state: &ChoiceState,
+    state: &UICtx,
     card_idx: usize,
     action_idx: Option<usize>,
 ) {
     let game = state.game();
-    let card = game.fight().hand().get(card_idx);
-    card.map(|card| render_card(widget, state, card, card_idx, action_idx));
+    let card = game.fight().hand().get(card_idx).cloned();
+    card.map(|card| render_card(widget, state, &card, card_idx, action_idx));
 }
 
-fn render_cards(
-    widget: &mut impl Element,
-    state: &ChoiceState,
-    play_card_actions: Vec<PlayCardAction>,
-) {
+fn render_cards(widget: &mut impl Element, state: &UICtx, play_card_actions: Vec<PlayCardAction>) {
     widget.layout().push_grid_template_row_fr(1.0);
     let mut hand_to_action = vec![None; state.game().fight().hand().len()];
     for (i, action) in play_card_actions.iter().enumerate() {
@@ -120,7 +122,7 @@ fn render_cards(
     }
 }
 
-fn render_enemy(widget: &mut impl Element, state: &ChoiceState, enemy_idx: usize) {
+fn render_enemy(widget: &mut impl Element, state: &UICtx, enemy_idx: usize) {
     let game = state.game();
     let enemy = &game.fight().enemies().enemies[enemy_idx];
     let Some(enemy) = enemy else {
@@ -154,7 +156,7 @@ fn render_enemy(widget: &mut impl Element, state: &ChoiceState, enemy_idx: usize
     });
 }
 
-fn render_enemies(widget: &mut impl Element, state: &ChoiceState) {
+fn render_enemies(widget: &mut impl Element, state: &UICtx) {
     //TODO - this should have a more clever layout.
     widget.layout().push_grid_template_row_fr(1.0);
     for i in 0..Game::MAX_ENEMIES {
@@ -180,7 +182,7 @@ fn style_vertical_breakdown(parent: &mut impl Node, children: &mut [impl Node; 3
 }
 fn render_rest_site(
     widget: &mut impl Element,
-    _choice_state: &ChoiceState,
+    _ui_ctx: &UICtx,
     rest_site_actions: Vec<RestSiteAction>,
 ) {
     let top = widget.child(|_child| {});
@@ -210,23 +212,23 @@ fn render_rest_site(
     style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
 
-fn render_game_over(widget: &mut impl Element, choice_state: &ChoiceState) {
+fn render_game_over(widget: &mut impl Element, ui_ctx: &UICtx) {
     let top = widget.child(|_child| {});
     let middle = widget.child(|child| {
         child
             .layout()
             .justify_content(taffy::AlignContent::Center)
             .align_items(taffy::AlignItems::Center);
-        child.child(|child| render_game_over_box(child, choice_state));
+        child.child(|child| render_game_over_box(child, ui_ctx));
     });
     let bottom = widget.child(|_child| {});
     style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
 
-fn render_game_over_box(widget: &mut impl Element, choice_state: &ChoiceState) {
+fn render_game_over_box(widget: &mut impl Element, ui_ctx: &UICtx) {
     BorderWidget::builder(widget, |center| {
         let mut text_region = TextRegion::new(center);
-        match &choice_state.choice() {
+        match &ui_ctx.choice() {
             crate::game::choice::Choice::Win => {
                 writeln!(&mut text_region, "Victory!");
             }
@@ -240,17 +242,17 @@ fn render_game_over_box(widget: &mut impl Element, choice_state: &ChoiceState) {
 }
 fn render_battlefield(
     widget: &mut impl Element,
-    choice_state: &ChoiceState,
+    ui_ctx: &UICtx,
     play_card_actions: Vec<PlayCardAction>,
 ) {
     let top = widget.child(|_child| {});
     let middle = widget.child(|child| {
         child.layout().push_grid_template_row_fr(1.0);
         let player_box = child.child(|child| {
-            render_player(child, choice_state);
+            render_player(child, ui_ctx);
         });
         let fight_box = child.child(|child| {
-            render_enemies(child, choice_state);
+            render_enemies(child, ui_ctx);
         });
         for elem in (&mut [player_box, fight_box]).iter_mut().enumerate() {
             child.layout().push_grid_template_column_fr(1.0);
@@ -258,19 +260,19 @@ fn render_battlefield(
         }
     });
     let bottom = widget.child(|child| {
-        render_cards(child, choice_state, play_card_actions);
+        render_cards(child, ui_ctx, play_card_actions);
     });
     style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
 
 pub fn render_card_view(
     widget: &mut impl Element,
-    choice_state: &ChoiceState,
+    ui_ctx: &UICtx,
     actions: Vec<SelectDeckCardAction>,
 ) {
     let top = widget.child(|_child| {});
     let middle = widget.child(|child| {
-        render_card_view_inner(child, choice_state, actions);
+        render_card_view_inner(child, ui_ctx, actions);
     });
     let bottom = widget.child(|_child| {});
     style_vertical_breakdown(widget, &mut [top, middle, bottom]);
@@ -278,22 +280,27 @@ pub fn render_card_view(
 
 pub fn render_card_view_inner(
     widget: &mut impl Element,
-    choice_state: &ChoiceState,
+    ui_ctx: &UICtx,
     actions: Vec<SelectDeckCardAction>,
 ) {
     widget
         .layout()
         .flex_direction(FlexDirection::Row)
         .flex_wrap(FlexWrap::Wrap);
-    for action in &actions {
-        choice_state.game().base_deck().get(action.0).map(|card| {
-            widget.child(|child| render_card(child, choice_state, card));
-        });
+    for (action_idx, action) in actions.iter().enumerate() {
+        ui_ctx
+            .game()
+            .base_deck()
+            .get(action.0)
+            .cloned()
+            .map(|card| {
+                widget.child(|child| render_card(child, ui_ctx, &card, action.0, Some(action_idx)));
+            });
     }
 }
 
-pub fn render_map_state(widget: &mut impl Element, choice_state: &ChoiceState) {
-    let game = &**choice_state.game();
+pub fn render_map_state(widget: &mut impl Element, ui_ctx: &UICtx) {
+    let game = ui_ctx.game();
     let position = game.act().position;
     for _ in 0..ROW_WIDTH {
         widget.layout().push_grid_template_row_fr(1.0);
@@ -330,31 +337,31 @@ pub fn render_map_state(widget: &mut impl Element, choice_state: &ChoiceState) {
     }
 }
 
-pub fn draw_game(widget: &mut impl Element, choice_state: &ChoiceState) {
-    match choice_state.choice().clone() {
+pub fn draw_game(widget: &mut impl Element, ui_ctx: &UICtx) {
+    match ui_ctx.choice().clone() {
         crate::game::choice::Choice::PlayCardState(play_card_actions) => {
             widget.child(|elem| {
-                render_battlefield(elem, choice_state, play_card_actions);
+                render_battlefield(elem, ui_ctx, play_card_actions);
             });
         }
         crate::game::choice::Choice::ChooseEnemyState(choose_enemy_actions, _) => {
             widget.child(|elem| {
-                render_battlefield(elem, choice_state, vec![]);
+                render_battlefield(elem, ui_ctx, vec![]);
             });
         }
         crate::game::choice::Choice::Win => {
             widget.child(|elem| {
-                render_game_over(elem, choice_state);
+                render_game_over(elem, ui_ctx);
             });
         }
         crate::game::choice::Choice::Loss => {
             widget.child(|elem| {
-                render_game_over(elem, choice_state);
+                render_game_over(elem, ui_ctx);
             });
         }
         crate::game::choice::Choice::MapState(map_state_actions) => {
             widget.child(|elem| {
-                render_map_state(elem, choice_state);
+                render_map_state(elem, ui_ctx);
             });
         }
         crate::game::choice::Choice::SelectCardState(
@@ -366,12 +373,12 @@ pub fn draw_game(widget: &mut impl Element, choice_state: &ChoiceState) {
         crate::game::choice::Choice::Event(event, event_actions) => {}
         crate::game::choice::Choice::SelectDeckCardState(reason, actions) => {
             widget.child(|elem| {
-                render_card_view(elem, choice_state, actions);
+                render_card_view(elem, ui_ctx, actions);
             });
         }
         crate::game::choice::Choice::RestSite(actions) => {
             widget.child(|elem| {
-                render_rest_site(elem, choice_state, actions);
+                render_rest_site(elem, ui_ctx, actions);
             });
         }
     }
