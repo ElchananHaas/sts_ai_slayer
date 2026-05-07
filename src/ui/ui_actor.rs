@@ -39,8 +39,8 @@ impl UICtx {
     pub fn choice(&self) -> &Choice {
         self.choice_state.choice()
     }
-    pub fn set_action(&self, action: usize) {
-        self.action.set(Some(action))
+    pub fn set_action(&self, action_idx: usize) {
+        self.action.set(Some(action_idx))
     }
 }
 struct RootState {
