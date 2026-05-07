@@ -75,13 +75,12 @@ fn render_card(
             writeln!(text_region, "");
         }
     });
-    let mut key_event = None;
     if let Some(action_idx) = action_idx {
         widget.key_press(|event| {
-            key_event = Some(event.clone());
+            let corresponding_card = ((card_idx + 1) as u32) % 10;
             if event.code
                 == KeyCode::Char(
-                    char::from_digit(((action_idx + 1) as u32) % 10, 10)
+                    char::from_digit(corresponding_card, 10)
                         .expect("Number is in-bounds"),
                 )
             {
@@ -89,9 +88,6 @@ fn render_card(
             }
         });
     }
-    key_event.map(|event| {
-        writeln!(widget.log(), "{:?}", event);
-    });
 }
 
 fn render_hand_card(
