@@ -207,7 +207,7 @@ fn style_vertical_breakdown(parent: &mut impl Node, children: &mut [impl Node; 3
 }
 fn render_rest_site(
     widget: &mut impl Element,
-    _ui_ctx: &UICtx,
+    ui_ctx: &UICtx,
     rest_site_actions: Vec<RestSiteAction>,
 ) {
     let top = widget.child(|_child| {});
@@ -220,14 +220,7 @@ fn render_rest_site(
         for i in 0..rest_site_actions.len() {
             child.child(|child| {
                 BorderWidget::builder(child, |center| {
-                    center
-                        .layout()
-                        .border_left_px(1)
-                        .border_top_px(1)
-                        .border_right_px(1)
-                        .border_bottom_px(1);
-                    let mut text_region = TextRegion::new(center);
-                    writeln!(&mut text_region, "{:?}", rest_site_actions[i]);
+                    render_rest_site_action(center, ui_ctx, rest_site_actions[i], i)
                 })
                 .build();
             });
@@ -237,6 +230,22 @@ fn render_rest_site(
     style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
 
+fn render_rest_site_action(widget: &mut impl Element, ui_ctx: &UICtx, action: RestSiteAction, idx: usize) {
+    widget
+        .layout()
+        .border_left_px(1)
+        .border_top_px(1)
+        .border_right_px(1)
+        .border_bottom_px(1);
+    let mut text_region = TextRegion::new(widget);
+    writeln!(&mut text_region, "{:?}", action);
+    writeln!(&mut text_region, "Key {:?}", rotate_key(idx));
+    widget.key_press(|event| {
+        if matches_rotated_key(event, idx) {
+            ui_ctx.set_action(idx);
+        }
+    });
+}
 fn render_game_over(widget: &mut impl Element, ui_ctx: &UICtx) {
     let top = widget.child(|_child| {});
     let middle = widget.child(|child| {
