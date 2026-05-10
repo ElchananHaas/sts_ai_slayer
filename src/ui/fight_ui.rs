@@ -8,7 +8,7 @@ use fliptui::{Element, Node, taffy};
 use crate::card::Card;
 use crate::game::Game;
 use crate::game::choice::{
-    ChooseEnemyAction, PlayCardAction, RestSiteAction, SelectDeckCardAction,
+    ChooseEnemyAction, MapStateAction, PlayCardAction, RestSiteAction, SelectDeckCardAction, SelectDeckCardReason
 };
 use crate::map::{self, NUM_FLOORS, ROW_WIDTH};
 use crate::ui::ui_actor::UICtx;
@@ -103,8 +103,8 @@ fn render_hand_card(
     action_idx: Option<usize>,
 ) {
     let game = state.game();
-    let card = game.fight().hand().get(card_idx).cloned();
-    card.map(|card| render_card(widget, state, &card, card_idx, action_idx));
+    let card = game.fight().hand().get(card_idx);
+    card.map(|card| render_card(widget, state, card, card_idx, action_idx));
 }
 
 fn render_cards(widget: &mut impl Element, state: &UICtx, play_card_actions: Vec<PlayCardAction>) {
@@ -230,7 +230,12 @@ fn render_rest_site(
     style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
 
-fn render_rest_site_action(widget: &mut impl Element, ui_ctx: &UICtx, action: RestSiteAction, idx: usize) {
+fn render_rest_site_action(
+    widget: &mut impl Element,
+    ui_ctx: &UICtx,
+    action: RestSiteAction,
+    idx: usize,
+) {
     widget
         .layout()
         .border_left_px(1)
@@ -303,9 +308,13 @@ fn render_battlefield(
 pub fn render_card_view(
     widget: &mut impl Element,
     ui_ctx: &UICtx,
+    reason: SelectDeckCardReason,
     actions: Vec<SelectDeckCardAction>,
 ) {
-    let top = widget.child(|_child| {});
+    let top = widget.child(|child| {
+        let mut text_region = TextRegion::new(child);
+        writeln!(&mut text_region, "Select a card to {:?}", reason);
+    });
     let middle = widget.child(|child| {
         render_card_view_inner(child, ui_ctx, actions);
     });
@@ -322,19 +331,15 @@ pub fn render_card_view_inner(
         .layout()
         .flex_direction(FlexDirection::Row)
         .flex_wrap(FlexWrap::Wrap);
+    //TODO - Add pagination.
     for (action_idx, action) in actions.iter().enumerate() {
-        ui_ctx
-            .game()
-            .base_deck()
-            .get(action.0)
-            .cloned()
-            .map(|card| {
-                widget.child(|child| render_card(child, ui_ctx, &card, action.0, Some(action_idx)));
-            });
+        ui_ctx.game().base_deck().get(action.0).map(|card| {
+            widget.child(|child| render_card(child, ui_ctx, card, action.0, Some(action_idx)));
+        });
     }
 }
 
-pub fn render_map_state(widget: &mut impl Element, ui_ctx: &UICtx) {
+pub fn render_map_state(widget: &mut impl Element, ui_ctx: &UICtx, map_state_actions: Vec<MapStateAction>) {
     let game = ui_ctx.game();
     let position = game.act().position;
     for _ in 0..ROW_WIDTH {
@@ -367,6 +372,8 @@ pub fn render_map_state(widget: &mut impl Element, ui_ctx: &UICtx) {
                 } else {
                     text_line(child, text);
                 }
+                //This ensures the layout is correct even when the player doesn't have a map position. 
+                child.layout().min_width_px(7).min_height_px(3);
             });
         }
     }
@@ -396,7 +403,7 @@ pub fn draw_game(widget: &mut impl Element, ui_ctx: &UICtx) {
         }
         crate::game::choice::Choice::MapState(map_state_actions) => {
             widget.child(|elem| {
-                render_map_state(elem, ui_ctx);
+                render_map_state(elem, ui_ctx, map_state_actions);
             });
         }
         crate::game::choice::Choice::SelectCardState(
@@ -408,7 +415,7 @@ pub fn draw_game(widget: &mut impl Element, ui_ctx: &UICtx) {
         crate::game::choice::Choice::Event(event, event_actions) => {}
         crate::game::choice::Choice::SelectDeckCardState(reason, actions) => {
             widget.child(|elem| {
-                render_card_view(elem, ui_ctx, actions);
+                render_card_view(elem, ui_ctx, reason, actions);
             });
         }
         crate::game::choice::Choice::RestSite(actions) => {
