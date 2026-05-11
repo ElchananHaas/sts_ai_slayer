@@ -2,19 +2,20 @@ use std::fmt::Write;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use fliptui::taffy::{FlexDirection, FlexWrap};
-use fliptui::widgets::{BorderWidget, TextRegion, text_line};
+use fliptui::widgets::{BorderWidget, text_line};
 use fliptui::{Element, Node, taffy};
 
 use crate::card::Card;
 use crate::game::Game;
 use crate::game::choice::{
-    ChooseEnemyAction, MapStateAction, PlayCardAction, RestSiteAction, SelectDeckCardAction, SelectDeckCardReason
+    ChooseEnemyAction, MapStateAction, PlayCardAction, RestSiteAction, SelectDeckCardAction,
+    SelectDeckCardReason,
 };
 use crate::map::{self, NUM_FLOORS, ROW_WIDTH};
 use crate::ui::ui_actor::UICtx;
 
 //This forwards all input to the standard writeln/write macro, but ignores the result. This
-//is useful for writing ot the TextRegion because those write calls will never error.
+//is useful for writing to the TextRegion because those write calls will never error.
 macro_rules! writeln {
     ($($arg:tt)*) => {
         {
@@ -38,29 +39,21 @@ fn matches_rotated_key(event: KeyEvent, idx: usize) -> bool {
     event.code == KeyCode::Char(char::from_digit(rotate_key(idx), 10).expect("Number is in-bounds"))
 }
 
-fn simple_boxed_text<T: Element>(widget: &mut T, f: impl FnOnce(&mut TextRegion<T>)) {
-    BorderWidget::builder(widget, |center| {
-        let mut text_region = TextRegion::new(center);
-        (f)(&mut text_region)
-    })
-    .build();
-}
 fn render_player(widget: &mut impl Element, state: &UICtx) {
     let game = state.game();
     BorderWidget::builder(widget, |center| {
-        let mut text_region = TextRegion::new(center);
-        writeln!(&mut text_region, "{}", game.charachter().name());
+        writeln!(center.cursor(), "{}", game.charachter().name());
         writeln!(
-            &mut text_region,
+            center.cursor(),
             "{}/{} hp",
             game.player_hp(),
             game.player_max_hp()
         );
-        writeln!(&mut text_region, "{} energy", game.fight().energy());
-        writeln!(&mut text_region, "{} block", game.fight().player_block());
+        writeln!(center.cursor(), "{} energy", game.fight().energy());
+        writeln!(center.cursor(), "{} block", game.fight().player_block());
         if let Some(position) = game.act().position {
-            writeln!(&mut text_region, "{} block", game.fight().player_block());
-            writeln!(&mut text_region, "floor {}", position.y);
+            writeln!(center.cursor(), "{} block", game.fight().player_block());
+            writeln!(center.cursor(), "floor {}", position.y);
         }
     })
     .title("Player")
@@ -74,19 +67,20 @@ fn render_card(
     card_idx: usize,
     action_idx: Option<usize>,
 ) {
-    simple_boxed_text(widget, |text_region| {
+    BorderWidget::builder(widget, |center| {
         let upgraded = if card.is_upgraded() { "+" } else { "" };
         if let Some(cost) = state.game().fight().evaluate_cost(card) {
-            writeln!(text_region, "{:?}{} [{}]", card.body, upgraded, cost);
+            writeln!(center.cursor(), "{:?}{} [{}]", card.body, upgraded, cost);
         } else {
-            writeln!(text_region, "{:?}{}", card.body, upgraded);
+            writeln!(center.cursor(), "{:?}{}", card.body, upgraded);
         };
         if action_idx.is_some() {
-            writeln!(text_region, "Key {:?}", rotate_key(card_idx));
+            writeln!(center.cursor(), "Key {:?}", rotate_key(card_idx));
         } else {
-            writeln!(text_region, "");
+            writeln!(center.cursor(), "");
         }
-    });
+    })
+    .build();
     if let Some(action_idx) = action_idx {
         widget.key_press(|event| {
             if matches_rotated_key(event, card_idx) {
@@ -135,35 +129,36 @@ fn render_enemy(
     let Some(enemy) = enemy else {
         return;
     };
-    simple_boxed_text(widget, |text_region| {
-        writeln!(text_region, "{:?}", enemy.name);
-        writeln!(text_region, "{}/{} hp", enemy.hp, enemy.max_hp);
+    BorderWidget::builder(widget, |center| {
+        writeln!(center.cursor(), "{:?}", enemy.name);
+        writeln!(center.cursor(), "{}/{} hp", enemy.hp, enemy.max_hp);
         if enemy.block > 0 {
-            writeln!(text_region, "{} block", enemy.block);
+            writeln!(center.cursor(), "{} block", enemy.block);
         }
         if enemy.buffs.strength > 0 {
-            writeln!(text_region, "{} str", enemy.buffs.strength);
+            writeln!(center.cursor(), "{} str", enemy.buffs.strength);
         }
         if enemy.buffs.ritual > 0 || enemy.buffs.ritual_skip_first > 0 {
             writeln!(
-                text_region,
+                center.cursor(),
                 "{} ritual",
                 enemy.buffs.ritual + enemy.buffs.ritual_skip_first
             );
         }
         if enemy.buffs.curl_up > 0 {
-            writeln!(text_region, "{} curl up", enemy.buffs.curl_up);
+            writeln!(center.cursor(), "{} curl up", enemy.buffs.curl_up);
         }
         if enemy.debuffs.vulnerable > 0 {
-            writeln!(text_region, "{} vulnerable", enemy.debuffs.vulnerable);
+            writeln!(center.cursor(), "{} vulnerable", enemy.debuffs.vulnerable);
         }
         if enemy.debuffs.weak > 0 {
-            writeln!(text_region, "{} weak", enemy.debuffs.weak);
+            writeln!(center.cursor(), "{} weak", enemy.debuffs.weak);
         }
         if action_idx.is_some() {
-            writeln!(text_region, "Key {:?}", rotate_key(enemy_idx));
+            writeln!(center.cursor(), "Key {:?}", rotate_key(enemy_idx));
         }
-    });
+    })
+    .build();
     if let Some(action_idx) = action_idx {
         widget.key_press(|event| {
             if matches_rotated_key(event, enemy_idx) {
@@ -242,9 +237,9 @@ fn render_rest_site_action(
         .border_top_px(1)
         .border_right_px(1)
         .border_bottom_px(1);
-    let mut text_region = TextRegion::new(widget);
-    writeln!(&mut text_region, "{:?}", action);
-    writeln!(&mut text_region, "Key {:?}", rotate_key(idx));
+
+    writeln!(widget.cursor(), "{:?}", action);
+    writeln!(widget.cursor(), "Key {:?}", rotate_key(idx));
     widget.key_press(|event| {
         if matches_rotated_key(event, idx) {
             ui_ctx.set_action(idx);
@@ -266,13 +261,12 @@ fn render_game_over(widget: &mut impl Element, ui_ctx: &UICtx) {
 
 fn render_game_over_box(widget: &mut impl Element, ui_ctx: &UICtx) {
     BorderWidget::builder(widget, |center| {
-        let mut text_region = TextRegion::new(center);
         match &ui_ctx.choice() {
             crate::game::choice::Choice::Win => {
-                writeln!(&mut text_region, "Victory!");
+                writeln!(center.cursor(), "Victory!");
             }
             crate::game::choice::Choice::Loss => {
-                writeln!(&mut text_region, "Loss");
+                writeln!(center.cursor(), "Loss");
             }
             _ => panic!("render_game_over_box called in a non game over state"),
         }
@@ -312,8 +306,7 @@ pub fn render_card_view(
     actions: Vec<SelectDeckCardAction>,
 ) {
     let top = widget.child(|child| {
-        let mut text_region = TextRegion::new(child);
-        writeln!(&mut text_region, "Select a card to {:?}", reason);
+        writeln!(child.cursor(), "Select a card to {:?}", reason);
     });
     let middle = widget.child(|child| {
         render_card_view_inner(child, ui_ctx, actions);
@@ -339,7 +332,11 @@ pub fn render_card_view_inner(
     }
 }
 
-pub fn render_map_state(widget: &mut impl Element, ui_ctx: &UICtx, map_state_actions: Vec<MapStateAction>) {
+pub fn render_map_state(
+    widget: &mut impl Element,
+    ui_ctx: &UICtx,
+    map_state_actions: Vec<MapStateAction>,
+) {
     let game = ui_ctx.game();
     let position = game.act().position;
     for _ in 0..ROW_WIDTH {
@@ -368,11 +365,13 @@ pub fn render_map_state(widget: &mut impl Element, ui_ctx: &UICtx, map_state_act
                     map::RoomType::Unassigned => "",
                 };
                 if position.is_some_and(|pos| pos.x as usize == j && pos.y as usize == i) {
-                    simple_boxed_text(child, |writer| writeln!(writer, "{text}"));
+                    BorderWidget::builder(child, |text_elem|
+                        writeln!(text_elem.cursor(), "{text}")
+                    ).build();
                 } else {
                     text_line(child, text);
                 }
-                //This ensures the layout is correct even when the player doesn't have a map position. 
+                //This ensures the layout is correct even when the player doesn't have a map position.
                 child.layout().min_width_px(7).min_height_px(3);
             });
         }
