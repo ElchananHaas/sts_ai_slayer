@@ -260,16 +260,14 @@ fn render_game_over(widget: &mut impl Element, ui_ctx: &UICtx) {
 }
 
 fn render_game_over_box(widget: &mut impl Element, ui_ctx: &UICtx) {
-    BorderWidget::builder(widget, |center| {
-        match &ui_ctx.choice() {
-            crate::game::choice::Choice::Win => {
-                writeln!(center.cursor(), "Victory!");
-            }
-            crate::game::choice::Choice::Loss => {
-                writeln!(center.cursor(), "Loss");
-            }
-            _ => panic!("render_game_over_box called in a non game over state"),
+    BorderWidget::builder(widget, |center| match &ui_ctx.choice() {
+        crate::game::choice::Choice::Win => {
+            writeln!(center.cursor(), "Victory!");
         }
+        crate::game::choice::Choice::Loss => {
+            writeln!(center.cursor(), "Loss");
+        }
+        _ => panic!("render_game_over_box called in a non game over state"),
     })
     .build();
 }
@@ -337,8 +335,6 @@ pub fn render_map_state(
     ui_ctx: &UICtx,
     map_state_actions: Vec<MapStateAction>,
 ) {
-    let game = ui_ctx.game();
-    let position = game.act().position;
     for _ in 0..ROW_WIDTH {
         widget.layout().push_grid_template_row_fr(1.0);
     }
@@ -348,34 +344,44 @@ pub fn render_map_state(
     for i in 0..map::NUM_FLOORS {
         for j in 0..map::ROW_WIDTH {
             widget.child(|child| {
-                child
-                    .layout()
-                    .grid_row(j)
-                    .grid_col(i)
-                    .align_self(taffy::AlignItems::Center)
-                    .justify_self(taffy::AlignItems::Center);
-                let room = game.map().rooms[i][j];
-                let text = match room.room_type {
-                    map::RoomType::QuestionMark => "?",
-                    map::RoomType::Shop => "Shop",
-                    map::RoomType::Treasure => "Chest",
-                    map::RoomType::Rest => "Rest",
-                    map::RoomType::Monster => "Fight",
-                    map::RoomType::Elite => "Elite",
-                    map::RoomType::Unassigned => "",
-                };
-                if position.is_some_and(|pos| pos.x as usize == j && pos.y as usize == i) {
-                    BorderWidget::builder(child, |text_elem|
-                        writeln!(text_elem.cursor(), "{text}")
-                    ).build();
-                } else {
-                    text_line(child, text);
-                }
+                child.layout().grid_row(j).grid_col(i);
+                draw_room(child, ui_ctx, i, j, &map_state_actions);
                 //This ensures the layout is correct even when the player doesn't have a map position.
                 child.layout().min_width_px(7).min_height_px(3);
             });
         }
     }
+}
+fn draw_room(
+    widget: &mut impl Element,
+    ui_ctx: &UICtx,
+    i: usize,
+    j: usize,
+    map_state_actions: &Vec<MapStateAction>,
+) {
+    let game = ui_ctx.game();
+    let position = game.act().position;
+    let room = game.map().rooms[i][j];
+    let text = match room.room_type {
+        map::RoomType::QuestionMark => "?",
+        map::RoomType::Shop => "Shop",
+        map::RoomType::Treasure => "Chest",
+        map::RoomType::Rest => "Rest",
+        map::RoomType::Monster => "Fight",
+        map::RoomType::Elite => "Elite",
+        map::RoomType::Unassigned => "",
+    };
+    widget
+        .layout()
+        .justify_content(taffy::AlignContent::Center)
+        .align_content(taffy::AlignContent::Center);
+    widget.child(|child| {
+        if position.is_some_and(|pos| pos.x as usize == j && pos.y as usize == i) {
+            BorderWidget::builder(child, |center| writeln!(center.cursor(), "{text}")).build();
+        } else {
+            writeln!(child.cursor(), "{text}")
+        }
+    });
 }
 
 pub fn draw_game(widget: &mut impl Element, ui_ctx: &UICtx) {
