@@ -374,7 +374,7 @@ fn draw_room(
     widget
         .layout()
         .justify_content(taffy::AlignContent::Center)
-        .align_content(taffy::AlignContent::Center);
+        .align_items(taffy::AlignItems::Center);
     widget.child(|child| {
         if position.is_some_and(|pos| pos.x as usize == j && pos.y as usize == i) {
             BorderWidget::builder(child, |center| writeln!(center.cursor(), "{text}")).build();
