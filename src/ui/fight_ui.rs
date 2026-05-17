@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use fliptui::taffy::{FlexDirection, FlexWrap};
-use fliptui::widgets::{BorderWidget, text_line};
+use fliptui::widgets::BorderWidget;
 use fliptui::{Element, Node, taffy};
 
 use crate::card::Card;
@@ -370,7 +370,7 @@ fn draw_room_actions(
     let game = ui_ctx.game();
 
     let row_matches = if let Some(position) = game.act().position {
-        position.y as usize == i
+        position.y as usize + 1 == i
     } else {
         i == 0
     };
@@ -380,7 +380,7 @@ fn draw_room_actions(
             .layout()
             .justify_content(taffy::AlignContent::Center)
             .align_items(taffy::AlignItems::Center);
-        for action in map_state_actions {
+        for (action_idx, action) in map_state_actions.iter().enumerate() {
             let mut number = None;
             match *action {
                 MapStateAction::Jump(new_x) => {
@@ -390,17 +390,17 @@ fn draw_room_actions(
                 }
                 MapStateAction::Left => {
                     if row_pos.map(|row| row - 1) == Some(j as i32) {
-                        number = Some(1)
+                        number = Some(j)
                     }
                 }
                 MapStateAction::Forwards => {
                     if row_pos.map(|row| row) == Some(j as i32) {
-                        number = Some(2)
+                        number = Some(j)
                     }
                 }
                 MapStateAction::Right => {
                     if row_pos.map(|row| row + 1) == Some(j as i32) {
-                        number = Some(3)
+                        number = Some(j)
                     }
                 }
             }
@@ -409,7 +409,7 @@ fn draw_room_actions(
                 widget.child(|child| writeln!(child.cursor(), "{rotated}"));
                 widget.key_press(|event| {
                     if matches_rotated_key(event, number) {
-                        ui_ctx.set_action(todo!());
+                        ui_ctx.set_action(action_idx);
                     }
                 });
                 break;
