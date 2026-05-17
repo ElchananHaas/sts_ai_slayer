@@ -339,26 +339,86 @@ pub fn render_map_state(
         widget.layout().push_grid_template_row_fr(1.0);
     }
     for _ in 0..NUM_FLOORS {
+        //First column is for actions, second is for rooms.
+        widget.layout().push_grid_template_column_px(1);
         widget.layout().push_grid_template_column_fr(1.0);
     }
     for i in 0..map::NUM_FLOORS {
+        //Rows are actually drawn vertically.
         for j in 0..map::ROW_WIDTH {
             widget.child(|child| {
-                child.layout().grid_row(j).grid_col(i);
-                draw_room(child, ui_ctx, i, j, &map_state_actions);
+                child.layout().grid_row(j).grid_col(i * 2);
+                draw_room_actions(child, ui_ctx, i, j, &map_state_actions);
+            });
+            widget.child(|child| {
+                child.layout().grid_row(j).grid_col(i * 2 + 1);
+                draw_room(child, ui_ctx, i, j);
                 //This ensures the layout is correct even when the player doesn't have a map position.
                 child.layout().min_width_px(7).min_height_px(3);
             });
         }
     }
 }
-fn draw_room(
+
+fn draw_room_actions(
     widget: &mut impl Element,
     ui_ctx: &UICtx,
     i: usize,
     j: usize,
     map_state_actions: &Vec<MapStateAction>,
 ) {
+    let game = ui_ctx.game();
+
+    let row_matches = if let Some(position) = game.act().position {
+        position.y as usize == i
+    } else {
+        i == 0
+    };
+    if row_matches {
+        let row_pos = game.act().position.map(|pos| pos.x);
+        widget
+            .layout()
+            .justify_content(taffy::AlignContent::Center)
+            .align_items(taffy::AlignItems::Center);
+        for action in map_state_actions {
+            let mut number = None;
+            match *action {
+                MapStateAction::Jump(new_x) => {
+                    if new_x as usize == j {
+                        number = Some(j)
+                    }
+                }
+                MapStateAction::Left => {
+                    if row_pos.map(|row| row - 1) == Some(j as i32) {
+                        number = Some(1)
+                    }
+                }
+                MapStateAction::Forwards => {
+                    if row_pos.map(|row| row) == Some(j as i32) {
+                        number = Some(2)
+                    }
+                }
+                MapStateAction::Right => {
+                    if row_pos.map(|row| row + 1) == Some(j as i32) {
+                        number = Some(3)
+                    }
+                }
+            }
+            if let Some(number) = number {
+                let rotated = rotate_key(number);
+                widget.child(|child| writeln!(child.cursor(), "{rotated}"));
+                widget.key_press(|event| {
+                    if matches_rotated_key(event, number) {
+                        ui_ctx.set_action(todo!());
+                    }
+                });
+                break;
+            }
+        }
+    }
+}
+
+fn draw_room(widget: &mut impl Element, ui_ctx: &UICtx, i: usize, j: usize) {
     let game = ui_ctx.game();
     let position = game.act().position;
     let room = game.map().rooms[i][j];
