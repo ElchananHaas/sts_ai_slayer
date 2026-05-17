@@ -765,7 +765,7 @@ fn choose_card_filter(cards: &Vec<Card>, filter: impl Fn(&Card) -> bool) -> Vec<
         .iter()
         .enumerate()
         .filter(|x| filter(x.1))
-        .map(|(i, _)| SelectCardAction::ChooseCard(i))
+        .map(|(i, _)| SelectCardAction(i))
         .collect()
 }
 

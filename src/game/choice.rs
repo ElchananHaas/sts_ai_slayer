@@ -24,10 +24,9 @@ pub enum SelectionPile {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum SelectCardAction {
-    //Choose the i'th card
-    ChooseCard(usize),
-}
+//Choose the i'th card
+
+pub struct SelectCardAction(pub usize);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PlayCardAction {
@@ -70,10 +69,6 @@ pub enum SelectDeckCardReason {
     Upgrade,
 }
 
-//Select the i'th card in the deck.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct SelectDeckCardAction(pub usize);
-
 #[must_use]
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub enum Choice {
@@ -90,7 +85,7 @@ pub enum Choice {
         SelectionPile,
     ),
     Event(Event, Vec<EventAction>),
-    SelectDeckCardState(SelectDeckCardReason, Vec<SelectDeckCardAction>),
+    SelectDeckCardState(SelectDeckCardReason, Vec<SelectCardAction>),
     RestSite(Vec<RestSiteAction>),
 }
 
@@ -195,24 +190,15 @@ impl ChoiceState {
             ) => {
                 let action = select_card_actions[action_idx];
                 match selection_type {
-                    SelectionPile::Hand => match action {
-                        SelectCardAction::ChooseCard(choice) => {
-                            format!("Select {:?}", self.game.fight.hand[choice as usize].body)
-                        } //SelectCardAction::None => "No Selection".to_owned(),
-                    },
-                    SelectionPile::Discard => match action {
-                        SelectCardAction::ChooseCard(choice) => {
-                            format!(
-                                "Select {:?}",
-                                self.game.fight.discard_pile[choice as usize].body
-                            )
-                        }
-                    },
-                    SelectionPile::Exhaust => match action {
-                        SelectCardAction::ChooseCard(choice) => {
-                            format!("Select {:?}", self.game.fight.exhaust[choice as usize].body)
-                        }
-                    },
+                    SelectionPile::Hand => {
+                        format!("Select {:?}", self.game.fight.hand[action.0].body)
+                    }
+                    SelectionPile::Discard => {
+                        format!("Select {:?}", self.game.fight.discard_pile[action.0].body)
+                    }
+                    SelectionPile::Exhaust => {
+                        format!("Select {:?}", self.game.fight.exhaust[action.0].body)
+                    }
                 }
             }
             Choice::Event(event, event_actions) => {

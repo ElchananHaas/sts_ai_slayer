@@ -20,41 +20,29 @@ impl Game {
     ) {
         match effect {
             SelectCardEffect::UpgradeCardInHand => {
-                let card = match action {
-                    SelectCardAction::ChooseCard(idx) => &mut self.fight.hand[idx],
-                };
+                let card = { &mut self.fight.hand[action.0] };
                 card.upgrade();
             }
             SelectCardEffect::DiscardToTop => {
-                let card = match action {
-                    SelectCardAction::ChooseCard(idx) => self.fight.discard_pile.remove(idx),
-                };
+                let card = { self.fight.discard_pile.remove(action.0) };
                 self.put_on_top(card);
             }
             SelectCardEffect::ExhaustChosen => {
-                let card = match action {
-                    SelectCardAction::ChooseCard(idx) => self.fight.hand.remove(idx),
-                };
+                let card = { self.fight.hand.remove(action.0) };
                 self.exhaust(card);
             }
             SelectCardEffect::HandToTop => {
-                let card = match action {
-                    SelectCardAction::ChooseCard(idx) => self.fight.hand.remove(idx),
-                };
+                let card = { self.fight.hand.remove(action.0) };
                 self.put_on_top(card);
             }
             SelectCardEffect::DuplicatePowerOrAttack(amount) => {
-                let card = match action {
-                    SelectCardAction::ChooseCard(idx) => &self.fight.hand[idx].clone(),
-                };
+                let card = { &self.fight.hand[action.0].clone() };
                 for _ in 0..amount {
                     self.add_card_to_hand(card.clone());
                 }
             }
             SelectCardEffect::ExhaustToHand => {
-                let card = match action {
-                    SelectCardAction::ChooseCard(idx) => self.fight.exhaust.remove(idx),
-                };
+                let card = { self.fight.exhaust.remove(action.0) };
                 self.add_card_to_hand(card);
             }
         }

@@ -2,7 +2,7 @@ use smallvec::SmallVec;
 
 use crate::game::{
     Game,
-    choice::{Choice, MapStateAction, RestSiteAction, SelectDeckCardAction, SelectDeckCardReason},
+    choice::{Choice, MapStateAction, RestSiteAction, SelectCardAction, SelectDeckCardReason},
     encounter::Encounter,
 };
 
@@ -11,7 +11,7 @@ impl Game {
         let mut res = Vec::new();
         for i in 0..self.base_deck.len() {
             if self.base_deck[i].body.removable() {
-                res.push(SelectDeckCardAction(i));
+                res.push(SelectCardAction(i));
             }
         }
         if res.len() == 0 {
@@ -24,7 +24,7 @@ impl Game {
         let mut res = Vec::new();
         for i in 0..self.base_deck.len() {
             if self.base_deck[i].can_upgrade() {
-                res.push(SelectDeckCardAction(i));
+                res.push(SelectCardAction(i));
             }
         }
         if res.len() == 0 {
@@ -71,7 +71,7 @@ impl Game {
         let mut res = Vec::new();
         for i in 0..self.base_deck.len() {
             if self.base_deck[i].body.removable() {
-                res.push(SelectDeckCardAction(i));
+                res.push(SelectCardAction(i));
             }
         }
         if res.len() == 0 {

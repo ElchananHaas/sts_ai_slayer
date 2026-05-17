@@ -5,11 +5,12 @@ use fliptui::taffy::{FlexDirection, FlexWrap};
 use fliptui::widgets::BorderWidget;
 use fliptui::{Element, Node, taffy};
 
-use crate::card::Card;
+use crate::card::{Card, SelectCardEffect};
+use crate::fight::PlayCardContext;
 use crate::game::Game;
 use crate::game::choice::{
-    ChooseEnemyAction, MapStateAction, PlayCardAction, RestSiteAction, SelectDeckCardAction,
-    SelectDeckCardReason,
+    ChooseEnemyAction, MapStateAction, PlayCardAction, RestSiteAction, SelectCardAction,
+    SelectDeckCardReason, SelectionPile,
 };
 use crate::map::{self, NUM_FLOORS, ROW_WIDTH};
 use crate::ui::ui_actor::UICtx;
@@ -301,13 +302,13 @@ pub fn render_card_view(
     widget: &mut impl Element,
     ui_ctx: &UICtx,
     reason: SelectDeckCardReason,
-    actions: Vec<SelectDeckCardAction>,
+    actions: Vec<SelectCardAction>,
 ) {
     let top = widget.child(|child| {
         writeln!(child.cursor(), "Select a card to {:?}", reason);
     });
     let middle = widget.child(|child| {
-        render_card_view_inner(child, ui_ctx, actions);
+        render_card_view_inner(child, ui_ctx, ui_ctx.game().base_deck(), actions);
     });
     let bottom = widget.child(|_child| {});
     style_vertical_breakdown(widget, &mut [top, middle, bottom]);
@@ -316,7 +317,8 @@ pub fn render_card_view(
 pub fn render_card_view_inner(
     widget: &mut impl Element,
     ui_ctx: &UICtx,
-    actions: Vec<SelectDeckCardAction>,
+    selection_deck: &Vec<Card>,
+    actions: Vec<SelectCardAction>,
 ) {
     widget
         .layout()
@@ -324,7 +326,7 @@ pub fn render_card_view_inner(
         .flex_wrap(FlexWrap::Wrap);
     //TODO - Add pagination.
     for (action_idx, action) in actions.iter().enumerate() {
-        ui_ctx.game().base_deck().get(action.0).map(|card| {
+        selection_deck.get(action.0).map(|card| {
             widget.child(|child| render_card(child, ui_ctx, card, action.0, Some(action_idx)));
         });
     }
@@ -444,6 +446,33 @@ fn draw_room(widget: &mut impl Element, ui_ctx: &UICtx, i: usize, j: usize) {
     });
 }
 
+fn render_select_card_state(
+    widget: &mut impl Element,
+    ui_ctx: &UICtx,
+    _play_card_context: PlayCardContext,
+    select_card_effect: SelectCardEffect,
+    select_card_actions: Vec<SelectCardAction>,
+    selection_pile: SelectionPile,
+) {
+    let top = widget.child(|child| {
+        writeln!(
+            child.cursor(),
+            "Select a card from {:?} to {:?}",
+            selection_pile,
+            select_card_effect
+        );
+    });
+    let middle = widget.child(|child| {
+        let cards = match selection_pile {
+            SelectionPile::Hand => ui_ctx.game().fight().hand(),
+            SelectionPile::Discard => ui_ctx.game().fight().discard_pile(),
+            SelectionPile::Exhaust => ui_ctx.game().fight().exhaust(),
+        };
+        render_card_view_inner(child, ui_ctx, cards, select_card_actions);
+    });
+    let bottom = widget.child(|_child| {});
+    style_vertical_breakdown(widget, &mut [top, middle, bottom]);
+}
 pub fn draw_game(widget: &mut impl Element, ui_ctx: &UICtx) {
     match ui_ctx.choice().clone() {
         crate::game::choice::Choice::PlayCardState(play_card_actions) => {
@@ -476,7 +505,18 @@ pub fn draw_game(widget: &mut impl Element, ui_ctx: &UICtx) {
             select_card_effect,
             select_card_actions,
             selection_pile,
-        ) => {}
+        ) => {
+            widget.child(|elem| {
+                render_select_card_state(
+                    elem,
+                    ui_ctx,
+                    play_card_context,
+                    select_card_effect,
+                    select_card_actions,
+                    selection_pile,
+                );
+            });
+        }
         crate::game::choice::Choice::Event(event, event_actions) => {}
         crate::game::choice::Choice::SelectDeckCardState(reason, actions) => {
             widget.child(|elem| {
