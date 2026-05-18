@@ -9,9 +9,10 @@ use crate::card::{Card, SelectCardEffect};
 use crate::fight::PlayCardContext;
 use crate::game::Game;
 use crate::game::choice::{
-    ChooseEnemyAction, MapStateAction, PlayCardAction, RestSiteAction, SelectCardAction,
-    SelectDeckCardReason, SelectionPile,
+    ChooseEnemyAction, EventAction, MapStateAction, PlayCardAction, RestSiteAction,
+    SelectCardAction, SelectDeckCardReason, SelectionPile,
 };
+use crate::game::event::Event;
 use crate::map::{self, NUM_FLOORS, ROW_WIDTH};
 use crate::ui::ui_actor::UICtx;
 
@@ -473,6 +474,48 @@ fn render_select_card_state(
     let bottom = widget.child(|_child| {});
     style_vertical_breakdown(widget, &mut [top, middle, bottom]);
 }
+
+fn render_event(
+    widget: &mut impl Element,
+    ui_ctx: &UICtx,
+    event: Event,
+    event_actions: Vec<EventAction>,
+) {
+    let top = widget.child(|child| {
+        let event_title = event.name();
+        writeln!(child.cursor(), "{event_title}");
+    });
+    let middle = widget.child(|child| {
+        render_event_inner(child, ui_ctx, event, event_actions);
+    });
+    let bottom = widget.child(|_child| {});
+    style_vertical_breakdown(widget, &mut [top, middle, bottom]);
+}
+
+fn render_event_inner(
+    widget: &mut impl Element,
+    ui_ctx: &UICtx,
+    event: Event,
+    event_actions: Vec<EventAction>,
+) {
+    widget
+        .layout()
+        .flex_direction(FlexDirection::Column)
+        .align_items(taffy::AlignItems::Center);
+    for (action_idx, action) in event_actions.iter().enumerate() {
+        widget.child(|child| {
+            BorderWidget::builder(child, |child| {
+                writeln!(
+                    child.cursor(),
+                    "{:?}: {:?}",
+                    rotate_key(action_idx),
+                    event.action_str(ui_ctx.game(), *action)
+                );
+            })
+            .build();
+        });
+    }
+}
 pub fn draw_game(widget: &mut impl Element, ui_ctx: &UICtx) {
     match ui_ctx.choice().clone() {
         crate::game::choice::Choice::PlayCardState(play_card_actions) => {
@@ -517,7 +560,9 @@ pub fn draw_game(widget: &mut impl Element, ui_ctx: &UICtx) {
                 );
             });
         }
-        crate::game::choice::Choice::Event(event, event_actions) => {}
+        crate::game::choice::Choice::Event(event, event_actions) => {
+            render_event(widget, ui_ctx, event, event_actions);
+        }
         crate::game::choice::Choice::SelectDeckCardState(reason, actions) => {
             widget.child(|elem| {
                 render_card_view(elem, ui_ctx, reason, actions);

@@ -2,7 +2,7 @@ mod buff_debuff;
 pub mod choice;
 mod choice_handler;
 pub mod encounter;
-mod event;
+pub mod event;
 mod goto_state;
 mod perform_action;
 
