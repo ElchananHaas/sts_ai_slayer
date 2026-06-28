@@ -25,7 +25,6 @@ use crate::{
 };
 use paste::paste;
 use serde::{Deserialize, Serialize};
-use strum::VariantArray;
 /*
 Event Generation works as follows:
 

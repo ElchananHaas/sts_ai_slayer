@@ -812,7 +812,7 @@ impl Game {
                     CardBody::Strike.to_card(),
                 ],
                 relics: Relics::new(),
-                relic_pool: RelicPool::new(),
+                relic_pool: RelicPool::new(character),
                 rng,
                 map,
                 act: Act::new(),

@@ -1,0 +1,185 @@
+### Common Relics - All
+- [] Akabeko
+- [] Anchor
+- [] Ancient Tea Set
+- [] Art of War
+- [] Bag of Marbles
+- [] Bag of Preparation
+- [] Blood Vial
+- [] Bronze Scales
+- [] Centennial Puzzle
+- [] Ceramic Fish
+- [] Dream Catcher
+- [] Happy Flower
+- [] Juzu Bracelet
+- [] Lantern
+- [] Maw Bank
+- [] Meal Ticket
+- [] Nunchaku
+- [] Oddly Smooth Stone
+- [] Omamori
+- [] Orichalum
+- [] Pen Nib
+- [] Potion Belt
+- [] Preserved Insect
+- [] Regal Pillow
+- [] Smiling Mask
+- [] Strawberry
+- [] The Boot
+- [] Tiny Chest
+- [] Toy Ornithopter
+- [] Vajra
+- [] War Paint
+- [] Whetstone
+### Uncommon Relics - All
+- [] Blue Candle
+- [] Bottled Flame
+- [] Bottled Lightning
+- [] Bottled Tornado
+- [] Darkstone Periapt
+- [] Eternal Feather
+- [] Frozen Egg
+- [] Gremlin Horn
+- [] Horn Cleat
+- [] Ink Bottle
+- [] Kunai
+- [] Letter Opener
+- [] Matryoshka
+- [] Meat on the Bone
+- [] Mercury Hourglass
+- [] Molten Egg
+- [] Mummified Hand
+- [] Ornamental Fan
+- [] Pantograph
+- [] Pear
+- [] Question Card
+- [] Shuriken
+- [] Singing Bowl
+- [] Strike Dummy
+- [] Sundial
+- [] The Courier
+- [] Toxic Egg
+- [] White Beast Statue
+### Rare Relics - All
+- [] Bird Faced Urn
+- [] Calipers
+- [] Captains Wheel
+- [] Dead Branch
+- [] DuVu Doll
+- [] Fossilized Helix
+- [] Gambling Chip
+- [] Ginger
+- [] Girya
+- [] Ice Cream
+- [] Incense Burner
+- [] Lizard Tail
+- [] Mango
+- [] Old Coin
+- [] Peace Pipe
+- [] Pocketwatch
+- [] Prayer Wheel
+- [] Shovel
+- [] Stone Calendar
+- [] Thread and Needle
+- [] Torii
+- [] Tungsten Rod
+- [] Turnip
+- [] Unceasing Top
+- [] Wing Boots
+### Shop Relics - All
+- [] Cauldron
+- [] Chemical X
+- [] Clockwork Souvenir
+- [] Dollys Mirror
+- [] Frozen Eye
+- [] Hand Drill
+- [] Lees Waffle
+- [] Medical Kit
+- [] Membership Card
+- [] Orange Pellets
+- [] Orrery
+- [] Prismatic Shard
+- [] Sling of Courage
+- [] Strange Spoon
+- [] The Abacus
+- [] Toolbox
+### Boss Relics - All
+- [] Astrolabe
+- [] Black Star
+- [] Busted Crown
+- [] Calling Bell
+- [] Coffee Dripper
+- [] Cursed Key
+- [] Ectoplasm
+- [] Empty Cage
+- [] Fusion Hammer
+- [] Pandoras Box
+- [] Philosophers Stone
+- [] Runic Dome
+- [] Runic Pyramid
+- [] Sacred Bark
+- [] Slavers Collar
+- [] Snecko Eye
+- [] Sozu
+- [] Tiny House
+- [] Velvet Choker
+### Event
+- [] Bloody Idol
+- [] Cultist Headpiece
+- [] Enrichidon
+- [] Face of Cleric
+- [] Golden Idol
+- [] Gremlin Visage
+- [] Mark of the Bloom
+- [] Mutagenic Strength
+- [] Nloths Gift
+- [] Nloths Hungry Face
+- [] Necronomicon
+- [] Neows Lament
+- [] Nilrys Codex
+- [] Odd Mushroom
+- [] Red Mask
+- [] Spirit Poop
+- [] Ssserpent Head
+- [] Warped Tongs
+### Char Specific
+- [] Burning Blood
+- [] Ring of the Snake
+- [] Cracked Core
+- [] Pure Water
+- [] Red Skull
+- [] Snecko Skull
+- [] Data Disk
+- [] Damaru
+- [] Paper Phrog
+- [] Self Forming Clay
+- [] Ninja Scroll
+- [] Paper Krane
+- [] Gold Plated Cables
+- [] Symbiotic Virus
+- [] Duality
+- [] Teardrop Locket
+- [] Champion Belt
+- [] Charons Ashes
+- [] Magic Flower
+- [] The Specimen
+- [] Tingsha
+- [] Tough Bandages
+- [] Emotion Chip
+- [] Cloak Clasp
+- [] Golden Eye
+- [] Brimstone
+- [] Twisted Funnel
+- [] Runic Capacitor
+- [] Melange
+- [] Black Blood
+- [] Mark of Pain
+- [] Runic Cube
+- [] Ring of the Serpent
+- [] Wrist Blade
+- [] Hovering Kite
+- [] Frozen Core
+- [] Inserter
+- [] Nuclear Battery
+- [] Holy Water
+- [] Violet Lotus
