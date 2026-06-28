@@ -48,7 +48,7 @@ macro_rules! relic_segments {
      $($shop:ident),* ;
      $($other:ident),*
     ) => {
-        make_relics!(  
+        make_relics!(
             //Circlet is a placeholder relic that does nothing if you have all relics.
             Circlet,
             $($common_all,)*
