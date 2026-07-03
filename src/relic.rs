@@ -358,11 +358,22 @@ pub enum RelicRarity {
     Uncommon,
     Rare,
     Shop,
-    Event,
+    Boss,
+}
+
+fn random_or_circlet(rng: &mut Rng, relics: &mut Vec<Relic>) -> Relic {
+    rng.try_sample(relics.len())
+        .map_or(Relic::Circlet, |idx| relics.swap_remove(idx))
 }
 impl RelicPool {
-    pub fn get_relic(&mut self, rarity: RelicRarity) -> Relic {
-        return Relic::Circlet;
+    pub fn get_relic(&mut self, rng: &mut Rng, rarity: RelicRarity) -> Relic {
+        match rarity {
+            RelicRarity::Common => random_or_circlet(rng, &mut self.common_relics),
+            RelicRarity::Uncommon => random_or_circlet(rng, &mut self.uncommon_relics),
+            RelicRarity::Rare => random_or_circlet(rng, &mut self.rare_relics),
+            RelicRarity::Shop => random_or_circlet(rng, &mut self.shop_relics),
+            RelicRarity::Boss => random_or_circlet(rng, &mut self.boss_relics),
+        }
     }
     pub fn get_random_tier_relic(&mut self, rng: &mut Rng) -> Relic {
         let sample = rng.sample_weighted(&[50, 33, 17]);
@@ -372,6 +383,6 @@ impl RelicPool {
             2 => RelicRarity::Rare,
             _ => panic!("Invalid rarity returned by RNG"),
         };
-        self.get_relic(rarity)
+        self.get_relic(rng, rarity)
     }
 }

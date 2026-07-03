@@ -33,14 +33,13 @@ impl Rng {
         self.rng = ChaCha8Rng::from_seed(seed);
     }
 
-    //The samples is exclusive on max. It utilizes rejection sampling.
-    pub fn sample(&mut self, bound: usize) -> usize {
+    pub fn try_sample(&mut self, bound: usize) -> Option<usize> {
         if bound == 0 {
-            panic!("Invalid range: Max cannot be 0");
+            return None;
         }
         //The RNG is sometimes called with a max of 1, have a fast path for that.
         if bound == 1 {
-            return 0;
+            return Some(0);
         }
         let next_pow_2 = bound.next_power_of_two();
         let mask = next_pow_2 - 1;
@@ -48,9 +47,14 @@ impl Rng {
             let rand = { self.rng.next_u64() };
             let rand = mask & (rand as usize);
             if rand < bound {
-                return rand;
+                return Some(rand);
             }
         }
+    }
+    //The samples is exclusive on max. It utilizes rejection sampling.
+    pub fn sample(&mut self, bound: usize) -> usize {
+        self.try_sample(bound)
+            .unwrap_or_else(|| panic!("Invalid RNG range: Max cannot be 0"))
     }
 
     pub fn sample_i32(&mut self, max: i32) -> i32 {
