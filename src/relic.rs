@@ -41,11 +41,11 @@ macro_rules! make_relics {
 }
 
 macro_rules! relic_segments {
-    ($($common_all:ident),* ;
-     $($uncommon_all:ident),* ;
-     $($rare_all:ident),* ;
-     $($boss_all:ident),* ;
-     $($shop:ident),* ;
+    ($($common_all:ident),*;
+     $($uncommon_all:ident),*;
+     $($rare_all:ident),*;
+     $($boss_all:ident),*;
+     $($shop:ident),*;
      $($other:ident),*
     ) => {
         make_relics!(
@@ -64,20 +64,109 @@ macro_rules! relic_segments {
             common_relics: Vec<Relic>,
             uncommon_relics: Vec<Relic>,
             rare_relics: Vec<Relic>,
+            boss_relics: Vec<Relic>,
+            shop_relics: Vec<Relic>,
         }
 
         impl RelicPool {
-            //TODO - add character specific relics.
             pub fn new(character: Character) -> Self {
                 RelicPool {
-                    common_relics: {vec![$(Relic::$common_all,)*]},
-                    uncommon_relics: {vec![$(Relic::$uncommon_all,)*]},
-                    rare_relics: {vec![$(Relic::$rare_all,)*]},
+                    common_relics: {
+                        let mut relics = vec![$(Relic::$common_all,)*];
+                        match character {
+                            Character::IRONCLAD => {
+                                relics.append(&mut vec![Relic::RedSkull]);
+                            },
+                            Character::SILENT => {
+                                relics.append(&mut vec![Relic::SneckoSkull]);
+                            },
+                            Character::DEFECT => {
+                                relics.append(&mut vec![Relic::DataDisk]);
+                            },
+                            Character::WATCHER => {
+                                relics.append(&mut vec![Relic::Damaru]);
+                            }
+                        }
+                        relics
+                    },
+                    uncommon_relics: {
+                        let mut relics = vec![$(Relic::$uncommon_all,)*];
+                        match character {
+                            Character::IRONCLAD => {
+                                relics.append(&mut vec![Relic::PaperPhrog, Relic::SelfFormingClay]);
+                            },
+                            Character::SILENT => {
+                                relics.append(&mut vec![Relic::NinjaScroll, Relic::PaperKrane]);
+                            },
+                            Character::DEFECT => {
+                                relics.append(&mut vec![Relic::GoldPlatedCables, Relic::SymbioticVirus]);
+                            },
+                            Character::WATCHER => {
+                                relics.append(&mut vec![Relic::Duality, Relic::TeardropLocket]);
+                            }
+                        }
+                        relics
+                    },
+                    rare_relics: {
+                        let mut relics = vec![$(Relic::$rare_all,)*];
+                        match character {
+                            Character::IRONCLAD => {
+                                relics.append(&mut vec![Relic::ChampionBelt, Relic::CharonsAshes, Relic::MagicFlower]);
+                            },
+                            Character::SILENT => {
+                                relics.append(&mut vec![Relic::TheSpecimen, Relic::Tingsha, Relic::ToughBandages]);
+                            },
+                            Character::DEFECT => {
+                                relics.append(&mut vec![Relic::EmotionChip]);
+                            },
+                            Character::WATCHER => {
+                                relics.append(&mut vec![Relic::CloakClasp, Relic::GoldenEye]);
+                            }
+                        }
+                        relics
+                    },
+                    boss_relics: {
+                        let mut relics = vec![$(Relic::$boss_all,)*];
+                        match character {
+                            Character::IRONCLAD => {
+                                relics.append(&mut vec![Relic::BlackBlood, Relic::MarkofPain, Relic::RunicCube]);
+                            },
+                            Character::SILENT => {
+                                relics.append(&mut vec![Relic::RingoftheSerpent, Relic::WristBlade, Relic::HoveringKite]);
+                            },
+                            Character::DEFECT => {
+                                relics.append(&mut vec![Relic::FrozenCore, Relic::Inserter, Relic::NuclearBattery]);
+                            },
+                            Character::WATCHER => {
+                                relics.append(&mut vec![Relic::HolyWater, Relic::VioletLotus]);
+                            }
+                        }
+                        relics
+                    },
+                    shop_relics: {
+                        let mut relics = vec![$(Relic::$shop,)*];
+                        match character {
+                            Character::IRONCLAD => {
+                                relics.append(&mut vec![Relic::Brimstone]);
+                            },
+                            Character::SILENT => {
+                                relics.append(&mut vec![Relic::TwistedFunnel]);
+                            },
+                            Character::DEFECT => {
+                                relics.append(&mut vec![Relic::RunicCapacitor]);
+                            },
+                            Character::WATCHER => {
+                                relics.append(&mut vec![Relic::Melange]);
+                            }
+                        }
+                        relics
+                    },
                 }
             }
         }
     }
 }
+
 relic_segments!( 
     //Common - All chars
     Akabeko,
