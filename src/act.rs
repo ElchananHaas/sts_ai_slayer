@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::game::{
-    QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT, QUESTION_TREASURE_BASE_WEIGHT,
-    encounter::Encounter,
+use crate::{
+    game::{
+        QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT, QUESTION_TREASURE_BASE_WEIGHT,
+        encounter::Encounter,
+    },
+    map::RoomType,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -11,9 +14,9 @@ pub struct Act {
     pub question_shop_weight: i32,
     pub question_treasure_weight: i32,
     pub question_mark_visits: i32,
-    pub prior_floor_shop: bool,
     pub prior_elite: Option<Encounter>,
     pub number_of_fights: i32,
+    pub room_history: Vec<RoomType>,
     pub prior_fights: [Option<Encounter>; 2],
     pub position: Option<MapPosition>,
 }
@@ -29,9 +32,9 @@ impl Act {
             question_shop_weight: QUESTION_SHOP_BASE_WEIGHT,
             question_treasure_weight: QUESTION_TREASURE_BASE_WEIGHT,
             question_mark_visits: 0,
-            prior_floor_shop: false,
             prior_elite: None,
             number_of_fights: 0,
+            room_history: Vec::new(),
             prior_fights: [None, None],
             position: None,
         }

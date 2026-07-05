@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    card::Buff,
     enemies::{
         blue_slaver::generate_blue_slaver, cultist::generate_cultist,
         fungi_beast::generate_fungi_beast, green_louse::generate_green_louse,
@@ -17,6 +18,8 @@ use crate::{
     },
     fight::Enemy,
     game::{Choice, Game},
+    map::RoomType,
+    relic::Relic,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -66,6 +69,22 @@ impl Game {
             2 => generate_med_green_slime(&mut self.rng),
             _ => {
                 panic!("Unexpected rng result!")
+            }
+        }
+    }
+
+    fn start_of_fight_relics(&mut self) {
+        if self.relics.has_relic(Relic::Akabeko) {
+            self.apply_buff_to_player(Buff::Vigor(8));
+        }
+        if self.relics.has_relic(Relic::Anchor) {
+            self.player_gain_block(10, false);
+        }
+        if self.relics.has_relic(Relic::AncientTeaSet) {
+            if self.act.room_history.len() >= 2
+                && self.act.room_history[self.act.room_history.len() - 2] == RoomType::Rest
+            {
+                self.fight.energy += 2;
             }
         }
     }
@@ -194,6 +213,7 @@ impl Game {
                 }
             }
         }
+        self.start_of_fight_relics();
         self.play_card_choice()
     }
 }

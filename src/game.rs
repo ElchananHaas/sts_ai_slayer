@@ -42,7 +42,6 @@ pub struct Game {
     charachter: Character,
     fight: Fight,
     base_deck: Vec<Card>,
-    relic_pool: RelicPool,
     relics: Relics,
     gold: i32,
     rng: Rng,
@@ -363,6 +362,9 @@ impl Game {
                         }
                     }
                     card_context.card.temp_cost = None;
+                    if card_context.card.body.card_type() == CardType::Attack {
+                        self.fight.player_buffs.vigor = 0;
+                    }
                     if card_context.card.body.card_type() == CardType::Power
                         || !card_context.real_card
                     {
@@ -540,7 +542,7 @@ impl Game {
                 }
                 _ => 1,
             });
-        let mut damage: f32 = (amount + strength) as f32;
+        let mut damage: f32 = (amount + strength + self.fight.player_buffs.vigor) as f32;
         let Some(enemy) = &mut self.fight.enemies[target] else {
             return AttackResult::default();
         };
@@ -811,8 +813,7 @@ impl Game {
                     CardBody::Strike.to_card(),
                     CardBody::Strike.to_card(),
                 ],
-                relics: Relics::new(),
-                relic_pool: RelicPool::new(character),
+                relics: Relics::new(character),
                 rng,
                 map,
                 act: Act::new(),

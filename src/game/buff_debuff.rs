@@ -37,7 +37,8 @@ impl Game {
             | Buff::BrutalityBuff
             | Buff::CorruptionBuff
             | Buff::DoubleTap(_)
-            | Buff::Juggernaut(_) => {
+            | Buff::Juggernaut(_)
+            | Buff::Vigor(_) => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -104,6 +105,7 @@ impl Game {
             Buff::CorruptionBuff => self.fight.player_buffs.corruption = true,
             Buff::DoubleTap(x) => self.fight.player_buffs.double_tap += x,
             Buff::Juggernaut(x) => self.fight.player_buffs.juggernaut += x,
+            Buff::Vigor(x) => self.fight.player_buffs.vigor += x,
             Buff::Enrage(_) => panic_not_apply_player(buff),
         }
     }

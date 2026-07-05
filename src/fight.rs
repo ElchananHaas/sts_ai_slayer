@@ -76,6 +76,7 @@ pub struct PlayerBuffs {
     pub double_tap: i32,
     pub juggernaut: i32,
     pub dexterity: i32,
+    pub vigor: i32,
 }
 
 //This holds effects that happen after a card finishes resolving.

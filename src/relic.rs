@@ -14,15 +14,15 @@ macro_rules! make_relics {
             }
 
             #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-            pub struct Relics {
+            pub struct RelicBar {
                 $(
-                    [<$x:lower>]: bool,
+                    pub [<$x:lower>]: bool,
                 )*
             }
 
-            impl Relics {
+            impl RelicBar {
                 pub fn new() -> Self {
-                    Relics {
+                    RelicBar {
                         $(
                             [<$x:lower>] : false,
                         )*
@@ -35,8 +35,35 @@ macro_rules! make_relics {
                         )*
                     }
                 }
+                pub fn has_relic(&self, relic: Relic) -> bool {
+                    match relic {
+                        $(
+                            Relic::$x => self.[<$x:lower>],
+                        )*
+                    }
+                }
             }
         }
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Relics {
+    pub bar: RelicBar,
+    pub pool: RelicPool,
+}
+
+impl Relics {
+    pub fn new(character: Character) -> Self {
+        Self {
+            bar: RelicBar::new(),
+            pool: RelicPool::new(character),
+        }
+    }
+    pub fn add(&mut self, relic: Relic) {
+        self.bar.add(relic);
+    }
+    pub fn has_relic(&self, relic: Relic) -> bool {
+        self.bar.has_relic(relic)
     }
 }
 

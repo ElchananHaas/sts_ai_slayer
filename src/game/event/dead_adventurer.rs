@@ -91,7 +91,7 @@ impl EventRoom for DeadAdventurer {
                             game.gain_gold(30);
                         }
                         DeadAdventurerLoot::Relic => {
-                            let relic = game.relic_pool.get_random_tier_relic(&mut game.rng);
+                            let relic = game.relics.pool.get_random_tier_relic(&mut game.rng);
                             game.relics.add(relic);
                         }
                     }

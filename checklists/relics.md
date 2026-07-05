@@ -1,7 +1,7 @@
 ### Common Relics - All
-- [] Akabeko
-- [] Anchor
-- [] Ancient Tea Set
+- [x] Akabeko
+- [x] Anchor
+- [x] Ancient Tea Set
 - [] Art of War
 - [] Bag of Marbles
 - [] Bag of Preparation

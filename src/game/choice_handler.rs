@@ -93,9 +93,7 @@ impl Game {
     }
 
     pub(super) fn handle_map_state_action(&mut self, action: MapStateAction) -> Choice {
-        let prior_floor_shop = self.act.prior_floor_shop;
-        self.act.prior_floor_shop = false;
-
+        let prior_floor_shop = self.act.room_history.last() == Some(&RoomType::Shop);
         if let Some(position) = &mut self.act.position {
             position.y += 1;
         }
@@ -115,7 +113,9 @@ impl Game {
                 position.x += 1;
             }
         };
-        match self.map.rooms[position.y as usize][position.x as usize].room_type {
+        let room_type = self.map.rooms[position.y as usize][position.x as usize].room_type;
+        self.act.room_history.push(room_type);
+        match room_type {
             RoomType::QuestionMark => {
                 let roll = self.rng.sample(100) as i32;
                 let monster_weight =

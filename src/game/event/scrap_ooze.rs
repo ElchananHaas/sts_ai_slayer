@@ -32,7 +32,7 @@ impl EventRoom for ScrapOoze {
             0 => {
                 game.player_lose_hp(self.hp_loss(), false);
                 if (game.rng.sample(100) as i32) < self.odds() {
-                    let relic = game.relic_pool.get_random_tier_relic(&mut game.rng);
+                    let relic = game.relics.pool.get_random_tier_relic(&mut game.rng);
                     game.relics.add(relic);
                     game.goto_map()
                 } else {
