@@ -17,7 +17,8 @@ use crate::fight::EnemyName;
 use crate::game::choice::{
     Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, SelectCardAction, SelectionPile,
 };
-use crate::map::ActMap;
+use crate::map::{ActMap, RoomType};
+use crate::relic::Relic;
 use crate::{
     card::{Buff, Card, CardBody, CardType, Debuff, SelectCardEffect},
     deck::Deck,
@@ -137,7 +138,7 @@ impl Game {
                         if let Some(choice) = self.damage_player(damage, false) {
                             return choice;
                         }
-                        let player_spikiness = self.fight.player_buffs.temp_spikes;
+                        let player_spikiness = self.fight.player_buffs.temp_spikes + self.fight.player_buffs.thorns;
                         if player_spikiness > 0 {
                             self.damage_enemy(player_spikiness, i.0 as usize, false);
                         }
@@ -189,8 +190,7 @@ impl Game {
     }
 
     fn reset_for_next_turn(&mut self) {
-        //TODO implement relics that affect energy.
-        //TODO implement cards that affect energy.
+        self.fight.turn_count += 1;
         for enemy_idx in self.fight.enemies.indicies() {
             let enemy: &mut Enemy = &mut self.fight.enemies[enemy_idx];
             enemy.buffs.strength += enemy.buffs.ritual;
@@ -213,12 +213,16 @@ impl Game {
             self.fight.draw(&mut self.rng);
         }
         if self.fight.player_buffs.brutality > 0 {
-            self.player_lose_hp(self.fight.player_buffs.brutality, false);
+            self.player_lose_hp(self.fight.player_buffs.brutality, true);
         }
         if !self.fight.player_buffs.barricade {
             self.fight.player_block = 0;
         }
         self.fight.energy = 3 + self.fight.player_buffs.energy_every_turn;
+        if self.relics.has_relic(Relic::ArtofWar) && self.fight.attacks_played_this_turn == 0 {
+            self.fight.energy += 1;
+        }
+        self.fight.attacks_played_this_turn = 0;
     }
 
     fn discard_hand_end_of_turn(&mut self) {
@@ -735,14 +739,18 @@ impl Game {
         }
         self.fight.deck = Deck::shuffled(deck_cards);
         self.fight.energy = 3;
+        let mut initial_size = 5_usize;
+        if self.relics.has_relic(Relic::BagofPreparation) {
+            initial_size += 2;
+        }
         //TODO handle relics that affect initial hand size.
-        for _ in 0..(5_usize.saturating_sub(self.fight.hand.len())) {
+        for _ in 0..(initial_size.saturating_sub(self.fight.hand.len())) {
             self.fight.draw(&mut self.rng);
         }
     }
 }
 
-fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
+pub fn apply_debuff_to_enemy(enemy: &mut Enemy, debuff: Debuff) {
     match debuff {
         Debuff::Vulnerable(amount) => {
             enemy.debuffs.vulnerable += amount;

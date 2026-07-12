@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    card::Buff,
-    enemies::{
+    card::{Buff, Debuff}, enemies::{
         blue_slaver::generate_blue_slaver, cultist::generate_cultist,
         fungi_beast::generate_fungi_beast, green_louse::generate_green_louse,
         gremlin_fat::generate_fat_gremlin, gremlin_mad::generate_mad_gremlin,
@@ -15,11 +14,7 @@ use crate::{
         red_louse::generate_red_louse, red_slaver::generate_red_slaver, sentry::generate_sentry,
         small_black_slime::generate_small_black_slime,
         small_green_slime::generate_small_green_slime,
-    },
-    fight::Enemy,
-    game::{Choice, Game},
-    map::RoomType,
-    relic::Relic,
+    }, fight::Enemy, game::{Choice, Game, apply_debuff_to_enemy}, map::RoomType, relic::Relic,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -80,12 +75,22 @@ impl Game {
         if self.relics.has_relic(Relic::Anchor) {
             self.player_gain_block(10, false);
         }
-        if self.relics.has_relic(Relic::AncientTeaSet) {
-            if self.act.room_history.len() >= 2
-                && self.act.room_history[self.act.room_history.len() - 2] == RoomType::Rest
-            {
-                self.fight.energy += 2;
+        if self.relics.has_relic(Relic::AncientTeaSet)
+            && self.act.room_history.len() >= 2
+            && self.act.room_history[self.act.room_history.len() - 2] == RoomType::Rest
+        {
+            self.fight.energy += 2;
+        }
+        if self.relics.has_relic(Relic::BagofMarbles) {
+            for i in self.fight.enemies.indicies() {
+                apply_debuff_to_enemy(&mut self.fight.enemies[i], Debuff::Vulnerable(1));
             }
+        }
+        if self.relics.has_relic(Relic::BloodVial) {
+            self.heal(2);
+        }
+        if self.relics.has_relic(Relic::BronzeScales) {
+            self.apply_buff_to_player(Buff::Thorns(3));
         }
     }
 

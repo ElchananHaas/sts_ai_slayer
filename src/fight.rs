@@ -32,6 +32,8 @@ pub struct Fight {
     //This is used for cards which play other cards, such as Havoc and some powers.
     pub post_card_queue: VecDeque<PostCardItem>,
     pub rewards: FightRewards,
+    pub attacks_played_this_turn: i32,
+    pub turn_count: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
@@ -77,6 +79,7 @@ pub struct PlayerBuffs {
     pub juggernaut: i32,
     pub dexterity: i32,
     pub vigor: i32,
+    pub thorns: i32,
 }
 
 //This holds effects that happen after a card finishes resolving.
@@ -351,6 +354,7 @@ pub struct EnemyBuffs {
     pub enrage: i32,
     pub metallicize: i32,
     pub asleep: bool,
+    pub thorns: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]

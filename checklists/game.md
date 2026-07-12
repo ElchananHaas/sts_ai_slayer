@@ -32,7 +32,7 @@ TODO
 TODO
 
 ### Relics
-TODO
+In Progress.
 
 ### Treasure Rooms
 TODO

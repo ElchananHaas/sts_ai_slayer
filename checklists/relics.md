@@ -2,11 +2,11 @@
 - [x] Akabeko
 - [x] Anchor
 - [x] Ancient Tea Set
-- [] Art of War
-- [] Bag of Marbles
-- [] Bag of Preparation
-- [] Blood Vial
-- [] Bronze Scales
+- [x] Art of War
+- [x] Bag of Marbles
+- [x] Bag of Preparation
+- [x] Blood Vial
+- [x] Bronze Scales
 - [] Centennial Puzzle
 - [] Ceramic Fish
 - [] Dream Catcher

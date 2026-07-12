@@ -22,6 +22,9 @@ impl Game {
             Buff::Enrage(x) => {
                 enemy.buffs.enrage += x;
             }
+            Buff::Thorns(x) => {
+                enemy.buffs.thorns += x;
+            }
             Buff::EndTurnDamageAllEnemies(_)
             | Buff::EndTurnLoseHP(_)
             | Buff::DarkEmbraceBuff
@@ -106,6 +109,7 @@ impl Game {
             Buff::DoubleTap(x) => self.fight.player_buffs.double_tap += x,
             Buff::Juggernaut(x) => self.fight.player_buffs.juggernaut += x,
             Buff::Vigor(x) => self.fight.player_buffs.vigor += x,
+            Buff::Thorns(x) => self.fight.player_buffs.thorns += x,
             Buff::Enrage(_) => panic_not_apply_player(buff),
         }
     }
