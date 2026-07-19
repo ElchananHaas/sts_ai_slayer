@@ -226,7 +226,7 @@ pub enum Buff {
     Juggernaut(i32),
     Enrage(i32),
     Vigor(i32),
-    Thorns(i32)
+    Thorns(i32),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

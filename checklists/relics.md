@@ -7,7 +7,7 @@
 - [x] Bag of Preparation
 - [x] Blood Vial
 - [x] Bronze Scales
-- [] Centennial Puzzle
+- [x] Centennial Puzzle
 - [] Ceramic Fish
 - [] Dream Catcher
 - [] Happy Flower

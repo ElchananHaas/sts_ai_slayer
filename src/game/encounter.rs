@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    card::{Buff, Debuff}, enemies::{
+    card::{Buff, Debuff},
+    enemies::{
         blue_slaver::generate_blue_slaver, cultist::generate_cultist,
         fungi_beast::generate_fungi_beast, green_louse::generate_green_louse,
         gremlin_fat::generate_fat_gremlin, gremlin_mad::generate_mad_gremlin,
@@ -14,7 +15,11 @@ use crate::{
         red_louse::generate_red_louse, red_slaver::generate_red_slaver, sentry::generate_sentry,
         small_black_slime::generate_small_black_slime,
         small_green_slime::generate_small_green_slime,
-    }, fight::Enemy, game::{Choice, Game, apply_debuff_to_enemy}, map::RoomType, relic::Relic,
+    },
+    fight::Enemy,
+    game::{Choice, Game, apply_debuff_to_enemy},
+    map::RoomType,
+    relic::Relic,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]

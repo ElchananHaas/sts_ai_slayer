@@ -34,6 +34,7 @@ pub struct Fight {
     pub rewards: FightRewards,
     pub attacks_played_this_turn: i32,
     pub turn_count: i32,
+    pub triggered_centennial_puzzle: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]

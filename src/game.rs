@@ -138,7 +138,8 @@ impl Game {
                         if let Some(choice) = self.damage_player(damage, false) {
                             return choice;
                         }
-                        let player_spikiness = self.fight.player_buffs.temp_spikes + self.fight.player_buffs.thorns;
+                        let player_spikiness =
+                            self.fight.player_buffs.temp_spikes + self.fight.player_buffs.thorns;
                         if player_spikiness > 0 {
                             self.damage_enemy(player_spikiness, i.0 as usize, false);
                         }
@@ -281,6 +282,11 @@ impl Game {
         self.player_hp -= amount;
         if from_card && self.fight.player_buffs.rupture > 0 {
             self.apply_buff_to_player(Buff::Strength(self.fight.player_buffs.rupture));
+        }
+        if !self.fight.triggered_centennial_puzzle && self.relics.has_relic(Relic::CentennialPuzzle)
+        {
+            self.fight.triggered_centennial_puzzle = true;
+            self.fight.post_card_queue.push_back(PostCardItem::Draw(3));
         }
     }
 
