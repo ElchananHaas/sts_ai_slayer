@@ -1,10 +1,13 @@
 use smallvec::SmallVec;
 
 use crate::{
-    act::MapPosition, card::{
+    act::MapPosition,
+    card::{
         COLORLESS_CARDS, CURSE_CARDS, CardCharachter, CardType, IRONCLAD_CARDS, SelectCardEffect,
         sample_card,
-    }, fight::PlayCardContext, game::{
+    },
+    fight::PlayCardContext,
+    game::{
         Game, QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT,
         QUESTION_TREASURE_BASE_WEIGHT,
         choice::{
@@ -12,7 +15,9 @@ use crate::{
             RewardAction, Rewards, SelectCardAction,
         },
         encounter::Encounter,
-    }, map::RoomType, relic::Relic,
+    },
+    map::RoomType,
+    relic::Relic,
 };
 
 impl Game {
@@ -24,7 +29,12 @@ impl Game {
     pub(super) fn handle_rest_site_action(&mut self, action: RestSiteAction) -> Choice {
         match action {
             RestSiteAction::Heal => {
-                self.heal((self.player_max_hp * 3) / 10);
+                let regal_pillow_bonus = if self.relics.has_relic(Relic::RegalPillow) {
+                    15
+                } else {
+                    0
+                };
+                self.player_heal((self.player_max_hp * 3) / 10 + regal_pillow_bonus);
                 if self.relics.has_relic(Relic::DreamCatcher) {
                     //TODO - Figure out how to build the card screen!!!!!!
                     self.goto_rewards(todo!());
@@ -180,7 +190,7 @@ impl Game {
                 self.goto_rewards(rewards)
             }
             RewardAction::TakeRelic(idx) => {
-                self.relics.add(rewards.relics[idx]);
+                self.add_relic(rewards.relics[idx]);
                 rewards.relics.remove(idx);
                 self.goto_rewards(rewards)
             }

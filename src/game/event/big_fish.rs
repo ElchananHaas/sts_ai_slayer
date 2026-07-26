@@ -20,7 +20,7 @@ impl EventRoom for BigFish {
     fn take_action(self, game: &mut Game, action: EventAction) -> Choice {
         match action.0 {
             0 => {
-                game.heal(heal_amount(game));
+                game.player_heal(heal_amount(game));
                 game.goto_map()
             }
             1 => {

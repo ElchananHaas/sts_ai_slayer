@@ -676,7 +676,7 @@ impl Game {
         self.player_hp += amount;
     }
 
-    fn heal(&mut self, amount: i32) {
+    fn player_heal(&mut self, amount: i32) {
         self.player_hp = min(self.player_max_hp, self.player_hp + amount);
     }
 
@@ -747,6 +747,13 @@ impl Game {
     }
 
     fn add_card_to_deck(&mut self, card: CardBody) {
+        if self.relics.omamori_charges > 0
+            && self.relics.has_relic(Relic::Omamori)
+            && card.card_type() == CardType::Curse
+        {
+            self.relics.omamori_charges -= 1;
+            return;
+        }
         insert_sorted(card.to_card(), &mut self.base_deck);
         if self.relics.has_relic(Relic::CeramicFish) {
             self.gain_gold(9);
@@ -783,6 +790,19 @@ impl Game {
         //TODO handle relics that affect initial hand size.
         for _ in 0..(initial_size.saturating_sub(self.fight.hand.len())) {
             self.fight.draw(&mut self.rng);
+        }
+    }
+
+    fn add_relic(&mut self, relic: Relic) {
+        self.relics.add(relic);
+        match relic {
+            Relic::Strawberry => {
+                self.gain_max_hp(7);
+            }
+            Relic::Omamori => {
+                self.relics.omamori_charges += 2;
+            }
+            _ => {}
         }
     }
 }

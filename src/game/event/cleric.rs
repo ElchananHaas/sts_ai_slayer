@@ -28,7 +28,7 @@ impl EventRoom for Cleric {
         match action.0 {
             0 => {
                 game.lose_gold(35);
-                game.heal(heal_amount(game));
+                game.player_heal(heal_amount(game));
                 game.goto_map()
             }
             1 => {

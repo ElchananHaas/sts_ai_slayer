@@ -14,21 +14,21 @@
 - [] Juzu Bracelet
 - [x] Lantern
 - [] Maw Bank
-- [] Meal Ticket
+- [x] Meal Ticket
 - [] Nunchaku
-- [] Oddly Smooth Stone
-- [] Omamori
+- [x] Oddly Smooth Stone
+- [x] Omamori
 - [] Orichalum
 - [] Pen Nib
 - [] Potion Belt
 - [] Preserved Insect
-- [] Regal Pillow
+- [x] Regal Pillow
 - [] Smiling Mask
-- [] Strawberry
+- [x] Strawberry
 - [] The Boot
 - [] Tiny Chest
 - [] Toy Ornithopter
-- [] Vajra
+- [x] Vajra
 - [] War Paint
 - [] Whetstone
 ### Uncommon Relics - All

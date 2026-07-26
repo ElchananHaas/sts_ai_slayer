@@ -1,12 +1,15 @@
 use smallvec::SmallVec;
 
-use crate::game::{
-    Game,
-    choice::{
-        Choice, MapStateAction, RestSiteAction, RewardAction, Rewards, SelectCardAction,
-        SelectDeckCardReason,
+use crate::{
+    game::{
+        Game,
+        choice::{
+            Choice, MapStateAction, RestSiteAction, RewardAction, Rewards, SelectCardAction,
+            SelectDeckCardReason,
+        },
+        encounter::Encounter,
     },
-    encounter::Encounter,
+    relic::Relic,
 };
 
 impl Game {
@@ -167,6 +170,9 @@ impl Game {
 
     pub(super) fn goto_shop(&mut self) -> Choice {
         //TODO - go to real shop!
+        if self.relics.has_relic(Relic::MealTicket) {
+            self.player_heal(15);
+        }
         self.goto_map()
     }
 

@@ -41,7 +41,8 @@ impl Game {
             | Buff::CorruptionBuff
             | Buff::DoubleTap(_)
             | Buff::Juggernaut(_)
-            | Buff::Vigor(_) => {
+            | Buff::Vigor(_)
+            | Buff::Dexterity(_) => {
                 panic_not_apply_enemies(buff);
             }
         }
@@ -111,6 +112,7 @@ impl Game {
             Buff::Vigor(x) => self.fight.player_buffs.vigor += x,
             Buff::Thorns(x) => self.fight.player_buffs.thorns += x,
             Buff::Enrage(_) => panic_not_apply_player(buff),
+            Buff::Dexterity(x) => self.fight.player_buffs.dexterity += x,
         }
     }
 }

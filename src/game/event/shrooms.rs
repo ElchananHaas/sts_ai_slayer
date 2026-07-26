@@ -27,7 +27,7 @@ impl EventRoom for HypnotizingShrooms {
                 encounter
             }
             1 => {
-                game.heal(heal_amount(game));
+                game.player_heal(heal_amount(game));
                 game.add_card_to_deck(CardBody::Parasite);
                 game.goto_map()
             }

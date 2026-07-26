@@ -307,7 +307,7 @@ impl Game {
                         .damage_dealt;
                 }
                 if total > 0 {
-                    self.heal(total);
+                    self.player_heal(total);
                 }
             }
         }

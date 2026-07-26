@@ -95,10 +95,16 @@ impl Game {
             }
         }
         if self.relics.has_relic(Relic::BloodVial) {
-            self.heal(2);
+            self.player_heal(2);
         }
         if self.relics.has_relic(Relic::BronzeScales) {
             self.apply_buff_to_player(Buff::Thorns(3));
+        }
+        if self.relics.has_relic(Relic::Vajra) {
+            self.apply_buff_to_player(Buff::Strength(1));
+        }
+        if self.relics.has_relic(Relic::OddlySmoothStone) {
+            self.apply_buff_to_player(Buff::Dexterity(1));
         }
     }
 
