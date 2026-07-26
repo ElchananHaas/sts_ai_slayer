@@ -8,11 +8,11 @@
 - [x] Blood Vial
 - [x] Bronze Scales
 - [x] Centennial Puzzle
-- [] Ceramic Fish
-- [] Dream Catcher
-- [] Happy Flower
+- [x] Ceramic Fish
+- [] Dream Catcher (Need to fix card rewards)
+- [x] Happy Flower
 - [] Juzu Bracelet
-- [] Lantern
+- [x] Lantern
 - [] Maw Bank
 - [] Meal Ticket
 - [] Nunchaku

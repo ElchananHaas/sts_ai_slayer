@@ -225,6 +225,12 @@ impl Game {
         if self.relics.has_relic(Relic::ArtofWar) && self.fight.attacks_played_this_turn == 0 {
             self.fight.energy += 1;
         }
+        if self.relics.has_relic(Relic::HappyFlower) {
+            self.relics.happy_flower_counter = (self.relics.happy_flower_counter + 1) % 3;
+            if self.relics.happy_flower_counter == 0 {
+                self.fight.energy += 1;
+            }
+        }
         self.fight.attacks_played_this_turn = 0;
     }
 
@@ -742,6 +748,9 @@ impl Game {
 
     fn add_card_to_deck(&mut self, card: CardBody) {
         insert_sorted(card.to_card(), &mut self.base_deck);
+        if self.relics.has_relic(Relic::CeramicFish) {
+            self.gain_gold(9);
+        }
     }
 
     fn lose_gold(&mut self, amount: i32) {

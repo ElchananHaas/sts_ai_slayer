@@ -14,3 +14,6 @@ IN PROGRESS
 - [x] Show key controls
 - [x] Respond to key controls
 - [] More Playability
+
+### More Stuff
+- [] Show everything, complete states

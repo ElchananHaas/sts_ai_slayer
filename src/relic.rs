@@ -50,6 +50,7 @@ macro_rules! make_relics {
 pub struct Relics {
     pub bar: RelicBar,
     pub pool: RelicPool,
+    pub happy_flower_counter: i32
 }
 
 impl Relics {
@@ -57,6 +58,7 @@ impl Relics {
         Self {
             bar: RelicBar::new(),
             pool: RelicPool::new(character),
+            happy_flower_counter: 0
         }
     }
     pub fn add(&mut self, relic: Relic) {

@@ -17,7 +17,7 @@ All except Neow
 DONE!
 
 ### Combat Rewards
-TODO
+In Progress
 
 ### Potions
 TODO
@@ -32,7 +32,7 @@ TODO
 TODO
 
 ### Relics
-In Progress.
+In Progress
 
 ### Treasure Rooms
 TODO

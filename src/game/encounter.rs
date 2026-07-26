@@ -86,6 +86,9 @@ impl Game {
         {
             self.fight.energy += 2;
         }
+        if self.relics.has_relic(Relic::Lantern) {
+            self.fight.energy += 1;
+        }
         if self.relics.has_relic(Relic::BagofMarbles) {
             for i in self.fight.enemies.indicies() {
                 apply_debuff_to_enemy(&mut self.fight.enemies[i], Debuff::Vulnerable(1));

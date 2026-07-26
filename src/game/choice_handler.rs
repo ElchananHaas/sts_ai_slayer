@@ -1,13 +1,10 @@
 use smallvec::SmallVec;
 
 use crate::{
-    act::MapPosition,
-    card::{
+    act::MapPosition, card::{
         COLORLESS_CARDS, CURSE_CARDS, CardCharachter, CardType, IRONCLAD_CARDS, SelectCardEffect,
         sample_card,
-    },
-    fight::PlayCardContext,
-    game::{
+    }, fight::PlayCardContext, game::{
         Game, QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT,
         QUESTION_TREASURE_BASE_WEIGHT,
         choice::{
@@ -15,8 +12,7 @@ use crate::{
             RewardAction, Rewards, SelectCardAction,
         },
         encounter::Encounter,
-    },
-    map::RoomType,
+    }, map::RoomType, relic::Relic,
 };
 
 impl Game {
@@ -29,7 +25,12 @@ impl Game {
         match action {
             RestSiteAction::Heal => {
                 self.heal((self.player_max_hp * 3) / 10);
-                self.goto_map()
+                if self.relics.has_relic(Relic::DreamCatcher) {
+                    //TODO - Figure out how to build the card screen!!!!!!
+                    self.goto_rewards(todo!());
+                } else {
+                    self.goto_map()
+                }
             }
             RestSiteAction::Upgrade => self.goto_upgrade_card(),
         }
