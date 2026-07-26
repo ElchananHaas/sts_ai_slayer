@@ -802,7 +802,33 @@ impl Game {
             Relic::Omamori => {
                 self.relics.omamori_charges += 2;
             }
+            Relic::PotionBelt => {
+                self.max_potion_slots += 2;
+            }
+            Relic::WarPaint => {
+                self.upgrade_two_random(CardType::Skill);
+            }
+            Relic::Whetstone => {
+                self.upgrade_two_random(CardType::Attack);
+            }
             _ => {}
+        }
+    }
+    fn upgrade_two_random(&mut self, card_type: CardType) {
+        let mut valid: Vec<usize> = self
+            .base_deck
+            .iter()
+            .enumerate()
+            .filter(|(_idx, card)| card.can_upgrade() && card.body.card_type() == card_type)
+            .map(|(idx, _card)| idx)
+            .collect();
+        let valid_len = valid.len();
+        if valid_len > 2 {
+            valid.swap(0, self.rng.sample(valid_len));
+            valid.swap(1, 1 + self.rng.sample(valid_len - 1));
+        }
+        for i in 0..min(valid_len, 2) {
+            self.base_deck[valid[i]].upgrade();
         }
     }
 }

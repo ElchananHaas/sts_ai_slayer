@@ -20,7 +20,7 @@
 - [x] Omamori
 - [] Orichalum
 - [] Pen Nib
-- [] Potion Belt
+- [x] Potion Belt
 - [] Preserved Insect
 - [x] Regal Pillow
 - [] Smiling Mask
@@ -29,8 +29,8 @@
 - [] Tiny Chest
 - [] Toy Ornithopter
 - [x] Vajra
-- [] War Paint
-- [] Whetstone
+- [x] War Paint
+- [x] Whetstone
 ### Uncommon Relics - All
 - [] Blue Candle
 - [] Bottled Flame
