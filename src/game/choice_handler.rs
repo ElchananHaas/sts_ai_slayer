@@ -12,7 +12,7 @@ use crate::{
         QUESTION_TREASURE_BASE_WEIGHT,
         choice::{
             Choice, ChooseEnemyAction, MapStateAction, PlayCardAction, RestSiteAction,
-            SelectCardAction,
+            RewardAction, Rewards, SelectCardAction,
         },
         encounter::Encounter,
     },
@@ -165,6 +165,31 @@ impl Game {
             RoomType::Unassigned => {
                 panic!("Somehow reached an unassigned room!")
             }
+        }
+    }
+    pub(super) fn handle_reward_action(
+        &mut self,
+        mut rewards: Rewards,
+        action: RewardAction,
+    ) -> Choice {
+        match action {
+            RewardAction::TakeGold => {
+                self.gain_gold(rewards.gold);
+                rewards.gold = 0;
+                self.goto_rewards(rewards)
+            }
+            RewardAction::TakeRelic(idx) => {
+                self.relics.add(rewards.relics[idx]);
+                rewards.relics.remove(idx);
+                self.goto_rewards(rewards)
+            }
+            RewardAction::TakeCard(reward_idx, card_idx) => {
+                self.add_card_to_deck(rewards.card_choices[reward_idx][card_idx]);
+                rewards.card_choices.remove(reward_idx);
+                self.goto_rewards(rewards)
+            }
+            //TODO - handle reward screens that send you back to shops. (Cauldron, etc.)
+            RewardAction::Proceed => self.goto_map(),
         }
     }
 }

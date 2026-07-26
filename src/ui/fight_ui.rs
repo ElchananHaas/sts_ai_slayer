@@ -573,5 +573,10 @@ pub fn draw_game(widget: &mut impl Element, ui_ctx: &UICtx) {
                 render_rest_site(elem, ui_ctx, actions);
             });
         }
+        crate::game::choice::Choice::Rewards(rewards, reward_actions) => {
+            widget.child(|elem| {
+                writeln!(elem.cursor(), "Reward state rendering is WIP");
+            });
+        }
     }
 }

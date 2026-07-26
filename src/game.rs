@@ -10,12 +10,14 @@ use std::{cmp::min, mem, vec};
 
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
+use smallvec::SmallVec;
 
 use crate::act::Act;
 use crate::enemies::behavior;
 use crate::fight::EnemyName;
 use crate::game::choice::{
-    Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, SelectCardAction, SelectionPile,
+    Choice, ChoiceState, ChooseEnemyAction, PlayCardAction, Rewards, SelectCardAction,
+    SelectionPile,
 };
 use crate::map::{ActMap, RoomType};
 use crate::relic::Relic;
@@ -475,8 +477,28 @@ impl Game {
     }
 
     fn win_battle(&mut self) -> Choice {
+        let mut relics = SmallVec::new();
+        for _ in 0..self.fight.rewards.relic_count {
+            relics.push(self.relics.pool.get_random_tier_relic(&mut self.rng));
+        }
+        if let Some(relic) = self.fight.rewards.fixed_relic {
+            relics.push(relic);
+        }
+        let mut card_choices = SmallVec::new();
+        // TODO - Handle rarity logic!!!!!!!!!!!!!!!!!
+        // I haven't even marked rarity on cards, so I'll wait and do that first.
+        for _ in 0..1 {
+            let rarity = todo!();
+        }
+        let rewards = Rewards {
+            gold: self
+                .rng
+                .sample_i32_inclusive(self.fight.rewards.gold_min, self.fight.rewards.gold_max),
+            relics,
+            card_choices,
+        };
         self.fight = Fight::default();
-        self.goto_map()
+        self.goto_rewards(rewards)
     }
 
     //Used for Shield Gremlin.

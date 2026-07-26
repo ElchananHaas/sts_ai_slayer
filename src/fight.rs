@@ -7,6 +7,7 @@ use std::{
 
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
+use smallvec::SmallVec;
 
 use crate::{
     card::{Buff, Card, CardBody, CardType, Cost, Debuff},

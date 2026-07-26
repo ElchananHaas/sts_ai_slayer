@@ -6,7 +6,7 @@ use paste::paste;
 macro_rules! make_relics {
     ($($x:ident),* $(,)?) => {
         paste!{
-            #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+            #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
             pub enum Relic {
                 $(
                     $x,

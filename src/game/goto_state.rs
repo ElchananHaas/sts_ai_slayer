@@ -2,7 +2,10 @@ use smallvec::SmallVec;
 
 use crate::game::{
     Game,
-    choice::{Choice, MapStateAction, RestSiteAction, SelectCardAction, SelectDeckCardReason},
+    choice::{
+        Choice, MapStateAction, RestSiteAction, RewardAction, Rewards, SelectCardAction,
+        SelectDeckCardReason,
+    },
     encounter::Encounter,
 };
 
@@ -143,6 +146,23 @@ impl Game {
             self.update_act_from_fight(encounter);
             self.setup_encounter(encounter)
         }
+    }
+
+    pub(super) fn goto_rewards(&mut self, rewards: Rewards) -> Choice {
+        let mut actions = Vec::new();
+        actions.push(RewardAction::Proceed);
+        if rewards.gold > 0 {
+            actions.push(RewardAction::TakeGold);
+        }
+        for i in 0..rewards.relics.len() {
+            actions.push(RewardAction::TakeRelic(i));
+        }
+        for i in 0..rewards.card_choices.len() {
+            for j in 0..rewards.card_choices[i].len() {
+                actions.push(RewardAction::TakeCard(i, j));
+            }
+        }
+        Choice::Rewards(rewards, actions)
     }
 
     pub(super) fn goto_shop(&mut self) -> Choice {
