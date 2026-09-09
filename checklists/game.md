@@ -17,7 +17,7 @@ All except Neow (Need to handle actually going to them/ question marks)
 DONE!
 
 ### Combat Rewards
-In Progress
+DONE!
 
 ### Potions
 TODO

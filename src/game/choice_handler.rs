@@ -36,8 +36,14 @@ impl Game {
                 };
                 self.player_heal((self.player_max_hp * 3) / 10 + regal_pillow_bonus);
                 if self.relics.has_relic(Relic::DreamCatcher) {
-                    //TODO - Figure out how to build the card screen!!!!!!
-                    self.goto_rewards(todo!());
+                    let mut card_choices = SmallVec::new();
+                        card_choices.push(self.generate_card_rewards(true));
+                    let rewards = Rewards {
+                        gold: 0,
+                        relics: Default::default(),
+                        card_choices,
+                    };
+                    self.goto_rewards(rewards)
                 } else {
                     self.goto_map()
                 }

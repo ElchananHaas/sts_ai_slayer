@@ -9,7 +9,7 @@
 - [x] Bronze Scales
 - [x] Centennial Puzzle
 - [x] Ceramic Fish
-- [] Dream Catcher (Need to fix card rewards)
+- [x] Dream Catcher
 - [x] Happy Flower
 - [] Juzu Bracelet
 - [x] Lantern
