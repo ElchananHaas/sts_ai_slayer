@@ -240,6 +240,13 @@ pub enum CardType {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum CardRarity {
+    Common,
+    Uncommon,
+    Rare,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum CardCharachter {
     IRONCLAD,
     SILENT,
@@ -261,6 +268,7 @@ struct CardProps {
     removable: bool,
     starter: bool,
     innate: Innate,
+    rarity: CardRarity,
 }
 
 enum Ethereal {
@@ -282,6 +290,7 @@ impl CardProps {
         requires_target: bool,
         card_type: CardType,
         charachter: CardCharachter,
+        rarity: CardRarity,
     ) -> Self {
         Self {
             actions,
@@ -296,6 +305,7 @@ impl CardProps {
             removable: true,
             charachter,
             starter: false,
+            rarity,
         }
     }
     const fn with_starter(self) -> Self {
@@ -340,8 +350,9 @@ impl CardBody {
                     Cost::Fixed(1),
                     true,
                     CardType::Attack,
-                    CardCharachter::IRONCLAD //This can be found on all charachters but is
-                                             //a starter so it doesn't matter.
+                    CardCharachter::IRONCLAD, //This can be found on all charachters but is
+                    //a starter so it doesn't matter.
+                    CardRarity::Common,
                 )
                 .with_starter()
             ),
@@ -358,7 +369,8 @@ impl CardBody {
                     Cost::Fixed(2),
                     true,
                     CardType::Attack,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Common,
                 )
                 .with_starter()
             ),
@@ -369,8 +381,9 @@ impl CardBody {
                     Cost::Fixed(1),
                     false,
                     CardType::Skill,
-                    CardCharachter::IRONCLAD //This can be found on all charachters but is
-                                             //a starter so it doesn't matter.
+                    CardCharachter::IRONCLAD, //This can be found on all charachters but is
+                    //a starter so it doesn't matter.
+                    CardRarity::Common,
                 )
                 .with_starter()
             ),
@@ -380,7 +393,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Status,
-                CardCharachter::COLORLESS
+                CardCharachter::COLORLESS,
+                CardRarity::Common,
             )),
             CardBody::Anger => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(6), PlayEffect::AddCopyToDiscard],
@@ -388,7 +402,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::Armaments => const_card!(&CardProps::new(
                 &[
@@ -399,7 +414,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::BodySlam => const_card!(
                 &CardProps::new(
@@ -408,7 +424,8 @@ impl CardBody {
                     Cost::Fixed(1),
                     true,
                     CardType::Attack,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Common,
                 )
                 .with_upgraded_cost(Cost::Fixed(0))
             ),
@@ -418,7 +435,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::Cleave => const_card!(&CardProps::new(
                 &[PlayEffect::AttackAll(8)],
@@ -426,7 +444,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::Clothesline => const_card!(&CardProps::new(
                 &[
@@ -440,7 +459,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::Flex => const_card!(&CardProps::new(
                 &[
@@ -454,7 +474,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::Havoc => const_card!(
                 &CardProps::new(
@@ -463,7 +484,8 @@ impl CardBody {
                     Cost::Fixed(1),
                     false,
                     CardType::Skill,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Common,
                 )
                 .with_upgraded_cost(Cost::Fixed(0))
             ),
@@ -479,7 +501,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::HeavyBlade => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(14)],
@@ -487,7 +510,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::IronWave => const_card!(&CardProps::new(
                 &[PlayEffect::Block(5), PlayEffect::Attack(5)],
@@ -495,7 +519,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::SearingBlow => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(12)],
@@ -503,7 +528,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::PerfectedStrike => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(6)],
@@ -511,7 +537,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::PommelStrike => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(9), PlayEffect::Draw(1)],
@@ -519,7 +546,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::ShrugItOff => const_card!(&CardProps::new(
                 &[PlayEffect::Block(8), PlayEffect::Draw(1)],
@@ -527,7 +555,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::SwordBoomerang => const_card!(&CardProps::new(
                 &[
@@ -544,7 +573,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::Thunderclap => const_card!(&CardProps::new(
                 &[
@@ -558,7 +588,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::TrueGrit => const_card!(&CardProps::new(
                 &[PlayEffect::Block(7), PlayEffect::ExhaustRandomInHand],
@@ -569,7 +600,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::TwinStrike => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(5), PlayEffect::Attack(5)],
@@ -577,7 +609,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::Warcry => const_card!(&CardProps::new(
                 &[
@@ -593,7 +626,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::WildStrike => const_card!(&CardProps::new(
                 &[
@@ -607,7 +641,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Common,
             )),
             CardBody::Wound => const_card!(&CardProps::new(
                 &[PlayEffect::MarkExhaust],
@@ -615,7 +650,8 @@ impl CardBody {
                 Cost::Unplayable,
                 false,
                 CardType::Status,
-                CardCharachter::COLORLESS
+                CardCharachter::COLORLESS,
+                CardRarity::Common,
             )),
             CardBody::BattleTrance => const_card!(&CardProps::new(
                 &[PlayEffect::Draw(3), PlayEffect::DebuffSelf(Debuff::NoDraw)],
@@ -623,7 +659,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::BloodForBlood => const_card!(
                 &CardProps::new(
@@ -632,7 +669,8 @@ impl CardBody {
                     Cost::NumMinusHpLoss(4),
                     true,
                     CardType::Attack,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Uncommon,
                 )
                 .with_upgraded_cost(Cost::NumMinusHpLoss(3))
             ),
@@ -642,7 +680,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::BurningPact => const_card!(&CardProps::new(
                 &[
@@ -656,7 +695,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Carnage => const_card!(
                 &CardProps::new(
@@ -665,7 +705,8 @@ impl CardBody {
                     Cost::Fixed(2),
                     true,
                     CardType::Attack,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Uncommon,
                 )
                 .with_ethereal(Ethereal::Yes)
             ),
@@ -681,7 +722,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::DarkEmbrace => const_card!(
                 &CardProps::new(
@@ -690,7 +732,8 @@ impl CardBody {
                     Cost::Fixed(2),
                     false,
                     CardType::Power,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Uncommon,
                 )
                 .with_upgraded_cost(Cost::Fixed(1))
             ),
@@ -706,7 +749,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Dropkick => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(5), PlayEffect::DropkickDraw],
@@ -714,7 +758,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::DualWield => const_card!(&CardProps::new(
                 &[PlayEffect::SelectCardEffect(
@@ -726,7 +771,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Entrench => const_card!(
                 &CardProps::new(
@@ -735,7 +781,8 @@ impl CardBody {
                     Cost::Fixed(2),
                     false,
                     CardType::Skill,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Uncommon,
                 )
                 .with_upgraded_cost(Cost::Fixed(1))
             ),
@@ -745,7 +792,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::FeelNoPain => const_card!(&CardProps::new(
                 &[PlayEffect::Buff(Buff::FNPBuff(3))],
@@ -753,7 +801,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::FireBreathing => const_card!(&CardProps::new(
                 &[PlayEffect::Buff(Buff::FireBreathingBuff(6))],
@@ -761,7 +810,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::FlameBarrier => const_card!(&CardProps::new(
                 &[PlayEffect::Block(12), PlayEffect::Buff(Buff::TempSpikes(4))],
@@ -769,7 +819,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::GhostlyArmor => const_card!(
                 &CardProps::new(
@@ -778,7 +829,8 @@ impl CardBody {
                     Cost::Fixed(1),
                     false,
                     CardType::Skill,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Uncommon,
                 )
                 .with_ethereal(Ethereal::Yes)
             ),
@@ -788,7 +840,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::InfernalBlade => const_card!(
                 &CardProps::new(
@@ -797,7 +850,8 @@ impl CardBody {
                     Cost::Fixed(1),
                     false,
                     CardType::Skill,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Uncommon,
                 )
                 .with_upgraded_cost(Cost::Fixed(0))
             ),
@@ -807,7 +861,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Intimidate => const_card!(&CardProps::new(
                 &[
@@ -821,7 +876,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Metallicize => const_card!(&CardProps::new(
                 &[PlayEffect::Buff(Buff::Metallicize(3))],
@@ -829,7 +885,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::PowerThrough => const_card!(&CardProps::new(
                 &[
@@ -845,7 +902,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Pummel => const_card!(&CardProps::new(
                 &[
@@ -864,7 +922,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Rage => const_card!(&CardProps::new(
                 &[PlayEffect::Buff(Buff::RageBuff(3))],
@@ -872,7 +931,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Rampage => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(8), PlayEffect::IncreaseDamage(5)],
@@ -880,7 +940,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::RecklessCharge => const_card!(&CardProps::new(
                 &[
@@ -894,7 +955,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Dazed => const_card!(
                 &CardProps::new(
@@ -903,7 +965,8 @@ impl CardBody {
                     Cost::Unplayable,
                     false,
                     CardType::Status,
-                    CardCharachter::COLORLESS
+                    CardCharachter::COLORLESS,
+                    CardRarity::Uncommon,
                 )
                 .with_ethereal(Ethereal::Yes)
             ),
@@ -913,7 +976,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::SecondWind => const_card!(&CardProps::new(
                 &[PlayEffect::ExhaustNonAttackForBlock(5)],
@@ -921,7 +985,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::SeeingRed => const_card!(
                 &CardProps::new(
@@ -930,7 +995,8 @@ impl CardBody {
                     Cost::Fixed(1),
                     false,
                     CardType::Skill,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Uncommon,
                 )
                 .with_upgraded_cost(Cost::Fixed(0))
             ),
@@ -940,7 +1006,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::SeverSoul => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(16), PlayEffect::ExhaustNonAttack],
@@ -948,7 +1015,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Shockwave => const_card!(&CardProps::new(
                 &[
@@ -964,7 +1032,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::SpotWeakness => const_card!(&CardProps::new(
                 &[PlayEffect::SpotWeakness(3),],
@@ -972,7 +1041,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Uppercut => const_card!(&CardProps::new(
                 &[
@@ -988,7 +1058,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Whirlwind => const_card!(&CardProps::new(
                 &[PlayEffect::AttackAllX(5)],
@@ -996,7 +1067,8 @@ impl CardBody {
                 Cost::X,
                 false,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Uncommon,
             )),
             CardBody::Barricade => const_card!(
                 &CardProps::new(
@@ -1005,7 +1077,8 @@ impl CardBody {
                     Cost::Fixed(3),
                     false,
                     CardType::Power,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Rare,
                 )
                 .with_upgraded_cost(Cost::Fixed(2))
             ),
@@ -1021,7 +1094,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::Bludgeon => const_card!(&CardProps::new(
                 &[PlayEffect::Attack(32)],
@@ -1029,7 +1103,8 @@ impl CardBody {
                 Cost::Fixed(3),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::Brutality => const_card!(
                 &CardProps::new(
@@ -1038,7 +1113,8 @@ impl CardBody {
                     Cost::Fixed(0),
                     false,
                     CardType::Power,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Rare,
                 )
                 .with_innate(Innate::Upgraded)
             ),
@@ -1049,7 +1125,8 @@ impl CardBody {
                     Cost::Fixed(3),
                     false,
                     CardType::Power,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Rare,
                 )
                 .with_upgraded_cost(Cost::Fixed(2))
             ),
@@ -1059,7 +1136,8 @@ impl CardBody {
                 Cost::Fixed(3),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::DoubleTap => const_card!(&CardProps::new(
                 &[PlayEffect::Buff(Buff::DoubleTap(1))],
@@ -1067,7 +1145,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::Exhume => const_card!(
                 &CardProps::new(
@@ -1082,7 +1161,8 @@ impl CardBody {
                     Cost::Fixed(1),
                     false,
                     CardType::Skill,
-                    CardCharachter::IRONCLAD
+                    CardCharachter::IRONCLAD,
+                    CardRarity::Rare,
                 )
                 .with_upgraded_cost(Cost::Fixed(0))
             ),
@@ -1092,7 +1172,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::FiendFire => const_card!(&CardProps::new(
                 &[PlayEffect::AttackFiendFire(7), PlayEffect::MarkExhaust],
@@ -1100,7 +1181,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 true,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::Immolate => const_card!(&CardProps::new(
                 &[
@@ -1114,7 +1196,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 false,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::Burn => const_card!(&CardProps::new(
                 &[PlayEffect::MarkExhaust],
@@ -1122,7 +1205,8 @@ impl CardBody {
                 Cost::Unplayable,
                 false,
                 CardType::Status,
-                CardCharachter::COLORLESS
+                CardCharachter::COLORLESS,
+                CardRarity::Rare,
             )),
             CardBody::Impervious => const_card!(&CardProps::new(
                 &[PlayEffect::Block(30), PlayEffect::MarkExhaust],
@@ -1130,7 +1214,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::Juggernaut => const_card!(&CardProps::new(
                 &[PlayEffect::Buff(Buff::Juggernaut(5))],
@@ -1138,7 +1223,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 false,
                 CardType::Power,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::LimitBreak => const_card!(&CardProps::new(
                 &[PlayEffect::DoubleStrength, PlayEffect::MarkExhaust],
@@ -1146,7 +1232,8 @@ impl CardBody {
                 Cost::Fixed(1),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::Offering => const_card!(&CardProps::new(
                 &[
@@ -1164,7 +1251,8 @@ impl CardBody {
                 Cost::Fixed(0),
                 false,
                 CardType::Skill,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::Reaper => const_card!(&CardProps::new(
                 &[PlayEffect::AttackAllForHP(4), PlayEffect::MarkExhaust],
@@ -1172,7 +1260,8 @@ impl CardBody {
                 Cost::Fixed(2),
                 false,
                 CardType::Attack,
-                CardCharachter::IRONCLAD
+                CardCharachter::IRONCLAD,
+                CardRarity::Rare,
             )),
             CardBody::Regret => const_card!(&CardProps::new(
                 &[PlayEffect::MarkExhaust],
@@ -1180,7 +1269,8 @@ impl CardBody {
                 Cost::Unplayable,
                 false,
                 CardType::Curse,
-                CardCharachter::COLORLESS
+                CardCharachter::COLORLESS,
+                CardRarity::Rare,
             )),
             CardBody::Injury => const_card!(&CardProps::new(
                 &[PlayEffect::MarkExhaust],
@@ -1188,7 +1278,8 @@ impl CardBody {
                 Cost::Unplayable,
                 false,
                 CardType::Curse,
-                CardCharachter::COLORLESS
+                CardCharachter::COLORLESS,
+                CardRarity::Rare,
             )),
             CardBody::Parasite => const_card!(&CardProps::new(
                 &[PlayEffect::MarkExhaust],
@@ -1196,7 +1287,8 @@ impl CardBody {
                 Cost::Unplayable,
                 false,
                 CardType::Curse,
-                CardCharachter::COLORLESS
+                CardCharachter::COLORLESS,
+                CardRarity::Rare,
             )),
             CardBody::Doubt => const_card!(&CardProps::new(
                 &[PlayEffect::MarkExhaust],
@@ -1204,7 +1296,8 @@ impl CardBody {
                 Cost::Unplayable,
                 false,
                 CardType::Curse,
-                CardCharachter::COLORLESS
+                CardCharachter::COLORLESS,
+                CardRarity::Rare,
             )),
         };
     }
@@ -1286,7 +1379,18 @@ const fn ironclad_filter(props: &'static CardProps) -> bool {
     matches!(props.charachter, CardCharachter::IRONCLAD) && !props.starter
 }
 pub const IRONCLAD_CARDS: &'static [CardBody] = filtered_cards!(ironclad_filter);
-
+const fn ironclad_common(props: &'static CardProps) -> bool {
+    ironclad_filter(props) && matches!(props.rarity, CardRarity::Common)
+}
+pub const IRONCLAD_COMMON: &'static [CardBody] = filtered_cards!(ironclad_common);
+const fn ironclad_uncommon(props: &'static CardProps) -> bool {
+    ironclad_filter(props) && matches!(props.rarity, CardRarity::Uncommon)
+}
+pub const IRONCLAD_UNCOMMON: &'static [CardBody] = filtered_cards!(ironclad_uncommon);
+const fn ironclad_rare(props: &'static CardProps) -> bool {
+    ironclad_filter(props) && matches!(props.rarity, CardRarity::Rare)
+}
+pub const IRONCLAD_RARE: &'static [CardBody] = filtered_cards!(ironclad_rare);
 const fn curse_filter(props: &'static CardProps) -> bool {
     matches!(props.card_type, CardType::Curse)
 }

@@ -11,7 +11,7 @@ DONE!
 DONE!
 
 ### Act 1 Events
-All except Neow
+All except Neow (Need to handle actually going to them/ question marks)
 
 ### Map Generation
 DONE!

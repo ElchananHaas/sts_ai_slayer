@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
 use crate::act::Act;
+use crate::card::{CardRarity, IRONCLAD_COMMON, IRONCLAD_RARE, IRONCLAD_UNCOMMON};
 use crate::enemies::behavior;
 use crate::fight::EnemyName;
 use crate::game::choice::{
@@ -36,6 +37,7 @@ use crate::{
 pub const QUESTION_MONSTER_BASE_WEIGHT: i32 = 10;
 pub const QUESTION_SHOP_BASE_WEIGHT: i32 = 3;
 pub const QUESTION_TREASURE_BASE_WEIGHT: i32 = 2;
+pub const RARE_CARD_STARTING_OFFSET: i32 = -5;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Getters, Serialize, Deserialize)]
 pub struct Game {
@@ -281,7 +283,6 @@ impl Game {
         }
     }
 
-    //TODO handle various effects of HP loss.
     fn player_lose_hp(&mut self, amount: i32, from_card: bool) {
         if amount <= 0 {
             return;
@@ -491,10 +492,8 @@ impl Game {
             relics.push(relic);
         }
         let mut card_choices = SmallVec::new();
-        // TODO - Handle rarity logic!!!!!!!!!!!!!!!!!
-        // I haven't even marked rarity on cards, so I'll wait and do that first.
         for _ in 0..1 {
-            let rarity = todo!();
+            card_choices.push(self.generate_card_rewards(true));
         }
         let rewards = Rewards {
             gold: self
@@ -505,6 +504,57 @@ impl Game {
         };
         self.fight = Fight::default();
         self.goto_rewards(rewards)
+    }
+
+    fn generate_card_rewards(&mut self, combat_reward: bool) -> SmallVec<[CardBody; 4]> {
+        let mut cards = SmallVec::new();
+        for _ in 0..3 {
+            let rarity = self.sample_card_rarity();
+            loop {
+                let card = self.generate_card_with_rarity(rarity);
+                if !cards.contains(&card) {
+                    cards.push(card);
+                    break;
+                }
+            }
+            if combat_reward {
+                match rarity {
+                    CardRarity::Common => {
+                        self.act.rare_card_offset += 1;
+                    }
+                    CardRarity::Uncommon => {}
+                    CardRarity::Rare => {
+                        self.act.rare_card_offset = RARE_CARD_STARTING_OFFSET;
+                    }
+                }
+            }
+        }
+        cards
+    }
+
+    fn generate_card_with_rarity(&mut self, rarity: CardRarity) -> CardBody {
+        let cards: &'static [CardBody] = match self.charachter {
+            Character::IRONCLAD => match rarity {
+                CardRarity::Common => IRONCLAD_COMMON,
+                CardRarity::Uncommon => IRONCLAD_UNCOMMON,
+                CardRarity::Rare => IRONCLAD_RARE,
+            },
+            Character::SILENT => todo!(),
+            Character::DEFECT => todo!(),
+            Character::WATCHER => todo!(),
+        };
+        cards[self.rng.sample(cards.len())]
+    }
+
+    fn sample_card_rarity(&mut self) -> CardRarity {
+        let roll = self.rng.sample_i32(100) + self.act.rare_card_offset;
+        if roll >= 97 {
+            CardRarity::Rare
+        } else if roll >= 60 {
+            CardRarity::Uncommon
+        } else {
+            CardRarity::Common
+        }
     }
 
     //Used for Shield Gremlin.

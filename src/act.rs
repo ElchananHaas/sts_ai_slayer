@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     game::{
         QUESTION_MONSTER_BASE_WEIGHT, QUESTION_SHOP_BASE_WEIGHT, QUESTION_TREASURE_BASE_WEIGHT,
-        encounter::Encounter,
+        RARE_CARD_STARTING_OFFSET, encounter::Encounter,
     },
     map::RoomType,
 };
@@ -19,6 +19,7 @@ pub struct Act {
     pub room_history: Vec<RoomType>,
     pub prior_fights: [Option<Encounter>; 2],
     pub position: Option<MapPosition>,
+    pub rare_card_offset: i32,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct MapPosition {
@@ -37,6 +38,7 @@ impl Act {
             room_history: Vec::new(),
             prior_fights: [None, None],
             position: None,
+            rare_card_offset: RARE_CARD_STARTING_OFFSET,
         }
     }
 }
